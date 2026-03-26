@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Chessboard } from 'react-chessboard';
@@ -36,7 +36,7 @@ function formatTime(seconds: number) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-export default function ReplayPage() {
+function ReplayContent() {
   const searchParams = useSearchParams();
   const gameId = searchParams.get('id');
   const { token } = useAppStore();
@@ -280,5 +280,17 @@ export default function ReplayPage() {
         </div>
       </div>
     </AppLayout>
+  );
+}
+
+export default function ReplayPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="w-8 h-8 animate-spin rounded-full border-4 border-sky-400 border-t-transparent" />
+      </div>
+    }>
+      <ReplayContent />
+    </Suspense>
   );
 }
