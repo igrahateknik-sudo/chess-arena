@@ -27,11 +27,18 @@ function getCtx(): AudioContext | null {
       return null;
     }
   }
-  // Resume if suspended (browser autoplay policy)
-  if (ctx.state === 'suspended') {
-    ctx.resume().catch(() => {});
-  }
   return ctx;
+}
+
+/** Resume context if suspended, then run callback. Handles browser autoplay policy. */
+function withCtx(fn: (c: AudioContext) => void): void {
+  const c = getCtx();
+  if (!c) return;
+  if (c.state === 'suspended') {
+    c.resume().then(() => fn(c)).catch(() => {});
+  } else {
+    fn(c);
+  }
 }
 
 /** Play a short sine/square tone burst */
@@ -42,56 +49,54 @@ function tone(
   volume = 0.35,
   startDelay = 0,
 ) {
-  const c = getCtx();
-  if (!c) return;
+  withCtx(c => {
+    const osc = c.createOscillator();
+    const gain = c.createGain();
 
-  const osc = c.createOscillator();
-  const gain = c.createGain();
+    osc.connect(gain);
+    gain.connect(c.destination);
 
-  osc.connect(gain);
-  gain.connect(c.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(frequency, c.currentTime + startDelay);
 
-  osc.type = type;
-  osc.frequency.setValueAtTime(frequency, c.currentTime + startDelay);
+    gain.gain.setValueAtTime(0, c.currentTime + startDelay);
+    gain.gain.linearRampToValueAtTime(volume, c.currentTime + startDelay + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + startDelay + duration);
 
-  gain.gain.setValueAtTime(0, c.currentTime + startDelay);
-  gain.gain.linearRampToValueAtTime(volume, c.currentTime + startDelay + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + startDelay + duration);
-
-  osc.start(c.currentTime + startDelay);
-  osc.stop(c.currentTime + startDelay + duration + 0.05);
+    osc.start(c.currentTime + startDelay);
+    osc.stop(c.currentTime + startDelay + duration + 0.05);
+  });
 }
 
 /** Play a noise burst (for capture impact) */
 function noise(duration: number, volume = 0.2, startDelay = 0) {
-  const c = getCtx();
-  if (!c) return;
+  withCtx(c => {
+    const bufferSize = c.sampleRate * duration;
+    const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
 
-  const bufferSize = c.sampleRate * duration;
-  const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) {
-    data[i] = Math.random() * 2 - 1;
-  }
+    const source = c.createBufferSource();
+    source.buffer = buffer;
 
-  const source = c.createBufferSource();
-  source.buffer = buffer;
+    const gain = c.createGain();
+    const filter = c.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1200;
+    filter.Q.value = 0.8;
 
-  const gain = c.createGain();
-  const filter = c.createBiquadFilter();
-  filter.type = 'bandpass';
-  filter.frequency.value = 1200;
-  filter.Q.value = 0.8;
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(c.destination);
 
-  source.connect(filter);
-  filter.connect(gain);
-  gain.connect(c.destination);
+    gain.gain.setValueAtTime(volume, c.currentTime + startDelay);
+    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + startDelay + duration);
 
-  gain.gain.setValueAtTime(volume, c.currentTime + startDelay);
-  gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + startDelay + duration);
-
-  source.start(c.currentTime + startDelay);
-  source.stop(c.currentTime + startDelay + duration + 0.05);
+    source.start(c.currentTime + startDelay);
+    source.stop(c.currentTime + startDelay + duration + 0.05);
+  });
 }
 
 const SOUNDS: Record<ChessSoundType, () => void> = {

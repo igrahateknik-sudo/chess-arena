@@ -652,6 +652,7 @@ function registerGameRoom(io, socket, userId) {
       san: move.san,
       from: move.from,
       to: move.to,
+      flags: move.flags,          // needed by client for sound selection
       piece: move.piece,
       captured: move.captured,
       promotion: move.promotion,
