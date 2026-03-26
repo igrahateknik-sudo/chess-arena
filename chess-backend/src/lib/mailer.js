@@ -34,7 +34,7 @@ function getTransporter() {
 }
 
 const FROM_NAME  = 'Chess Arena';
-const FROM_EMAIL = process.env.SMTP_USER || 'noreply@chess-arena.app';
+const FROM_EMAIL = process.env.SMTP_FROM || 'onboarding@resend.dev';
 const BASE_URL   = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 /**
