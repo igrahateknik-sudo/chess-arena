@@ -29,11 +29,27 @@ const STATS = [
 export default function LandingPage() {
   const router = useRouter();
   const { login } = useAppStore();
-  const [mode, setMode] = useState<'landing' | 'login' | 'register'>('landing');
+  const [mode, setMode] = useState<'landing' | 'login' | 'register' | 'forgot'>('landing');
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ username: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState('');
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setAuthError('');
+    setForgotSuccess('');
+    try {
+      await api.auth.forgotPassword(form.email);
+      setForgotSuccess('Link reset password telah dikirim ke email kamu. Cek inbox (dan folder spam).');
+    } catch (err: unknown) {
+      setAuthError(err instanceof Error ? err.message : 'Gagal mengirim email reset');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,6 +278,55 @@ export default function LandingPage() {
           </motion.div>
         )}
 
+        {mode === 'forgot' && (
+          <motion.div key="forgot" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+            className="min-h-screen flex items-center justify-center px-4">
+            <div className="w-full max-w-md">
+              <div className="text-center mb-8">
+                <button onClick={() => setMode('login')} className="inline-flex items-center gap-2 mb-6 hover:opacity-80 transition-opacity">
+                  <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <span className="text-2xl">♔</span>
+                  </div>
+                  <span className="text-2xl font-bold">Chess<span className="gradient-text">Arena</span></span>
+                </button>
+                <h1 className="text-2xl font-bold">Reset Password</h1>
+                <p className="text-slate-400 mt-2 text-sm">Masukkan email kamu dan kami akan kirim link reset.</p>
+              </div>
+              <div className="glass rounded-2xl p-8 border border-white/10">
+                {authError && (
+                  <div className="flex items-center gap-2 p-3 mb-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+                    <span>⚠</span> {authError}
+                  </div>
+                )}
+                {forgotSuccess ? (
+                  <div className="flex flex-col items-center gap-4 py-4">
+                    <div className="w-14 h-14 rounded-full bg-emerald-500/20 flex items-center justify-center text-3xl">✉️</div>
+                    <p className="text-emerald-400 text-sm text-center">{forgotSuccess}</p>
+                    <button onClick={() => setMode('login')} className="text-sm text-sky-400 hover:text-sky-300 transition-colors">Kembali ke Login</button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
+                      <input type="email" value={form.email} required
+                        onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                        placeholder="you@example.com"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors" />
+                    </div>
+                    <button type="submit" disabled={loading}
+                      className="w-full py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl font-semibold text-base hover:opacity-90 transition-opacity shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 disabled:opacity-70">
+                      {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Kirim Link Reset'}
+                    </button>
+                    <button type="button" onClick={() => setMode('login')} className="w-full text-sm text-slate-400 hover:text-slate-300 transition-colors mt-2">
+                      Kembali ke Login
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {(mode === 'login' || mode === 'register') && (
           <motion.div key="auth" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
             className="min-h-screen flex items-center justify-center px-4">
@@ -322,7 +387,7 @@ export default function LandingPage() {
                   </div>
                   {mode === 'login' && (
                     <div className="text-right">
-                      <button type="button" className="text-sm text-sky-400 hover:text-sky-300 transition-colors">Forgot password?</button>
+                      <button type="button" onClick={() => { setMode('forgot'); setAuthError(''); setForgotSuccess(''); }} className="text-sm text-sky-400 hover:text-sky-300 transition-colors">Forgot password?</button>
                     </div>
                   )}
                   <button type="submit" disabled={loading}

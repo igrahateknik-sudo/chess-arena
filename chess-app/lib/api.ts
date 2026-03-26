@@ -30,6 +30,12 @@ export const api = {
 
     updateProfile: (token: string, body: { country?: string; avatar_url?: string }) =>
       fetchAPI('/api/auth/profile', { method: 'PATCH', body: JSON.stringify(body) }, token),
+
+    forgotPassword: (email: string) =>
+      fetchAPI('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+
+    resetPassword: (token: string, password: string) =>
+      fetchAPI('/api/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
   },
 
   wallet: {
