@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User, ThemeMode, BoardTheme, ServerNotification } from '@/types';
+import { disconnectSocket } from '@/lib/socket';
 
 interface AppStore {
   // Auth
@@ -64,10 +65,10 @@ export const useAppStore = create<AppStore>()(
       updateUser: (updates) => set((state) => ({
         user: state.user ? { ...state.user, ...updates } : null,
       })),
-      logout: () => set({
-        user: null, token: null, isAuthenticated: false,
-        serverNotifications: [], onlineUsers: 0, activeGames: 0,
-      }),
+      logout: () => {
+        disconnectSocket();
+        set({ user: null, token: null, isAuthenticated: false, serverNotifications: [], onlineUsers: 0, activeGames: 0 });
+      },
 
       theme: 'dark',
       toggleTheme: () => set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
@@ -89,7 +90,7 @@ export const useAppStore = create<AppStore>()(
       notifications: [],
       addNotification: (notification) =>
         set((state) => ({
-          notifications: [...state.notifications, { ...notification, id: Date.now().toString() }],
+          notifications: [...state.notifications, { ...notification, id: crypto.randomUUID() }],
         })),
       removeNotification: (id) =>
         set((state) => ({

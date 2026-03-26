@@ -14,6 +14,14 @@ const { startWalletCleanupJob }       = require('./lib/walletCleanup');
 const logger                          = require('./lib/logger');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
+// ── Env var validation ────────────────────────────────────────────────────────
+const REQUIRED_ENV = ['SUPABASE_URL', 'SUPABASE_SERVICE_KEY', 'JWT_SECRET'];
+const missingEnv = REQUIRED_ENV.filter(k => !process.env[k]);
+if (missingEnv.length > 0) {
+  console.error(`[startup] Missing required environment variables: ${missingEnv.join(', ')}`);
+  process.exit(1);
+}
+
 const app = express();
 const server = http.createServer(app);
 
@@ -83,7 +91,8 @@ const RATE_RULES = [
 ];
 
 /**
- * Returns an isAllowed(event) predicate for one socket.
+ * Returns an isAllowed(event) predicate keyed by userId (not socket).
+ * Shared across all sockets for the same user — prevents multi-tab bypass.
  *
  * Algorithm (two-phase, no double-counting):
  *   Phase 1 — Check every applicable rule in READ-ONLY mode.
@@ -94,10 +103,16 @@ const RATE_RULES = [
  *   specific rule  → key `ev:<eventName>`
  *   wildcard '*'   → key `__global__`
  */
-function createSocketRateLimiter() {
-  const windows = new Map(); // Map<key, number[]>  (timestamps in ms)
 
-  /** Prune expired entries and return the live window array. */
+// Map<userId, Map<bucketKey, number[]>> — shared across all sockets for a user
+const userRateLimitWindows = new Map();
+
+function getUserRateLimiter(userId) {
+  if (!userRateLimitWindows.has(userId)) {
+    userRateLimitWindows.set(userId, new Map());
+  }
+  const windows = userRateLimitWindows.get(userId);
+
   function prune(key, windowMs) {
     if (!windows.has(key)) windows.set(key, []);
     const arr = windows.get(key);
@@ -242,11 +257,11 @@ io.on('connection', async (socket) => {
   const activeGames = [...gameCache.values()].filter(g => g.status === 'active').length;
   io.emit('lobby:online', { count: onlineCount, activeGames });
 
-  // ── Per-socket rate limiter ───────────────────────────────────────────────
-  // Wrap socket.on so every registered event goes through the rate limiter.
+  // ── Per-user rate limiter ─────────────────────────────────────────────────
+  // Shared across all sockets for the same userId — prevents multi-tab bypass.
   // Blocked events are silently dropped (no error sent to client to avoid
   // leaking info about limits). Violations are logged server-side.
-  const isAllowed = createSocketRateLimiter();
+  const isAllowed = getUserRateLimiter(userId);
   const originalOn = socket.on.bind(socket);
   socket.on = function rateLimitedOn(event, handler) {
     // Don't intercept internal Socket.IO events
@@ -285,6 +300,11 @@ io.on('connection', async (socket) => {
     const activeGamesAfter = [...gameCache.values()].filter(g => g.status === 'active').length;
     io.emit('lobby:online', { count: onlineCountAfter, activeGames: activeGamesAfter });
     logger.info('Socket disconnected', { username, socketId: socket.id });
+    // Clean up per-user rate limit windows if user has no remaining sockets
+    const userRoom = io.sockets.adapter.rooms.get(userId);
+    if (!userRoom || userRoom.size === 0) {
+      userRateLimitWindows.delete(userId);
+    }
   });
 });
 

@@ -28,6 +28,14 @@ const { logMove, logSecurityEvent } = require('../lib/auditLog');
 const { recordAndDetect, scoreFingerprintResult } = require('../lib/fingerprint');
 const { runCollusionDetection } = require('../lib/collusion');
 
+// ── Utility: async task with timeout ──────────────────────────────────────
+function withTimeout(promise, ms, label) {
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error(`Timeout after ${ms}ms: ${label}`)), ms)
+  );
+  return Promise.race([promise, timeout]);
+}
+
 // ── In-memory state maps ───────────────────────────────────────────────────
 // Map<gameId, GameState>
 const gameCache = new Map();
@@ -282,11 +290,11 @@ async function endGame(io, gameId, winner, endReason) {
 
       if (anticheatResult.white.suspicious) {
         anticheatFlags.push({ color: 'white', flags: anticheatResult.white.flags, score: anticheatResult.white.score });
-        await enforceAnticheat(game.whiteId, gameId, anticheatResult.white, io);
+        await withTimeout(enforceAnticheat(game.whiteId, gameId, anticheatResult.white, io), 30_000, 'enforceAnticheat:white');
       }
       if (anticheatResult.black.suspicious) {
         anticheatFlags.push({ color: 'black', flags: anticheatResult.black.flags, score: anticheatResult.black.score });
-        await enforceAnticheat(game.blackId, gameId, anticheatResult.black, io);
+        await withTimeout(enforceAnticheat(game.blackId, gameId, anticheatResult.black, io), 30_000, 'enforceAnticheat:black');
       }
 
       // Layer 4: ELO anomaly detection (async, non-blocking)
@@ -294,7 +302,7 @@ async function endGame(io, gameId, winner, endReason) {
         ...anticheatResult.white.flags,
         ...anticheatResult.black.flags,
       ];
-      Promise.all([
+      withTimeout(Promise.all([
         detectEloAnomaly(game.whiteId, {
           playerElo:   game.whiteEloBefore || whiteUser.elo,
           opponentElo: game.blackEloBefore || blackUser.elo,
@@ -305,33 +313,33 @@ async function endGame(io, gameId, winner, endReason) {
           opponentElo: game.whiteEloBefore || whiteUser.elo,
           result:      winner === 'black' ? 'win' : winner === 'white' ? 'loss' : 'draw',
         }),
-      ]).then(async ([whiteEloResult, blackEloResult]) => {
+      ]), 30_000, 'detectEloAnomaly').then(async ([whiteEloResult, blackEloResult]) => {
         if (whiteEloResult.suspicious) {
-          await enforceAnticheat(game.whiteId, gameId, whiteEloResult, io);
+          await withTimeout(enforceAnticheat(game.whiteId, gameId, whiteEloResult, io), 30_000, 'enforceAnticheat:elo:white');
         }
         if (blackEloResult.suspicious) {
-          await enforceAnticheat(game.blackId, gameId, blackEloResult, io);
+          await withTimeout(enforceAnticheat(game.blackId, gameId, blackEloResult, io), 30_000, 'enforceAnticheat:elo:black');
         }
       }).catch(e => console.error('[ELO-anomaly background]', e.message));
 
       // Layer 5: Stockfish comparison (async, background, only if already suspicious)
-      runStockfishBackground(gameId, game.moveHistory, allSyncFlags, io)
+      withTimeout(runStockfishBackground(gameId, game.moveHistory, allSyncFlags, io), 120_000, 'stockfishBackground')
         .catch(e => console.error('[Stockfish background error]', e.message));
 
       // Layer 6: Collusion detection (async, background, pair + material gifting)
-      runCollusionDetection(
+      withTimeout(runCollusionDetection(
         gameId,
         game.whiteId,
         game.blackId,
         game.moveHistory,
         winner,
         endReason
-      ).then(async (collusionResult) => {
+      ), 30_000, 'collusionDetection').then(async (collusionResult) => {
         if (collusionResult.white.suspicious) {
-          await enforceAnticheat(game.whiteId, gameId, collusionResult.white, io);
+          await withTimeout(enforceAnticheat(game.whiteId, gameId, collusionResult.white, io), 30_000, 'enforceAnticheat:collusion:white');
         }
         if (collusionResult.black.suspicious) {
-          await enforceAnticheat(game.blackId, gameId, collusionResult.black, io);
+          await withTimeout(enforceAnticheat(game.blackId, gameId, collusionResult.black, io), 30_000, 'enforceAnticheat:collusion:black');
         }
       }).catch(e => console.error('[Collusion background error]', e.message));
 
@@ -683,8 +691,10 @@ function registerGameRoom(io, socket, userId) {
       blackTimeLeft,
     });
 
-    // [SECURITY-5] Real-time anticheat check setiap 10 move
-    if (newMoveHistory.length > 0 && newMoveHistory.length % 10 === 0) {
+    // [SECURITY-5] Real-time anticheat: every 10 moves for blitz/rapid, every 20 for bullet
+    const tcType = getTimeControlType(game.timeControl?.initial);
+    const anticheatInterval = tcType === 'bullet' ? 20 : 10;
+    if (newMoveHistory.length > 0 && newMoveHistory.length % anticheatInterval === 0) {
       try {
         const realtimeResult = analyzeRealtime(newMoveHistory);
         const playerColor = isWhite ? 'white' : 'black';

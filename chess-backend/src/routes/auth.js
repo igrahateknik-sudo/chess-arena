@@ -174,12 +174,12 @@ router.post('/verify-email', validate(schemas.verifyEmail), async (req, res) => 
       return res.status(400).json({ error: 'Invalid or expired verification token' });
     }
 
-    if (user.email_verified) {
+    if (user.verified) {
       return res.json({ ok: true, message: 'Email already verified' });
     }
 
     await users.update(user.id, {
-      email_verified: true,
+      verified: true,
       verify_token: null,
     });
 

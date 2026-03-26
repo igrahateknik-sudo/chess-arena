@@ -17,7 +17,7 @@ const users = {
         password_hash: passwordHash,
         avatar_url: avatarUrl,
         verify_token: verifyToken || null,
-        email_verified: !verifyToken, // guests have no token → auto-verified
+        verified: !verifyToken, // guests have no token → auto-verified
       })
       .select()
       .single();
@@ -68,13 +68,16 @@ const users = {
   },
 
   async getLeaderboard(limit = 50, timeControl = 'global') {
-    // Fetch per-TC ELO columns so the route can sort by the correct column
+    const sortCol = timeControl === 'bullet' ? 'elo_bullet'
+      : timeControl === 'blitz'  ? 'elo_blitz'
+      : timeControl === 'rapid'  ? 'elo_rapid'
+      : 'elo'; // 'global' or unrecognized → sort by global ELO
     const { data } = await supabase
       .from('users')
       .select('id, username, elo, elo_bullet, elo_blitz, elo_rapid, title, country, avatar_url, wins, losses, draws, games_played')
-      .order('elo', { ascending: false })
+      .order(sortCol, { ascending: false })
       .gt('games_played', 0)
-      .limit(Math.min(limit * 3, 300)); // Fetch more so we can re-sort by TC ELO
+      .limit(Math.min(limit, 100));
     return data || [];
   },
 

@@ -84,6 +84,15 @@ export default function OnlineGame({
   // Keep statusRef in sync so the clock interval can read it without a stale closure
   useEffect(() => { statusRef.current = status; }, [status]);
 
+  // Clear queued premove when game ends
+  useEffect(() => {
+    if (status !== 'active') {
+      premoveRef.current = null;
+      setPremove(null);
+      setPremoveSquares({});
+    }
+  }, [status]);
+
   // Keep premoveRef in sync so the socket handler can read current premove value
   useEffect(() => { premoveRef.current = premove; }, [premove]);
 

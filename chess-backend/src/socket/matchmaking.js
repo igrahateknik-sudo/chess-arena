@@ -35,16 +35,15 @@ function registerMatchmaking(io, socket, userId) {
         return socket.emit('error', { message: 'You already have an active game' });
       }
 
-      // Check balance for paid matches
+      // Lock the stake atomically via DB RPC (avoids TOCTOU race condition).
+      // The RPC raises an error if available balance < stakes.
       if (stakes > 0) {
-        const wallet = await wallets.getBalance(userId);
-        const available = wallet.balance - wallet.locked;
-        if (available < stakes) {
+        try {
+          await wallets.lock(userId, stakes);
+          recordLock(userId, stakes);
+        } catch (lockErr) {
           return socket.emit('error', { message: 'Insufficient balance for this stake' });
         }
-        // Lock the stake and record it for cleanup on disconnect
-        await wallets.lock(userId, stakes);
-        recordLock(userId, stakes);
       }
 
       const key = queueKey(timeControl, stakes);
@@ -171,12 +170,40 @@ async function tryPairPlayers(io, key, timeControl, stakes, preferredColor) {
       fen: game.fen,
     };
 
-    // Join both sockets to game room
+    // Join both sockets to game room — abort if either has disconnected
     const whiteSocket = io.sockets.sockets.get(whiteEntry.socketId);
     const blackSocket = io.sockets.sockets.get(blackEntry.socketId);
 
-    if (whiteSocket) whiteSocket.join(game.id);
-    if (blackSocket) blackSocket.join(game.id);
+    if (!whiteSocket || !blackSocket) {
+      // At least one player disconnected between match and pairing; cancel game
+      await games.update(game.id, { status: 'cancelled', end_reason: 'player-disconnected-before-start' });
+      // Unlock stakes for both players
+      if (stakes > 0) {
+        await wallets.unlock(whiteEntry.userId, stakes).catch(() => {});
+        await wallets.unlock(blackEntry.userId, stakes).catch(() => {});
+      }
+      // Re-enqueue the still-connected player
+      if (whiteSocket) {
+        const tcType = getTcType(timeControl.initial);
+        const whiteUser = await users.findById(whiteEntry.userId);
+        const tcElo = whiteUser?.[`elo_${tcType}`] ?? whiteUser?.elo ?? 1200;
+        if (!queues.has(key)) queues.set(key, []);
+        queues.get(key).push({ userId: whiteEntry.userId, socketId: whiteEntry.socketId, elo: tcElo, joinedAt: Date.now() });
+        whiteSocket.emit('queue:joined', { queueKey: key, position: queues.get(key).length, reason: 'opponent-disconnected' });
+      }
+      if (blackSocket) {
+        const tcType = getTcType(timeControl.initial);
+        const blackUser = await users.findById(blackEntry.userId);
+        const tcElo = blackUser?.[`elo_${tcType}`] ?? blackUser?.elo ?? 1200;
+        if (!queues.has(key)) queues.set(key, []);
+        queues.get(key).push({ userId: blackEntry.userId, socketId: blackEntry.socketId, elo: tcElo, joinedAt: Date.now() });
+        blackSocket.emit('queue:joined', { queueKey: key, position: queues.get(key).length, reason: 'opponent-disconnected' });
+      }
+      return;
+    }
+
+    whiteSocket.join(game.id);
+    blackSocket.join(game.id);
 
     // Notify both
     io.to(game.id).emit('game:found', gamePayload);

@@ -27,10 +27,10 @@ const TIMING_THRESHOLDS = {
 };
 
 const TRUST_PENALTY = {
-  // Timing
-  FAST_MOVES:            15,
-  ULTRA_FAST_MOVES:      20,
-  CONSISTENT_TIMING:     25,
+  // Timing — values match the suspicion scores added in analyzeMoveTimings()
+  FAST_MOVES:            40,
+  ULTRA_FAST_MOVES:      30,
+  CONSISTENT_TIMING:     35,
   // Integrity
   ILLEGAL_MOVE:          60,
   INVALID_MOVE:          60,
