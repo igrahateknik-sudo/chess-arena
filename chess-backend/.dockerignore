@@ -1,0 +1,9 @@
+.git
+.github
+node_modules
+.env
+.env.*
+*.log
+.DS_Store
+deploy-railway.sh
+render.yaml

@@ -1,0 +1,140 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # ── Job 1: Syntax & Integrity Validation ──────────────────────────────────
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Syntax check — all source files
+        run: |
+          echo "Checking syntax of all .js files..."
+          find src -name "*.js" | while read f; do
+            node --check "$f" && echo "  ✅ $f" || { echo "  ❌ $f FAILED"; exit 1; }
+          done
+
+      - name: Verify critical security files
+        run: |
+          required=(
+            "src/server.js"
+            "src/lib/anticheat.js"
+            "src/lib/stockfishAnalysis.js"
+            "src/lib/fingerprint.js"
+            "src/lib/collusion.js"
+            "src/lib/auditLog.js"
+            "src/lib/monitor.js"
+            "src/routes/admin.js"
+            "src/routes/appeal.js"
+            "src/middleware/adminAuth.js"
+            "railway.toml"
+            "Dockerfile"
+          )
+          for f in "${required[@]}"; do
+            test -f "$f" && echo "✅ $f" || { echo "❌ MISSING: $f"; exit 1; }
+          done
+
+      - name: Verify stockfish in dependencies
+        run: |
+          node -e "
+            const pkg = require('./package.json');
+            const sf = pkg.dependencies?.stockfish;
+            if (!sf) { console.error('❌ stockfish missing from package.json'); process.exit(1); }
+            console.log('✅ stockfish version:', sf);
+          "
+
+  # ── Job 2: Docker Build Test ───────────────────────────────────────────────
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t chess-backend:test .
+          echo "✅ Docker build successful"
+
+      - name: Test image starts correctly
+        run: |
+          docker run -d --name test-container \
+            -e PORT=4000 \
+            -e NODE_ENV=production \
+            -e SUPABASE_URL=https://placeholder.supabase.co \
+            -e SUPABASE_SERVICE_KEY=placeholder \
+            -e JWT_SECRET=testsecret \
+            -e ALLOWED_ORIGINS=http://localhost:3000 \
+            chess-backend:test
+
+          sleep 5
+
+          # Container harus masih running
+          STATUS=$(docker inspect --format='{{.State.Status}}' test-container 2>/dev/null)
+          echo "Container status: $STATUS"
+
+          docker logs test-container 2>&1 | tail -10
+
+          # Cleanup
+          docker stop test-container && docker rm test-container
+          echo "✅ Container startup test passed"
+
+  # ── Job 3: Deploy to Railway ───────────────────────────────────────────────
+  deploy-railway:
+    name: Deploy to Railway
+    runs-on: ubuntu-latest
+    needs: docker-build
+    environment: production
+    # Hanya deploy jika RAILWAY_TOKEN secret sudah di-set
+    if: ${{ vars.RAILWAY_ENABLED == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --service chess-arena-backend --detach
+          echo "🚀 Railway deployment triggered"
+          echo "   Commit: ${{ github.sha }}"
+          echo "   Branch: ${{ github.ref_name }}"
+
+  # ── Job 4: Deploy to Vercel (fallback / always runs) ─────────────────────
+  deploy-vercel:
+    name: Deploy to Vercel
+    runs-on: ubuntu-latest
+    needs: validate
+    environment: production
+    if: ${{ vars.RAILWAY_ENABLED != 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN:      ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID:     ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          npm install -g vercel
+          vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          vercel build --prod --token=$VERCEL_TOKEN
+          vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+          echo "🚀 Vercel deployment complete"

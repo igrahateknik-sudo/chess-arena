@@ -1,0 +1,48 @@
+{
+  "name": "chess-arena-backend",
+  "version": "1.0.0",
+  "description": "Real-time chess backend with Socket.io matchmaking",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest --runInBand --forceExit",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage --runInBand --forceExit"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "testTimeout": 15000
+  },
+  "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
+    "@supabase/supabase-js": "^2.100.0",
+    "bcryptjs": "^3.0.3",
+    "chess.js": "^1.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.3",
+    "express-rate-limit": "^8.3.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "midtrans-client": "^1.4.3",
+    "morgan": "^1.10.1",
+    "nodemailer": "^8.0.3",
+    "redis": "^4.7.0",
+    "socket.io": "^4.7.5",
+    "uuid": "^9.0.1",
+    "winston": "^3.19.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0",
+    "nodemon": "^3.1.0",
+    "socket.io-client": "^4.8.3",
+    "supertest": "^7.2.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

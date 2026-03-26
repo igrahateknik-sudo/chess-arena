@@ -1,0 +1,11 @@
+[build]
+# Railway akan otomatis deteksi Dockerfile jika ada
+# Ini memastikan Stockfish npm package ter-install dengan benar
+# di environment yang mendukung native module
+dockerfile = "Dockerfile"
+
+[deploy]
+restartPolicyType    = "on_failure"
+restartPolicyMaxRetries = 3
+healthcheckPath      = "/health"
+healthcheckTimeout   = 15

@@ -1,0 +1,71 @@
+name: Deploy Frontend to Vercel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # ── Job 1: Type Check & Build Validation ───────────────────────────────────
+  validate:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+        env:
+          NEXT_PUBLIC_BACKEND_URL: https://chess-backend-placeholder.railway.app
+          NEXT_PUBLIC_SOCKET_URL:  https://chess-backend-placeholder.railway.app
+
+      - name: Verify critical pages exist
+        run: |
+          test -f app/admin/page.tsx  && echo "✅ admin page"
+          test -f app/appeal/page.tsx && echo "✅ appeal page"
+          test -f lib/api.ts          && echo "✅ api.ts"
+
+  # ── Job 2: Deploy to Vercel ────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Vercel
+    runs-on: ubuntu-latest
+    needs: validate
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy to Vercel Production
+        env:
+          VERCEL_TOKEN:   ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID:  ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          vercel build --prod --token=$VERCEL_TOKEN
+          vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+
+      - name: Deployment notification
+        if: success()
+        run: |
+          echo "🎨 Frontend deployed to Vercel successfully"
+          echo "   URL:    https://chess-app-two-kappa.vercel.app"
+          echo "   Commit: ${{ github.sha }}"
