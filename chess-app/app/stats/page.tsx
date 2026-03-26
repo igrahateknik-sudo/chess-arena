@@ -14,7 +14,10 @@ import { api } from '@/lib/api';
 interface EloPoint { date: string; elo: number }
 interface GameRecord {
   id: string;
-  white_player_id: string;
+  white_id?: string;           // direct column (if selected)
+  white?: { id: string };      // nested join alias from getHistory()
+  black_id?: string;
+  black?: { id: string };
   result: string;
   time_control: { type: string; label: string };
   elo_before?: number;
@@ -67,7 +70,7 @@ export default function StatsPage() {
   games.forEach(g => {
     const tc = g.time_control?.type || 'other';
     if (!tcMap[tc]) tcMap[tc] = { wins: 0, losses: 0, draws: 0 };
-    const isWhite = g.white_player_id === user.id;
+    const isWhite = (g.white_id ?? g.white?.id) === user.id;
     if (g.result === 'white') { isWhite ? tcMap[tc].wins++ : tcMap[tc].losses++; }
     else if (g.result === 'black') { isWhite ? tcMap[tc].losses++ : tcMap[tc].wins++; }
     else if (g.result === 'draw') { tcMap[tc].draws++; }
@@ -85,7 +88,7 @@ export default function StatsPage() {
   let streak = 0;
   let streakType = '';
   for (const g of [...games].reverse()) {
-    const isWhite = g.white_player_id === user.id;
+    const isWhite = (g.white_id ?? g.white?.id) === user.id;
     const won = (g.result === 'white' && isWhite) || (g.result === 'black' && !isWhite);
     if (streak === 0) { streakType = won ? 'W' : 'L'; streak = 1; }
     else if ((won && streakType === 'W') || (!won && streakType === 'L')) streak++;
@@ -230,7 +233,7 @@ export default function StatsPage() {
             ) : (
               <div className="divide-y divide-[var(--border)]">
                 {games.slice(0, 10).map((g) => {
-                  const isWhite = g.white_player_id === user.id;
+                  const isWhite = (g.white_id ?? g.white?.id) === user.id;
                   const won = (g.result === 'white' && isWhite) || (g.result === 'black' && !isWhite);
                   const drew = g.result === 'draw';
                   const eloChange = g.elo_after && g.elo_before ? g.elo_after - g.elo_before : null;

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { supabase, wallets, transactions, notifications } = require('../lib/db');
 const { requireAuth } = require('../middleware/auth');
+const { requireAdmin } = require('../middleware/adminAuth');
 
 // ── GET /api/tournament ───────────────────────────────────────────────────────
 // List tournaments, optionally filtered by status: upcoming | active | finished
@@ -125,6 +126,17 @@ router.post('/:id/register', requireAuth, async (req, res) => {
       return res.status(409).json({ error: 'Tournament is full' });
     }
 
+    // Validate entry fee server-side (frontend sends amount; verify it matches tournament definition)
+    const MAX_ENTRY_FEE = 10_000_000; // 10 juta IDR hard cap
+    if (tournament.entry_fee && tournament.entry_fee > 0) {
+      if (tournament.entry_fee < 0 || !Number.isFinite(tournament.entry_fee)) {
+        return res.status(400).json({ error: 'Invalid entry fee value in tournament definition' });
+      }
+      if (tournament.entry_fee > MAX_ENTRY_FEE) {
+        return res.status(400).json({ error: `Entry fee exceeds maximum allowed (Rp ${MAX_ENTRY_FEE.toLocaleString('id-ID')})` });
+      }
+    }
+
     // Debit entry fee if applicable
     let paid = false;
     if (tournament.entry_fee && tournament.entry_fee > 0) {
@@ -212,16 +224,9 @@ router.get('/:id/players', async (req, res) => {
 });
 
 // ── POST /api/tournament ──────────────────────────────────────────────────────
-// Create a tournament (requireAuth, admin placeholder: elo > 2000)
-router.post('/', requireAuth, async (req, res) => {
+// Create a tournament (admin only)
+router.post('/', requireAdmin, async (req, res) => {
   try {
-    const user = req.user;
-
-    // Placeholder admin check: user must have ELO > 2000
-    if (user.elo <= 2000) {
-      return res.status(403).json({ error: 'Only administrators can create tournaments (ELO > 2000 required)' });
-    }
-
     const {
       name,
       description,
@@ -278,15 +283,9 @@ router.post('/', requireAuth, async (req, res) => {
 
 // ── POST /api/tournament/:id/finish ──────────────────────────────────────────
 // Admin endpoint: finish tournament, calculate standings, distribute prizes
-router.post('/:id/finish', requireAuth, async (req, res) => {
+router.post('/:id/finish', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const user = req.user;
-
-    // Only admin (elo > 2000) can finish tournaments
-    if (user.elo <= 2000) {
-      return res.status(403).json({ error: 'Only administrators can finish tournaments' });
-    }
 
     const { data: tournament, error: tErr } = await supabase
       .from('tournaments')
@@ -398,15 +397,10 @@ router.post('/:id/finish', requireAuth, async (req, res) => {
 
 // ── PATCH /api/tournament/:id/score ──────────────────────────────────────────
 // Update a player's score in a tournament (admin only, for manual Swiss round management)
-router.patch('/:id/score', requireAuth, async (req, res) => {
+router.patch('/:id/score', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { userId, score } = req.body;
-    const user = req.user;
-
-    if (user.elo <= 2000) {
-      return res.status(403).json({ error: 'Only administrators can update scores' });
-    }
 
     if (typeof score !== 'number' || score < 0) {
       return res.status(400).json({ error: 'Invalid score' });
@@ -479,6 +473,153 @@ router.get('/:id/standings', async (req, res) => {
   } catch (err) {
     console.error('[tournament/standings]', err);
     res.status(500).json({ error: 'Failed to fetch standings' });
+  }
+});
+
+// ── GET /api/tournament/:id/bracket ──────────────────────────────────────────
+// Return current standings and current-round matchups for bracket view
+router.get('/:id/bracket', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: tournament, error: tErr } = await supabase
+      .from('tournaments')
+      .select('id, name, format, status, current_round, prize_pool, prize_distribution')
+      .eq('id', id)
+      .single();
+
+    if (tErr || !tournament) return res.status(404).json({ error: 'Tournament not found' });
+
+    // Fetch all registrations with user info + scores
+    const { data: registrations, error: regErr } = await supabase
+      .from('tournament_registrations')
+      .select(`
+        id, user_id, score, wins, losses, draws, registered_at,
+        user:user_id (id, username, elo, avatar_url, title, country)
+      `)
+      .eq('tournament_id', id)
+      .order('score', { ascending: false });
+
+    if (regErr) throw regErr;
+
+    // Fetch current round pairings if any
+    const currentRound = tournament.current_round || 1;
+    const { data: pairings } = await supabase
+      .from('tournament_pairings')
+      .select(`
+        id, round, result, board_number,
+        white:white_id (id, username, elo, avatar_url, title),
+        black:black_id (id, username, elo, avatar_url, title)
+      `)
+      .eq('tournament_id', id)
+      .eq('round', currentRound)
+      .order('board_number', { ascending: true });
+
+    const standings = (registrations || []).map((reg, idx) => ({
+      rank:    idx + 1,
+      userId:  reg.user_id,
+      user:    reg.user,
+      score:   reg.score || 0,
+      wins:    reg.wins || 0,
+      losses:  reg.losses || 0,
+      draws:   reg.draws || 0,
+    }));
+
+    res.json({
+      tournament,
+      currentRound,
+      standings,
+      pairings: pairings || [],
+    });
+  } catch (err) {
+    console.error('[tournament/bracket]', err);
+    res.status(500).json({ error: 'Failed to fetch bracket' });
+  }
+});
+
+// ── POST /api/tournament/:id/next-round ───────────────────────────────────────
+// Admin: generate Swiss pairings for the next round
+router.post('/:id/next-round', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: tournament, error: tErr } = await supabase
+      .from('tournaments')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (tErr || !tournament) return res.status(404).json({ error: 'Tournament not found' });
+    if (tournament.status !== 'active') return res.status(400).json({ error: 'Tournament must be active' });
+
+    const nextRound = (tournament.current_round || 0) + 1;
+
+    // Fetch all registered players ordered by score (Swiss: pair by score group)
+    const { data: registrations, error: regErr } = await supabase
+      .from('tournament_registrations')
+      .select('user_id, score')
+      .eq('tournament_id', id)
+      .order('score', { ascending: false });
+
+    if (regErr) throw regErr;
+    if (!registrations || registrations.length < 2) {
+      return res.status(400).json({ error: 'Need at least 2 players to generate pairings' });
+    }
+
+    // Simple Swiss pairing: pair adjacent players in score order.
+    // If odd number of players, last player gets a bye (score +1).
+    const players = [...registrations];
+    const pairingsToInsert = [];
+    let boardNumber = 1;
+
+    for (let i = 0; i + 1 < players.length; i += 2) {
+      const [p1, p2] = [players[i], players[i + 1]];
+      // Alternate colors: even board → p1 white, odd board → p1 black
+      const whiteId = boardNumber % 2 === 1 ? p1.user_id : p2.user_id;
+      const blackId = boardNumber % 2 === 1 ? p2.user_id : p1.user_id;
+      pairingsToInsert.push({
+        tournament_id: id,
+        round:         nextRound,
+        board_number:  boardNumber++,
+        white_id:      whiteId,
+        black_id:      blackId,
+        result:        null, // pending
+      });
+    }
+
+    // Bye player (if odd count)
+    if (players.length % 2 === 1) {
+      const byePlayer = players[players.length - 1];
+      // Award 1 point for bye
+      await supabase
+        .from('tournament_registrations')
+        .update({ score: (byePlayer.score || 0) + 1 })
+        .eq('tournament_id', id)
+        .eq('user_id', byePlayer.user_id);
+    }
+
+    const { data: inserted, error: pairErr } = await supabase
+      .from('tournament_pairings')
+      .insert(pairingsToInsert)
+      .select();
+
+    if (pairErr) throw pairErr;
+
+    // Advance tournament round counter
+    await supabase
+      .from('tournaments')
+      .update({ current_round: nextRound })
+      .eq('id', id);
+
+    res.status(201).json({
+      message: `Round ${nextRound} pairings created`,
+      round:    nextRound,
+      pairings: inserted || [],
+      bye:      players.length % 2 === 1 ? players[players.length - 1].user_id : null,
+    });
+  } catch (err) {
+    console.error('[tournament/next-round]', err);
+    res.status(500).json({ error: 'Failed to generate next round' });
   }
 });
 

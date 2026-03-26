@@ -147,9 +147,3 @@ export function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function getEloChange(myElo: number, opponentElo: number, result: 'win' | 'loss' | 'draw'): number {
-  const K = 32;
-  const expectedScore = 1 / (1 + Math.pow(10, (opponentElo - myElo) / 400));
-  const actualScore = result === 'win' ? 1 : result === 'draw' ? 0.5 : 0;
-  return Math.round(K * (actualScore - expectedScore));
-}

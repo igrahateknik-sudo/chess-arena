@@ -235,6 +235,18 @@ const notifications = {
   async markAllRead(userId) {
     await supabase.from('notifications').update({ read: true }).eq('user_id', userId).eq('read', false);
   },
+
+  async markOneRead(notificationId, userId) {
+    const { data, error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', notificationId)
+      .eq('user_id', userId) // ownership check: user can only mark their own notifications
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
 };
 
 // ── ELO History ───────────────────────────────────────────────────────────

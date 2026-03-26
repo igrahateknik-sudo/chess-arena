@@ -206,7 +206,9 @@ async function endGame(io, gameId, winner, endReason) {
     const { whiteChange, blackChange } = calculateBothElo(
       whiteEloBefore,
       blackEloBefore,
-      eloResult
+      eloResult,
+      whiteUser.games_played ?? 30,
+      blackUser.games_played ?? 30
     );
 
     const newWhiteEloTc = Math.max(100, whiteEloBefore + whiteChange);

@@ -25,14 +25,14 @@ function calculateEloChange(playerRating, opponentRating, result, gamesPlayed = 
   return Math.round(K * (actual - expected));
 }
 
-function calculateBothElo(whiteRating, blackRating, result) {
+function calculateBothElo(whiteRating, blackRating, result, whiteGamesPlayed = 30, blackGamesPlayed = 30) {
   // result: 'white' | 'black' | 'draw'
   const whiteResult = result === 'white' ? 'win' : result === 'draw' ? 'draw' : 'loss';
   const blackResult = result === 'black' ? 'win' : result === 'draw' ? 'draw' : 'loss';
 
   return {
-    whiteChange: calculateEloChange(whiteRating, blackRating, whiteResult),
-    blackChange: calculateEloChange(blackRating, whiteRating, blackResult),
+    whiteChange: calculateEloChange(whiteRating, blackRating, whiteResult, whiteGamesPlayed),
+    blackChange: calculateEloChange(blackRating, whiteRating, blackResult, blackGamesPlayed),
   };
 }
 

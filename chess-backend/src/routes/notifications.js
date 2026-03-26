@@ -25,4 +25,18 @@ router.patch('/read', requireAuth, async (req, res) => {
   }
 });
 
+// PATCH /api/notifications/:id/read — tandai satu notifikasi sudah dibaca
+router.patch('/:id/read', requireAuth, async (req, res) => {
+  try {
+    const notif = await notifications.markOneRead(req.params.id, req.userId);
+    if (!notif) return res.status(404).json({ error: 'Notification not found' });
+    res.json({ ok: true, notification: notif });
+  } catch (err) {
+    console.error('[notifications/read-one]', err);
+    // Supabase returns no rows if id doesn't exist or userId doesn't match
+    if (err.code === 'PGRST116') return res.status(404).json({ error: 'Notification not found' });
+    res.status(500).json({ error: 'Failed to mark notification as read' });
+  }
+});
+
 module.exports = router;

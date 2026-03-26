@@ -117,7 +117,7 @@ export default function DashboardPage() {
 
   const totalGames = user.wins + user.losses + user.draws;
   const winRate = totalGames > 0 ? Math.round((user.wins / totalGames) * 100) : 0;
-  const rankColor = RANK_COLORS[user.rank.split(' ')[0]] || '#ffd700';
+  const rankColor = RANK_COLORS[(user.rank ?? '').split(' ')[0]] || '#ffd700';
 
   const statCards = [
     {

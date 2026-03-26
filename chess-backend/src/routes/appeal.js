@@ -49,7 +49,11 @@ router.post('/', requireAuth, async (req, res) => {
       });
     }
 
-    // Batasi: max 3 appeal total per user (termasuk rejected)
+    // Batasi: max 3 appeal total per user (termasuk rejected).
+    // NOTE: To make this truly race-safe, add a DB check constraint:
+    //   ALTER TABLE appeals ADD CONSTRAINT appeals_max_per_user
+    //     CHECK (... via trigger or partial unique index).
+    // The JS-level count check below reduces the race window but is not atomic.
     const { count } = await supabase
       .from('appeals')
       .select('*', { count: 'exact', head: true })
@@ -72,7 +76,17 @@ router.post('/', requireAuth, async (req, res) => {
       .select()
       .single();
 
-    if (error) throw error;
+    // Catch race: if insert fails due to a DB constraint violation (duplicate pending appeal
+    // or over-limit), return a user-friendly error rather than a 500.
+    if (error) {
+      if (error.code === '23505') {
+        return res.status(409).json({ error: 'You already have a pending appeal' });
+      }
+      if (error.code === '23514') {
+        return res.status(429).json({ error: 'Maximum appeal limit reached (3). Contact support directly.' });
+      }
+      throw error;
+    }
 
     console.info(`[Appeal] User ${userId} submitted appeal ${appeal.id}`);
 

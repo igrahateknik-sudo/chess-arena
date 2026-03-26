@@ -163,7 +163,9 @@ router.post('/users/:id/review', async (req, res) => {
 // ── GET /api/admin/anticheat-actions ─────────────────────────────────────
 router.get('/anticheat-actions', async (req, res) => {
   try {
-    const limit = Math.min(100, parseInt(req.query.limit || '50'));
+    const page   = Math.max(1, parseInt(req.query.page  || '1'));
+    const limit  = Math.min(100, parseInt(req.query.limit || '50'));
+    const from   = (page - 1) * limit;
     const action = req.query.action; // filter by action type
 
     let query = supabase
@@ -172,16 +174,16 @@ router.get('/anticheat-actions', async (req, res) => {
         id, action, reason, flags, score, created_at,
         users:user_id (id, username, elo, trust_score),
         games:game_id (id)
-      `)
+      `, { count: 'exact' })
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .range(from, from + limit - 1);
 
     if (action) query = query.eq('action', action);
 
-    const { data, error } = await query;
+    const { data, count, error } = await query;
     if (error) throw error;
 
-    res.json({ actions: data || [] });
+    res.json({ actions: data || [], total: count || 0, page, limit });
   } catch (err) {
     console.error('[admin/anticheat-actions]', err);
     res.status(500).json({ error: 'Failed to load actions' });
@@ -191,20 +193,24 @@ router.get('/anticheat-actions', async (req, res) => {
 // ── GET /api/admin/collusion-flags ───────────────────────────────────────
 router.get('/collusion-flags', async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const page  = Math.max(1, parseInt(req.query.page  || '1'));
+    const limit = Math.min(100, parseInt(req.query.limit || '50'));
+    const from  = (page - 1) * limit;
+
+    const { data, count, error } = await supabase
       .from('collusion_flags')
       .select(`
         id, pair_flags, gift_flags, pair_score, pair_stats, detected_at, reviewed, review_note,
         userA:user_id_a (id, username, elo, trust_score),
         userB:user_id_b (id, username, elo, trust_score),
         game:game_id (id)
-      `)
+      `, { count: 'exact' })
       .eq('reviewed', false)
       .order('detected_at', { ascending: false })
-      .limit(50);
+      .range(from, from + limit - 1);
 
     if (error) throw error;
-    res.json({ flags: data || [] });
+    res.json({ flags: data || [], total: count || 0, page, limit });
   } catch (err) {
     console.error('[admin/collusion-flags]', err);
     res.status(500).json({ error: 'Failed to load collusion flags' });
@@ -236,16 +242,20 @@ router.post('/collusion-flags/:id/review', async (req, res) => {
 // ── GET /api/admin/multi-account-flags ───────────────────────────────────
 router.get('/multi-account-flags', async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const page  = Math.max(1, parseInt(req.query.page  || '1'));
+    const limit = Math.min(100, parseInt(req.query.limit || '50'));
+    const from  = (page - 1) * limit;
+
+    const { data, count, error } = await supabase
       .from('multi_account_flags')
       .select(`
         id, fingerprint_hash, detected_at, reviewed, review_note,
         userA:user_id_a (id, username, email, elo, trust_score),
         userB:user_id_b (id, username, email, elo, trust_score)
-      `)
+      `, { count: 'exact' })
       .eq('reviewed', false)
       .order('detected_at', { ascending: false })
-      .limit(50);
+      .range(from, from + limit - 1);
 
     if (error) throw error;
 
@@ -254,7 +264,7 @@ router.get('/multi-account-flags', async (req, res) => {
       fingerprint_hash: f.fingerprint_hash?.slice(0, 12) + '…', // redact
     }));
 
-    res.json({ flags });
+    res.json({ flags, total: count || 0, page, limit });
   } catch (err) {
     console.error('[admin/multi-account-flags]', err);
     res.status(500).json({ error: 'Failed to load multi-account flags' });
