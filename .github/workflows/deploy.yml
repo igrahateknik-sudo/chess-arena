@@ -29,7 +29,7 @@ jobs:
         run: npm install -g @railway/cli
 
       - name: Deploy to Railway
-        run: railway up --service chess-backend --detach
+        run: railway up --service chess-arena --detach
         working-directory: chess-backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
@@ -39,7 +39,7 @@ jobs:
           echo "Waiting 30s for Railway to deploy..."
           sleep 30
           curl --retry 5 --retry-delay 10 --fail \
-            "${{ secrets.BACKEND_URL }}/health" || echo "Health check failed (non-fatal)"
+            "https://chess-arena-production.up.railway.app/health" || echo "Health check failed (non-fatal)"
 
   # ── Deploy Frontend to Vercel ─────────────────────────────────────────────────
   deploy-frontend:
