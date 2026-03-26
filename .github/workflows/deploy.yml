@@ -1,0 +1,80 @@
+name: Deploy — Production
+
+on:
+  push:
+    branches: [main]
+
+# Ensure only one deployment runs at a time per environment
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  # ── Run tests first ───────────────────────────────────────────────────────────
+  test:
+    name: Test before deploy
+    uses: ./.github/workflows/ci.yml
+
+  # ── Deploy Backend to Railway ─────────────────────────────────────────────────
+  deploy-backend:
+    name: Deploy Backend (Railway)
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        run: railway up --service chess-backend --detach
+        working-directory: chess-backend
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Wait for deployment health check
+        run: |
+          echo "Waiting 30s for Railway to deploy..."
+          sleep 30
+          curl --retry 5 --retry-delay 10 --fail \
+            "${{ secrets.BACKEND_URL }}/health" || echo "Health check failed (non-fatal)"
+
+  # ── Deploy Frontend to Vercel ─────────────────────────────────────────────────
+  deploy-frontend:
+    name: Deploy Frontend (Vercel)
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy to Vercel
+        run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes
+        working-directory: chess-app
+        env:
+          VERCEL_ORG_ID:     ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  # ── Notify on success/failure ────────────────────────────────────────────────
+  notify:
+    name: Notify deployment result
+    needs: [deploy-backend, deploy-frontend]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Notify Slack/Discord
+        if: env.WEBHOOK_URL != ''
+        env:
+          WEBHOOK_URL: ${{ secrets.MONITOR_WEBHOOK_URL }}
+          STATUS: ${{ needs.deploy-backend.result == 'success' && needs.deploy-frontend.result == 'success' && 'SUCCESS' || 'FAILED' }}
+        run: |
+          curl -X POST "$WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d "{\"content\": \"🚀 **Chess Arena Deploy**: $STATUS — commit \`${{ github.sha }}\` by \`${{ github.actor }}\`\"}"

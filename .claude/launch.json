@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "chess-arena",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["chess-app/start.sh"],
+      "port": 3000,
+      "autoPort": false
+    }
+  ]
+}
