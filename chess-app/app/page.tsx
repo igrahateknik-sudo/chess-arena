@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import {
   Eye, EyeOff, Crown, Zap, Shield, Globe, TrendingUp,
-  ChevronRight, DollarSign, Award
+  ChevronRight, DollarSign, Award, MailWarning
 } from 'lucide-react';
 
 const FEATURES = [
@@ -35,6 +35,9 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState('');
+  const [emailNotVerified, setEmailNotVerified] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState('');
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,10 +54,25 @@ export default function LandingPage() {
     }
   };
 
+  const handleResendVerification = async () => {
+    setResendLoading(true);
+    setResendSuccess('');
+    try {
+      await api.auth.resendVerification(form.email);
+      setResendSuccess('Email verifikasi telah dikirim ulang. Cek inbox (dan folder spam) kamu.');
+    } catch {
+      setResendSuccess('Email verifikasi telah dikirim ulang. Cek inbox (dan folder spam) kamu.');
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setAuthError('');
+    setEmailNotVerified(false);
+    setResendSuccess('');
     try {
       let data;
       if (mode === 'register') {
@@ -81,7 +99,11 @@ export default function LandingPage() {
       }, data.token);
       router.push('/dashboard');
     } catch (err: unknown) {
-      setAuthError(err instanceof Error ? err.message : 'Authentication failed');
+      if (err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED') {
+        setEmailNotVerified(true);
+      } else {
+        setAuthError(err instanceof Error ? err.message : 'Authentication failed');
+      }
     } finally {
       setLoading(false);
     }
@@ -355,6 +377,23 @@ export default function LandingPage() {
                     <span>⚠</span> {authError}
                   </div>
                 )}
+                {emailNotVerified && (
+                  <div className="p-4 mb-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-sm">
+                    <div className="flex items-center gap-2 text-yellow-400 font-medium mb-2">
+                      <MailWarning className="w-4 h-4" /> Email belum diverifikasi
+                    </div>
+                    <p className="text-slate-400 mb-3">Cek inbox kamu untuk link verifikasi. Jika tidak ada, klik tombol di bawah.</p>
+                    {resendSuccess ? (
+                      <p className="text-emerald-400 text-xs">{resendSuccess}</p>
+                    ) : (
+                      <button type="button" onClick={handleResendVerification} disabled={resendLoading}
+                        className="px-4 py-2 bg-yellow-500/20 border border-yellow-500/30 rounded-lg text-yellow-300 text-xs font-medium hover:bg-yellow-500/30 transition-colors disabled:opacity-60 flex items-center gap-2">
+                        {resendLoading ? <span className="w-3 h-3 border border-yellow-400/50 border-t-yellow-400 rounded-full animate-spin" /> : null}
+                        Kirim Ulang Email Verifikasi
+                      </button>
+                    )}
+                  </div>
+                )}
                 <form onSubmit={handleAuth} className="space-y-4">
                   {mode === 'register' && (
                     <div>
@@ -400,24 +439,7 @@ export default function LandingPage() {
                   </button>
                 </form>
 
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/10" />
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-4 bg-transparent text-slate-500">or continue with</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {['Google', 'Discord'].map((provider) => (
-                    <button key={provider} onClick={handleAuth}
-                      className="flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 rounded-xl text-sm font-medium hover:bg-white/10 transition-colors">
-                      <span>{provider === 'Google' ? '🔵' : '🟣'}</span>
-                      {provider}
-                    </button>
-                  ))}
-                </div>
+                {/* TODO: Implement OAuth (Google, Discord) in future */}
 
                 <p className="text-xs text-slate-500 text-center mt-6">
                   By continuing, you agree to our{' '}

@@ -20,7 +20,7 @@ jest.mock('../src/lib/db', () => {
     elo: 1200, elo_bullet: 1200, elo_blitz: 1200, elo_rapid: 1200,
     wins: 0, losses: 0, draws: 0, games_played: 0,
     trust_score: 100, flagged: false, online: false,
-    email_verified: true, verify_token: null, reset_token: null,
+    verified: true, email_verified: true, verify_token: null, reset_token: null,
     avatar_url: 'https://example.com/avatar.svg',
     created_at: new Date().toISOString(),
   };

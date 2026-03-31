@@ -1,5 +1,13 @@
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
 
+class ApiError extends Error {
+  code?: string;
+  constructor(message: string, code?: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
 async function fetchAPI(path: string, options: RequestInit = {}, token?: string) {
   const res = await fetch(`${BACKEND_URL}${path}`, {
     ...options,
@@ -10,9 +18,11 @@ async function fetchAPI(path: string, options: RequestInit = {}, token?: string)
     },
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Request failed');
+  if (!res.ok) throw new ApiError(data.error || 'Request failed', data.code);
   return data;
 }
+
+export { ApiError };
 
 export const api = {
   auth: {
@@ -36,6 +46,12 @@ export const api = {
 
     resetPassword: (token: string, password: string) =>
       fetchAPI('/api/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
+
+    verifyEmail: (token: string) =>
+      fetchAPI('/api/auth/verify-email', { method: 'POST', body: JSON.stringify({ token }) }),
+
+    resendVerification: (email: string) =>
+      fetchAPI('/api/auth/resend-verification', { method: 'POST', body: JSON.stringify({ email }) }),
   },
 
   wallet: {

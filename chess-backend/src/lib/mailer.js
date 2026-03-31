@@ -1,146 +1,249 @@
 /**
- * Email utility using Nodemailer.
- * Requires SMTP_* environment variables (see .env.example).
+ * Email utility — Resend SDK (primary) atau Nodemailer SMTP (fallback).
+ *
+ * Prioritas:
+ *   1. RESEND_API_KEY   → Resend SDK
+ *   2. SMTP_HOST + SMTP_USER + SMTP_PASS → Nodemailer SMTP
+ *   3. Tidak ada config → log ke console (dev mode)
  *
  * Functions:
  *   sendVerificationEmail(email, username, token)
  *   sendPasswordResetEmail(email, username, token)
- *
- * If SMTP is not configured, emails are logged to console in dev mode.
  */
 
 const nodemailer = require('nodemailer');
 
-// Build transporter lazily so missing SMTP config doesn't crash startup
-let _transporter = null;
+const RESEND_API_KEY  = process.env.RESEND_API_KEY;
+const SMTP_CONFIGURED = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 
-function getTransporter() {
-  if (_transporter) return _transporter;
-
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SECURE } = process.env;
-
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    return null; // Not configured
-  }
-
-  _transporter = nodemailer.createTransport({
-    host:   SMTP_HOST,
-    port:   parseInt(SMTP_PORT || '587'),
-    secure: SMTP_SECURE === 'true',
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-  });
-
-  return _transporter;
+if (!RESEND_API_KEY && !SMTP_CONFIGURED) {
+  console.warn('[Mailer] ⚠️  Email TIDAK dikonfigurasi — email TIDAK AKAN terkirim!');
+  console.warn('[Mailer]    Set RESEND_API_KEY (direkomendasikan) atau SMTP_HOST + SMTP_USER + SMTP_PASS.');
+  console.warn('[Mailer]    Resend gratis: https://resend.com (100 email/hari).');
+} else if (RESEND_API_KEY) {
+  console.info('[Mailer] Menggunakan Resend SDK.');
+} else {
+  console.info('[Mailer] Menggunakan Nodemailer SMTP.');
 }
 
 const FROM_NAME  = 'Chess Arena';
-const FROM_EMAIL = process.env.SMTP_FROM || 'onboarding@resend.dev';
+const FROM_EMAIL = process.env.RESEND_FROM || process.env.SMTP_FROM || 'noreply@chess-arena.app';
 const BASE_URL   = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-/**
- * Send email verification link after registration.
- * @param {string} email
- * @param {string} username
- * @param {string} token  - 32-byte hex verification token
- */
-async function sendVerificationEmail(email, username, token) {
-  const verifyUrl = `${BASE_URL}/verify-email?token=${token}`;
-
-  const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #0f172a; color: #e2e8f0; border-radius: 16px;">
-      <div style="text-align: center; margin-bottom: 32px;">
-        <h1 style="font-size: 28px; font-weight: 900; color: #38bdf8; margin: 0;">♟ Chess Arena</h1>
-      </div>
-      <h2 style="color: #f1f5f9; font-size: 20px; margin-bottom: 8px;">Verify your email</h2>
-      <p style="color: #94a3b8; margin-bottom: 24px; line-height: 1.6;">
-        Hi <strong style="color: #e2e8f0;">${username}</strong>, thanks for signing up!
-        Please click the button below to verify your email address.
-      </p>
-      <a href="${verifyUrl}" style="display: inline-block; background: linear-gradient(135deg, #0ea5e9, #3b82f6); color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-weight: 700; font-size: 15px; margin-bottom: 24px;">
-        Verify Email
-      </a>
-      <p style="color: #64748b; font-size: 13px; line-height: 1.5;">
-        Or copy this link:<br>
-        <a href="${verifyUrl}" style="color: #38bdf8; word-break: break-all;">${verifyUrl}</a>
-      </p>
-      <p style="color: #64748b; font-size: 12px; margin-top: 24px; border-top: 1px solid #1e293b; padding-top: 16px;">
-        This link expires in 24 hours. If you didn't create an account, you can ignore this email.
-      </p>
-    </div>
-  `;
-
-  await sendMail({
-    to: email,
-    subject: 'Verify your Chess Arena email',
-    html,
-    text: `Hi ${username},\n\nPlease verify your email by visiting:\n${verifyUrl}\n\nThis link expires in 24 hours.`,
-  });
+// ── Resend client (lazy init) ─────────────────────────────────────────────────
+let _resend = null;
+function getResend() {
+  if (_resend) return _resend;
+  if (!RESEND_API_KEY) return null;
+  const { Resend } = require('resend');
+  _resend = new Resend(RESEND_API_KEY);
+  return _resend;
 }
 
-/**
- * Send password reset link.
- * @param {string} email
- * @param {string} username
- * @param {string} token  - 32-byte hex reset token (expires 1 hour)
- */
-async function sendPasswordResetEmail(email, username, token) {
-  const resetUrl = `${BASE_URL}/reset-password?token=${token}`;
-
-  const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #0f172a; color: #e2e8f0; border-radius: 16px;">
-      <div style="text-align: center; margin-bottom: 32px;">
-        <h1 style="font-size: 28px; font-weight: 900; color: #38bdf8; margin: 0;">♟ Chess Arena</h1>
-      </div>
-      <h2 style="color: #f1f5f9; font-size: 20px; margin-bottom: 8px;">Reset your password</h2>
-      <p style="color: #94a3b8; margin-bottom: 24px; line-height: 1.6;">
-        Hi <strong style="color: #e2e8f0;">${username}</strong>, we received a request to reset your password.
-        Click the button below to set a new password.
-      </p>
-      <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(135deg, #f97316, #ef4444); color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-weight: 700; font-size: 15px; margin-bottom: 24px;">
-        Reset Password
-      </a>
-      <p style="color: #64748b; font-size: 13px; line-height: 1.5;">
-        Or copy this link:<br>
-        <a href="${resetUrl}" style="color: #38bdf8; word-break: break-all;">${resetUrl}</a>
-      </p>
-      <p style="color: #64748b; font-size: 12px; margin-top: 24px; border-top: 1px solid #1e293b; padding-top: 16px;">
-        This link expires in <strong>1 hour</strong>. If you didn't request a password reset, you can safely ignore this email — your password won't change.
-      </p>
-    </div>
-  `;
-
-  await sendMail({
-    to: email,
-    subject: 'Reset your Chess Arena password',
-    html,
-    text: `Hi ${username},\n\nReset your password at:\n${resetUrl}\n\nThis link expires in 1 hour. If you didn't request this, ignore this email.`,
+// ── Nodemailer transporter (lazy init) ────────────────────────────────────────
+let _transporter = null;
+function getTransporter() {
+  if (_transporter) return _transporter;
+  if (!SMTP_CONFIGURED) return null;
+  _transporter = nodemailer.createTransport({
+    host:   process.env.SMTP_HOST,
+    port:   parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
   });
+  return _transporter;
 }
 
-/**
- * Internal send helper with console fallback for development.
- */
+// ── Email Templates (Bahasa Indonesia) ───────────────────────────────────────
+
+function verificationEmailHtml(username, verifyUrl) {
+  return `
+    <!DOCTYPE html>
+    <html lang="id">
+    <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="margin:0; padding:0; background:#0a0f1e; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0f1e; padding:40px 16px;">
+        <tr><td align="center">
+          <table width="100%" style="max-width:520px; background:#0f172a; border-radius:16px; border:1px solid #1e293b; overflow:hidden;">
+            <!-- Header -->
+            <tr>
+              <td style="background:linear-gradient(135deg,#0ea5e9,#3b82f6); padding:32px; text-align:center;">
+                <div style="font-size:36px; margin-bottom:8px;">♟</div>
+                <h1 style="margin:0; color:#ffffff; font-size:24px; font-weight:900; letter-spacing:-0.5px;">Chess Arena</h1>
+                <p style="margin:4px 0 0; color:rgba(255,255,255,0.8); font-size:13px;">Platform Catur Kompetitif</p>
+              </td>
+            </tr>
+            <!-- Body -->
+            <tr>
+              <td style="padding:32px 32px 24px;">
+                <h2 style="margin:0 0 12px; color:#f1f5f9; font-size:20px; font-weight:700;">Verifikasi Email Kamu 👋</h2>
+                <p style="margin:0 0 20px; color:#94a3b8; font-size:15px; line-height:1.7;">
+                  Halo <strong style="color:#e2e8f0;">${username}</strong>, selamat bergabung di Chess Arena!<br>
+                  Klik tombol di bawah untuk mengaktifkan akunmu.
+                </p>
+                <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+                  <tr>
+                    <td style="border-radius:10px; background:linear-gradient(135deg,#0ea5e9,#3b82f6);">
+                      <a href="${verifyUrl}"
+                         style="display:inline-block; padding:14px 32px; color:#ffffff; text-decoration:none; font-weight:700; font-size:15px; border-radius:10px;">
+                        ✅ Verifikasi Email
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0 0 8px; color:#64748b; font-size:13px; line-height:1.5;">
+                  Atau salin link berikut ke browser:
+                </p>
+                <p style="margin:0 0 24px; word-break:break-all;">
+                  <a href="${verifyUrl}" style="color:#38bdf8; font-size:13px;">${verifyUrl}</a>
+                </p>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="padding:20px 32px 28px; border-top:1px solid #1e293b;">
+                <p style="margin:0; color:#475569; font-size:12px; line-height:1.6;">
+                  Link ini berlaku selama <strong style="color:#64748b;">24 jam</strong>.<br>
+                  Jika kamu tidak mendaftar di Chess Arena, abaikan email ini.
+                </p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:20px 0 0; color:#334155; font-size:12px;">© 2025 Chess Arena. Semua hak dilindungi.</p>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
+function resetPasswordEmailHtml(username, resetUrl) {
+  return `
+    <!DOCTYPE html>
+    <html lang="id">
+    <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="margin:0; padding:0; background:#0a0f1e; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0f1e; padding:40px 16px;">
+        <tr><td align="center">
+          <table width="100%" style="max-width:520px; background:#0f172a; border-radius:16px; border:1px solid #1e293b; overflow:hidden;">
+            <!-- Header -->
+            <tr>
+              <td style="background:linear-gradient(135deg,#f97316,#ef4444); padding:32px; text-align:center;">
+                <div style="font-size:36px; margin-bottom:8px;">♟</div>
+                <h1 style="margin:0; color:#ffffff; font-size:24px; font-weight:900; letter-spacing:-0.5px;">Chess Arena</h1>
+                <p style="margin:4px 0 0; color:rgba(255,255,255,0.8); font-size:13px;">Platform Catur Kompetitif</p>
+              </td>
+            </tr>
+            <!-- Body -->
+            <tr>
+              <td style="padding:32px 32px 24px;">
+                <h2 style="margin:0 0 12px; color:#f1f5f9; font-size:20px; font-weight:700;">Reset Password 🔐</h2>
+                <p style="margin:0 0 20px; color:#94a3b8; font-size:15px; line-height:1.7;">
+                  Halo <strong style="color:#e2e8f0;">${username}</strong>,<br>
+                  Kami menerima permintaan reset password untuk akunmu. Klik tombol di bawah untuk membuat password baru.
+                </p>
+                <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+                  <tr>
+                    <td style="border-radius:10px; background:linear-gradient(135deg,#f97316,#ef4444);">
+                      <a href="${resetUrl}"
+                         style="display:inline-block; padding:14px 32px; color:#ffffff; text-decoration:none; font-weight:700; font-size:15px; border-radius:10px;">
+                        🔑 Reset Password
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0 0 8px; color:#64748b; font-size:13px; line-height:1.5;">
+                  Atau salin link berikut ke browser:
+                </p>
+                <p style="margin:0 0 24px; word-break:break-all;">
+                  <a href="${resetUrl}" style="color:#38bdf8; font-size:13px;">${resetUrl}</a>
+                </p>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="padding:20px 32px 28px; border-top:1px solid #1e293b;">
+                <p style="margin:0; color:#475569; font-size:12px; line-height:1.6;">
+                  Link ini berlaku selama <strong style="color:#64748b;">1 jam</strong>.<br>
+                  Jika kamu tidak meminta reset password, abaikan email ini — password kamu tidak akan berubah.
+                </p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:20px 0 0; color:#334155; font-size:12px;">© 2025 Chess Arena. Semua hak dilindungi.</p>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
+// ── Core send function ────────────────────────────────────────────────────────
+
 async function sendMail({ to, subject, html, text }) {
-  const transporter = getTransporter();
+  const resend = getResend();
 
-  if (!transporter) {
-    // Dev fallback: log to console
-    console.info('[Mailer] SMTP not configured — email would be sent:');
-    console.info(`  To:      ${to}`);
-    console.info(`  Subject: ${subject}`);
-    console.info(`  Body:    ${text}`);
+  // 1. Resend SDK
+  if (resend) {
+    const { error } = await resend.emails.send({
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to,
+      subject,
+      html,
+      text,
+    });
+    if (error) throw new Error(`Resend error: ${error.message}`);
+    console.info(`[Mailer] Email terkirim via Resend: "${subject}" → ${to}`);
     return;
   }
 
-  await transporter.sendMail({
-    from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
-    to,
-    subject,
-    html,
-    text,
-  });
+  // 2. Nodemailer SMTP fallback
+  const transporter = getTransporter();
+  if (transporter) {
+    await transporter.sendMail({ from: `"${FROM_NAME}" <${FROM_EMAIL}>`, to, subject, html, text });
+    console.info(`[Mailer] Email terkirim via SMTP: "${subject}" → ${to}`);
+    return;
+  }
 
-  console.info(`[Mailer] Email sent: "${subject}" → ${to}`);
+  // 3. Dev fallback — log to console
+  console.info('[Mailer] Email tidak dikirim (tidak ada config). Preview:');
+  console.info(`  To:      ${to}`);
+  console.info(`  Subject: ${subject}`);
+  console.info(`  Body:    ${text}`);
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+
+/**
+ * Kirim email verifikasi setelah registrasi.
+ * @param {string} email
+ * @param {string} username
+ * @param {string} token  - 32-byte hex token (plain, sebelum di-hash)
+ */
+async function sendVerificationEmail(email, username, token) {
+  const verifyUrl = `${BASE_URL}/verify-email?token=${token}`;
+  await sendMail({
+    to: email,
+    subject: 'Verifikasi email Chess Arena kamu',
+    html: verificationEmailHtml(username, verifyUrl),
+    text: `Halo ${username},\n\nVerifikasi email kamu dengan membuka link berikut:\n${verifyUrl}\n\nLink berlaku 24 jam. Jika kamu tidak mendaftar, abaikan email ini.`,
+  });
+}
+
+/**
+ * Kirim email reset password.
+ * @param {string} email
+ * @param {string} username
+ * @param {string} token  - 32-byte hex token (plain, sebelum di-hash)
+ */
+async function sendPasswordResetEmail(email, username, token) {
+  const resetUrl = `${BASE_URL}/reset-password?token=${token}`;
+  await sendMail({
+    to: email,
+    subject: 'Reset password Chess Arena kamu',
+    html: resetPasswordEmailHtml(username, resetUrl),
+    text: `Halo ${username},\n\nReset password kamu dengan membuka link berikut:\n${resetUrl}\n\nLink berlaku 1 jam. Jika kamu tidak meminta reset password, abaikan email ini.`,
+  });
 }
 
 module.exports = { sendVerificationEmail, sendPasswordResetEmail };

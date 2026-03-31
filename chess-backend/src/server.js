@@ -22,6 +22,16 @@ if (missingEnv.length > 0) {
   process.exit(1);
 }
 
+// Startup warnings for non-critical but important config
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+if (!process.env.FRONTEND_URL || FRONTEND_URL.includes('localhost')) {
+  console.warn('[startup] ⚠️  FRONTEND_URL is not set or points to localhost — email links will not work in production!');
+  console.warn('[startup]    Set FRONTEND_URL to your production frontend URL (e.g. https://chess-app.vercel.app).');
+}
+if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'production') {
+  console.warn(`[startup] ⚠️  NODE_ENV="${process.env.NODE_ENV || 'undefined'}" — set NODE_ENV=production in production deployments.`);
+}
+
 const app = express();
 const server = http.createServer(app);
 
@@ -161,6 +171,17 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,  // dinonaktifkan agar tidak break socket.io polling
 }));
 app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
+
+// Additional security headers not covered by helmet defaults
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+
 app.use(morgan('combined', { stream: logger.morganStream }));
 app.use(logger.requestLogger);
 

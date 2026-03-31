@@ -50,8 +50,10 @@ const schemas = {
       .max(254, 'Email too long'),
     password: z
       .string({ required_error: 'Password is required' })
-      .min(6, 'Password must be at least 6 characters')
-      .max(128, 'Password too long'),
+      .min(8, 'Password minimal 8 karakter')
+      .max(128, 'Password terlalu panjang')
+      .regex(/[a-zA-Z]/, 'Password harus mengandung minimal 1 huruf')
+      .regex(/[0-9]/, 'Password harus mengandung minimal 1 angka'),
   }),
 
   login: z.object({
@@ -77,8 +79,10 @@ const schemas = {
       .min(1, 'Current password cannot be empty'),
     newPassword: z
       .string({ required_error: 'New password is required' })
-      .min(6, 'New password must be at least 6 characters')
-      .max(128, 'New password too long'),
+      .min(8, 'Password baru minimal 8 karakter')
+      .max(128, 'Password terlalu panjang')
+      .regex(/[a-zA-Z]/, 'Password harus mengandung minimal 1 huruf')
+      .regex(/[0-9]/, 'Password harus mengandung minimal 1 angka'),
   }),
 
   updateProfile: z.object({
@@ -98,14 +102,22 @@ const schemas = {
       .min(1, 'Token cannot be empty'),
     password: z
       .string({ required_error: 'New password is required' })
-      .min(6, 'Password must be at least 6 characters')
-      .max(128, 'Password too long'),
+      .min(8, 'Password minimal 8 karakter')
+      .max(128, 'Password terlalu panjang')
+      .regex(/[a-zA-Z]/, 'Password harus mengandung minimal 1 huruf')
+      .regex(/[0-9]/, 'Password harus mengandung minimal 1 angka'),
   }),
 
   verifyEmail: z.object({
     token: z
       .string({ required_error: 'Verification token is required' })
       .min(1, 'Token cannot be empty'),
+  }),
+
+  resendVerification: z.object({
+    email: z
+      .string({ required_error: 'Email is required' })
+      .email('Format email tidak valid'),
   }),
 
   // Wallet

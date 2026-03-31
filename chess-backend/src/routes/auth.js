@@ -9,6 +9,19 @@ const { requireAuth } = require('../middleware/auth');
 const { validate, schemas } = require('../middleware/validate');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../lib/mailer');
 
+// ── Account lockout per email ─────────────────────────────────────────────────
+const loginAttempts = new Map(); // key: email/username, value: { count, lastAttempt }
+const MAX_LOGIN_ATTEMPTS = 10;
+const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 menit
+
+// Cleanup expired lockout entries every 30 menit
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of loginAttempts.entries()) {
+    if (now - val.lastAttempt >= LOCKOUT_DURATION) loginAttempts.delete(key);
+  }
+}, 30 * 60 * 1000);
+
 // ── Rate limiters ─────────────────────────────────────────────────────────────
 const loginRateLimit = rateLimit({
   windowMs: 60 * 1000,          // 1 minute
@@ -43,6 +56,17 @@ const forgotPasswordRateLimit = rateLimit({
   legacyHeaders: false,
 });
 
+const resendVerificationRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000,     // 1 hour
+  max: 3,
+  keyGenerator: (req) => (req.body && req.body.email) ? req.body.email.toLowerCase() : req.ip,
+  handler: (req, res) => {
+    res.status(429).json({ error: 'Terlalu banyak permintaan. Coba lagi dalam 1 jam.' });
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // ── POST /api/auth/register ──────────────────────────────────────────────────
 router.post('/register', registerRateLimit, validate(schemas.register), async (req, res) => {
   try {
@@ -56,10 +80,11 @@ router.post('/register', registerRateLimit, validate(schemas.register), async (r
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Generate email verification token
+    // Generate email verification token (store hashed, send plain)
     const verifyToken = crypto.randomBytes(32).toString('hex');
+    const hashedVerifyToken = crypto.createHash('sha256').update(verifyToken).digest('hex');
 
-    const user = await users.create({ username, email, passwordHash, verifyToken });
+    const user = await users.create({ username, email, passwordHash, verifyToken: hashedVerifyToken });
 
     // Send verification email (non-blocking — don't fail registration if email fails)
     sendVerificationEmail(email, username, verifyToken).catch(err =>
@@ -90,10 +115,37 @@ router.post('/login', loginRateLimit, validate(schemas.login), async (req, res) 
       user = await users.findByUsername(username);
     }
 
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    const loginKey = (email || username || '').toLowerCase();
+
+    // Check account lockout
+    const attempts = loginAttempts.get(loginKey);
+    if (attempts && attempts.count >= MAX_LOGIN_ATTEMPTS && Date.now() - attempts.lastAttempt < LOCKOUT_DURATION) {
+      return res.status(429).json({ error: 'Akun terkunci sementara karena terlalu banyak percobaan login. Coba lagi dalam 15 menit.' });
+    }
+
+    if (!user) {
+      const cur = loginAttempts.get(loginKey) || { count: 0, lastAttempt: 0 };
+      loginAttempts.set(loginKey, { count: cur.count + 1, lastAttempt: Date.now() });
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
     const match = await bcrypt.compare(password, user.password_hash);
-    if (!match) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!match) {
+      const cur = loginAttempts.get(loginKey) || { count: 0, lastAttempt: 0 };
+      loginAttempts.set(loginKey, { count: cur.count + 1, lastAttempt: Date.now() });
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Enforce email verification
+    if (!user.verified) {
+      return res.status(403).json({
+        error: 'Email belum diverifikasi. Cek inbox kamu untuk link verifikasi.',
+        code: 'EMAIL_NOT_VERIFIED',
+      });
+    }
+
+    // Reset lockout on successful login
+    loginAttempts.delete(loginKey);
 
     const token = signToken({ userId: user.id });
     res.json({ token, user: users.public(user) });
@@ -204,10 +256,11 @@ router.post('/forgot-password', forgotPasswordRateLimit, validate(schemas.forgot
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
     const resetExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     await users.update(user.id, {
-      reset_token: resetToken,
+      reset_token: hashedResetToken,
       reset_token_expires: resetExpiry,
     });
 
@@ -249,6 +302,35 @@ router.post('/reset-password', validate(schemas.resetPassword), async (req, res)
   } catch (err) {
     console.error('[auth/reset-password]', err);
     res.status(500).json({ error: 'Password reset failed' });
+  }
+});
+
+// ── POST /api/auth/resend-verification ──────────────────────────────────────
+// Kirim ulang email verifikasi (max 3x per jam per email)
+router.post('/resend-verification', resendVerificationRateLimit, validate(schemas.resendVerification), async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await users.findByEmail(email);
+
+    // Always return success to prevent user enumeration
+    if (!user || user.verified) {
+      return res.json({ ok: true, message: 'Jika email terdaftar dan belum diverifikasi, link telah dikirim.' });
+    }
+
+    const verifyToken = crypto.randomBytes(32).toString('hex');
+    const hashedVerifyToken = crypto.createHash('sha256').update(verifyToken).digest('hex');
+
+    await users.update(user.id, { verify_token: hashedVerifyToken });
+
+    sendVerificationEmail(email, user.username, verifyToken).catch(err =>
+      console.error('[auth/resend-verification] Email send failed:', err.message)
+    );
+
+    res.json({ ok: true, message: 'Jika email terdaftar dan belum diverifikasi, link telah dikirim.' });
+  } catch (err) {
+    console.error('[auth/resend-verification]', err);
+    res.status(500).json({ error: 'Gagal mengirim ulang email verifikasi' });
   }
 });
 

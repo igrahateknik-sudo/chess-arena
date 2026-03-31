@@ -1,4 +1,9 @@
 const { createClient } = require('@supabase/supabase-js');
+const crypto = require('crypto');
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -36,14 +41,16 @@ const users = {
   },
 
   async findByVerifyToken(token) {
+    const hashed = hashToken(token);
     const { data } = await supabase
-      .from('users').select('*').eq('verify_token', token).single();
+      .from('users').select('*').eq('verify_token', hashed).single();
     return data;
   },
 
   async findByResetToken(token) {
+    const hashed = hashToken(token);
     const { data } = await supabase
-      .from('users').select('*').eq('reset_token', token).single();
+      .from('users').select('*').eq('reset_token', hashed).single();
     return data;
   },
 
