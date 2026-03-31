@@ -29,10 +29,11 @@ jobs:
         run: npm install -g @railway/cli
 
       - name: Deploy to Railway
-        run: railway up --service chess-arena --detach
+        run: railway up --service chess-arena-backend --detach
         working-directory: chess-backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: f703b269-871f-4cc3-97df-2135cf3e4053
 
       - name: Wait for deployment health check
         run: |
