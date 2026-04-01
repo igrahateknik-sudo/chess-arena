@@ -34,6 +34,8 @@ jobs:
             || echo "Health check failed (non-fatal)"
 
   # ── Deploy Frontend to Vercel ─────────────────────────────────────────────────
+  # Vercel auto-deploys on push to main via GitHub integration.
+  # This job just waits and verifies the deployment is live.
   deploy-frontend:
     name: Deploy Frontend (Vercel)
     needs: test
@@ -41,17 +43,13 @@ jobs:
     environment: production
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Vercel CLI
-        run: npm install -g vercel
-
-      - name: Deploy to Vercel
-        run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes
-        working-directory: chess-app
-        env:
-          VERCEL_ORG_ID:     ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      - name: Wait for Vercel auto-deploy
+        run: |
+          echo "Waiting 60s for Vercel to pick up the push and deploy..."
+          sleep 60
+          curl --retry 5 --retry-delay 15 --fail \
+            "https://chess-arena-two.vercel.app" \
+            || echo "Health check failed (non-fatal)"
 
   # ── Notify on success/failure ────────────────────────────────────────────────
   notify:
