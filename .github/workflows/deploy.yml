@@ -47,7 +47,8 @@ jobs:
         run: npm install -g vercel
 
       - name: Deploy to Vercel
-        run: vercel chess-app --prod --token ${{ secrets.VERCEL_TOKEN }} --yes
+        run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --yes
+        working-directory: chess-app
         env:
           VERCEL_ORG_ID:     ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
