@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import {
   Shield, Users, AlertTriangle, GitBranch,
   CheckCircle, XCircle, Clock, RefreshCw,
-  ChevronDown, ChevronUp, Eye, Ban, UserCheck,
-  Activity, Lock, Zap
+  ChevronDown, ChevronUp, Ban, UserCheck,
+  Activity, Lock, Zap, Wallet, ArrowDownLeft, ArrowUpRight, Building2, ExternalLink
 } from 'lucide-react';
 import AppLayout from '@/components/ui/AppLayout';
 import { useAppStore } from '@/lib/store';
@@ -43,9 +43,185 @@ interface Appeal {
 interface SecurityEvent {
   id: string; event_type: string; user_id: string; details: string; created_at: string;
 }
+interface ManualDeposit {
+  id: string; amount: number; unique_code: number; transfer_amount: number;
+  proof_url: string | null; status: string; admin_note: string | null;
+  created_at: string; reviewed_at: string | null;
+  users: { id: string; username: string; email: string } | null;
+}
+interface ManualWithdrawal {
+  id: string; amount: number; bank_name: string; account_number: string; account_name: string;
+  status: string; admin_note: string | null; created_at: string; reviewed_at: string | null;
+  users: { id: string; username: string; email: string } | null;
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const fmtDate = (s: string) => s ? new Date(s).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+
+// ── Payment sub-components ─────────────────────────────────────────────────
+const STATUS_CFG: Record<string, { label: string; cls: string }> = {
+  pending:   { label: 'Pending',    cls: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' },
+  approved:  { label: 'Disetujui', cls: 'bg-sky-500/20 text-sky-300 border-sky-500/40' },
+  completed: { label: 'Selesai',   cls: 'bg-green-500/20 text-green-300 border-green-500/40' },
+  rejected:  { label: 'Ditolak',   cls: 'bg-red-500/20 text-red-300 border-red-500/40' },
+};
+
+function PayStatusBadge({ status }: { status: string }) {
+  const c = STATUS_CFG[status] || { label: status, cls: 'bg-zinc-500/20 text-zinc-300 border-zinc-500/40' };
+  return <span className={`px-2 py-0.5 rounded-full text-xs border font-medium ${c.cls}`}>{c.label}</span>;
+}
+
+function fmtIDR(n: number) {
+  return `Rp ${n.toLocaleString('id-ID')}`;
+}
+
+function DepositCard({
+  deposit, actionLoading, onApprove, onReject,
+}: {
+  deposit: ManualDeposit;
+  actionLoading: string | null;
+  onApprove: () => void;
+  onReject: (note: string) => void;
+}) {
+  const [note, setNote] = useState('');
+  const busy = actionLoading === deposit.id + 'approve' || actionLoading === deposit.id + 'reject';
+  return (
+    <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-sky-500/10 flex items-center justify-center flex-shrink-0">
+            <Building2 size={16} className="text-sky-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-[var(--text-primary)] text-sm">{deposit.users?.username || '—'}</span>
+              <span className="text-xs text-[var(--text-muted)]">{deposit.users?.email}</span>
+            </div>
+            <div className="text-xs text-[var(--text-muted)] mt-0.5">
+              Transfer: <span className="font-mono font-semibold text-sky-400">{fmtIDR(deposit.transfer_amount)}</span>
+              <span className="mx-1">·</span>
+              Nominal: {fmtIDR(deposit.amount)}
+              <span className="mx-1">·</span>
+              Kode: <span className="font-mono text-yellow-400">{String(deposit.unique_code).padStart(3, '0')}</span>
+            </div>
+            <div className="text-xs text-[var(--text-muted)]">
+              {new Date(deposit.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
+            </div>
+          </div>
+        </div>
+        <PayStatusBadge status={deposit.status} />
+      </div>
+
+      {deposit.proof_url ? (
+        <a href={deposit.proof_url} target="_blank" rel="noreferrer"
+          className="flex items-center gap-2 text-xs text-sky-400 hover:text-sky-300 transition-colors">
+          <ExternalLink size={12} /> Lihat bukti transfer
+        </a>
+      ) : (
+        <p className="text-xs text-yellow-500">Bukti transfer belum diupload</p>
+      )}
+
+      {deposit.status === 'pending' && (
+        <div className="space-y-2 pt-1 border-t border-[var(--border)]">
+          <textarea
+            placeholder="Catatan admin (opsional)…"
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] resize-none h-12"
+          />
+          <div className="flex gap-2">
+            <button onClick={onApprove} disabled={busy}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-medium disabled:opacity-50 transition-colors">
+              <CheckCircle size={13} /> Setujui & Kredit Saldo
+            </button>
+            <button onClick={() => onReject(note)} disabled={busy}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 rounded-lg text-xs font-medium disabled:opacity-50 transition-colors">
+              <XCircle size={13} /> Tolak
+            </button>
+          </div>
+        </div>
+      )}
+
+      {deposit.admin_note && (
+        <p className="text-xs text-[var(--text-muted)]">Note: {deposit.admin_note}</p>
+      )}
+    </div>
+  );
+}
+
+function WithdrawalCard({
+  withdrawal, actionLoading, onApprove, onComplete, onReject,
+}: {
+  withdrawal: ManualWithdrawal;
+  actionLoading: string | null;
+  onApprove: (note: string) => void;
+  onComplete: (note: string) => void;
+  onReject: (note: string) => void;
+}) {
+  const [note, setNote] = useState('');
+  const busy = actionLoading?.startsWith(withdrawal.id);
+  return (
+    <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+            <ArrowUpRight size={16} className="text-orange-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-[var(--text-primary)] text-sm">{withdrawal.users?.username || '—'}</span>
+              <span className="text-xs text-[var(--text-muted)]">{withdrawal.users?.email}</span>
+            </div>
+            <div className="text-xs text-[var(--text-muted)] mt-0.5">
+              <span className="font-semibold text-orange-400">{fmtIDR(withdrawal.amount)}</span>
+              <span className="mx-1">→</span>
+              <span className="font-mono">{withdrawal.bank_name} {withdrawal.account_number}</span>
+              <span className="mx-1">a.n.</span>
+              <span className="font-semibold text-[var(--text-primary)]">{withdrawal.account_name}</span>
+            </div>
+            <div className="text-xs text-[var(--text-muted)]">
+              {new Date(withdrawal.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
+            </div>
+          </div>
+        </div>
+        <PayStatusBadge status={withdrawal.status} />
+      </div>
+
+      {(withdrawal.status === 'pending' || withdrawal.status === 'approved') && (
+        <div className="space-y-2 pt-1 border-t border-[var(--border)]">
+          <textarea
+            placeholder="Catatan admin (opsional)…"
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] resize-none h-12"
+          />
+          <div className="flex flex-wrap gap-2">
+            {withdrawal.status === 'pending' && (
+              <button onClick={() => onApprove(note)} disabled={busy}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 rounded-lg text-xs font-medium disabled:opacity-50 transition-colors">
+                <CheckCircle size={13} /> Setujui
+              </button>
+            )}
+            {withdrawal.status === 'approved' && (
+              <button onClick={() => onComplete(note)} disabled={busy}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-medium disabled:opacity-50 transition-colors">
+                <CheckCircle size={13} /> Tandai Selesai (Transfer Done)
+              </button>
+            )}
+            <button onClick={() => onReject(note)} disabled={busy}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 rounded-lg text-xs font-medium disabled:opacity-50 transition-colors">
+              <XCircle size={13} /> Tolak & Refund
+            </button>
+          </div>
+        </div>
+      )}
+
+      {withdrawal.admin_note && (
+        <p className="text-xs text-[var(--text-muted)]">Note: {withdrawal.admin_note}</p>
+      )}
+    </div>
+  );
+}
 
 function TrustBadge({ score }: { score: number }) {
   const color = score >= 80 ? 'text-green-400' : score >= 50 ? 'text-yellow-400' : 'text-red-400';
@@ -65,7 +241,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────
-type Tab = 'overview' | 'flagged' | 'collusion' | 'multiAccount' | 'appeals' | 'events';
+type Tab = 'overview' | 'flagged' | 'collusion' | 'multiAccount' | 'appeals' | 'events' | 'payments';
 
 export default function AdminPage() {
   const router                 = useRouter();
@@ -78,6 +254,9 @@ export default function AdminPage() {
   const [multiAcc, setMultiAcc]   = useState<MultiAccountFlag[]>([]);
   const [appeals, setAppeals]     = useState<Appeal[]>([]);
   const [events, setEvents]       = useState<SecurityEvent[]>([]);
+  const [deposits, setDeposits]   = useState<ManualDeposit[]>([]);
+  const [withdrawals, setWithdrawals] = useState<ManualWithdrawal[]>([]);
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<'pending' | 'approved' | 'all'>('pending');
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -106,6 +285,14 @@ export default function AdminPage() {
       if (t === 'multiAccount') { const d = await api.admin.multiAccountFlags(token); setMultiAcc(d.flags || []); }
       if (t === 'appeals')      { const d = await api.admin.appeals(token, 'all'); setAppeals(d.appeals || []); }
       if (t === 'events')       { const d = await api.admin.securityEvents(token); setEvents(d.events || []); }
+      if (t === 'payments')     {
+        const [depData, wdData] = await Promise.all([
+          api.admin.manualDeposits(token, paymentStatusFilter),
+          api.admin.manualWithdrawals(token, paymentStatusFilter),
+        ]);
+        setDeposits(depData.deposits || []);
+        setWithdrawals(wdData.withdrawals || []);
+      }
     } catch (e: unknown) {
       if (e instanceof Error && e.message.includes('Admin access')) {
         router.replace('/dashboard');
@@ -122,6 +309,7 @@ export default function AdminPage() {
   }, [user, token, router, loadStats, loadTab]);
 
   useEffect(() => { loadTab(tab); }, [tab, loadTab]);
+  useEffect(() => { if (tab === 'payments') loadTab('payments'); }, [paymentStatusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── User Review Actions ────────────────────────────────────────────────
   async function handleUserAction(userId: string, action: string, newTrust?: number) {
@@ -169,6 +357,76 @@ export default function AdminPage() {
     }
   }
 
+  async function handleDepositApprove(id: string) {
+    if (!token) return;
+    setActionLoading(id + 'approve');
+    try {
+      await api.admin.approveDeposit(token, id);
+      showMsg('✅ Deposit disetujui — saldo user ditambahkan');
+      await loadTab('payments');
+    } catch (e: unknown) {
+      showMsg(`❌ ${e instanceof Error ? e.message : 'Failed'}`, false);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleDepositReject(id: string, note: string) {
+    if (!token) return;
+    setActionLoading(id + 'reject');
+    try {
+      await api.admin.rejectDeposit(token, id, note);
+      showMsg('✅ Deposit ditolak');
+      await loadTab('payments');
+    } catch (e: unknown) {
+      showMsg(`❌ ${e instanceof Error ? e.message : 'Failed'}`, false);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleWithdrawalApprove(id: string, note: string) {
+    if (!token) return;
+    setActionLoading(id + 'approve');
+    try {
+      await api.admin.approveWithdrawal(token, id, note);
+      showMsg('✅ Penarikan disetujui — proses transfer manual sekarang');
+      await loadTab('payments');
+    } catch (e: unknown) {
+      showMsg(`❌ ${e instanceof Error ? e.message : 'Failed'}`, false);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleWithdrawalComplete(id: string, note: string) {
+    if (!token) return;
+    setActionLoading(id + 'complete');
+    try {
+      await api.admin.completeWithdrawal(token, id, note);
+      showMsg('✅ Penarikan selesai');
+      await loadTab('payments');
+    } catch (e: unknown) {
+      showMsg(`❌ ${e instanceof Error ? e.message : 'Failed'}`, false);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleWithdrawalReject(id: string, note: string) {
+    if (!token) return;
+    setActionLoading(id + 'reject');
+    try {
+      await api.admin.rejectWithdrawal(token, id, note);
+      showMsg('✅ Penarikan ditolak & saldo dikembalikan');
+      await loadTab('payments');
+    } catch (e: unknown) {
+      showMsg(`❌ ${e instanceof Error ? e.message : 'Failed'}`, false);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   async function handleMultiAccReview(id: string, verdict: 'confirmed' | 'dismissed') {
     if (!token) return;
     setActionLoading(id);
@@ -187,9 +445,10 @@ export default function AdminPage() {
   // ── Render ─────────────────────────────────────────────────────────────
   const TABS: { key: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { key: 'overview',     label: 'Overview',       icon: <Shield size={15} /> },
-    { key: 'flagged',      label: 'Flagged Users',  icon: <Users size={15} />,       badge: stats?.totalFlagged },
-    { key: 'collusion',    label: 'Collusion',      icon: <GitBranch size={15} />,   badge: stats?.unreviewedCollusion },
-    { key: 'multiAccount', label: 'Multi-Account',  icon: <Lock size={15} />,        badge: stats?.unreviewedMultiAccount },
+    { key: 'payments',     label: 'Payments',       icon: <Wallet size={15} />,       badge: deposits.filter(d => d.status === 'pending').length + withdrawals.filter(w => w.status === 'pending').length || undefined },
+    { key: 'flagged',      label: 'Flagged Users',  icon: <Users size={15} />,        badge: stats?.totalFlagged },
+    { key: 'collusion',    label: 'Collusion',      icon: <GitBranch size={15} />,    badge: stats?.unreviewedCollusion },
+    { key: 'multiAccount', label: 'Multi-Account',  icon: <Lock size={15} />,         badge: stats?.unreviewedMultiAccount },
     { key: 'appeals',      label: 'Appeals',        icon: <AlertTriangle size={15} />, badge: stats?.pendingAppeals },
     { key: 'events',       label: 'Security Log',   icon: <Activity size={15} /> },
   ];
@@ -515,6 +774,74 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* ── Payments ─────────────────────────────────────────────── */}
+            {tab === 'payments' && (
+              <div className="space-y-6">
+                {/* Filter */}
+                <div className="flex items-center gap-2">
+                  {(['pending', 'approved', 'all'] as const).map(s => (
+                    <button key={s} onClick={() => setPaymentStatusFilter(s)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        paymentStatusFilter === s
+                          ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                          : 'text-[var(--text-muted)] hover:bg-[var(--bg-primary)] border border-transparent'
+                      }`}>
+                      {s === 'all' ? 'Semua' : s === 'pending' ? 'Pending' : 'Disetujui'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Deposits */}
+                <div>
+                  <h3 className="text-sm font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                    <ArrowDownLeft size={15} className="text-sky-400" /> Deposit Manual
+                    <span className="text-xs bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded-full">{deposits.length}</span>
+                  </h3>
+                  <div className="space-y-3">
+                    {deposits.length === 0 && (
+                      <div className="text-center py-8 text-[var(--text-muted)] text-sm bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)]">
+                        Tidak ada deposit {paymentStatusFilter !== 'all' ? paymentStatusFilter : ''}
+                      </div>
+                    )}
+                    {deposits.map(d => (
+                      <DepositCard
+                        key={d.id}
+                        deposit={d}
+                        actionLoading={actionLoading}
+                        onApprove={() => handleDepositApprove(d.id)}
+                        onReject={(note) => handleDepositReject(d.id, note)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Withdrawals */}
+                <div>
+                  <h3 className="text-sm font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                    <ArrowUpRight size={15} className="text-orange-400" /> Penarikan
+                    <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full">{withdrawals.length}</span>
+                  </h3>
+                  <div className="space-y-3">
+                    {withdrawals.length === 0 && (
+                      <div className="text-center py-8 text-[var(--text-muted)] text-sm bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)]">
+                        Tidak ada penarikan {paymentStatusFilter !== 'all' ? paymentStatusFilter : ''}
+                      </div>
+                    )}
+                    {withdrawals.map(w => (
+                      <WithdrawalCard
+                        key={w.id}
+                        withdrawal={w}
+                        actionLoading={actionLoading}
+                        onApprove={(note) => handleWithdrawalApprove(w.id, note)}
+                        onComplete={(note) => handleWithdrawalComplete(w.id, note)}
+                        onReject={(note) => handleWithdrawalReject(w.id, note)}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 

@@ -66,6 +66,34 @@ export const api = {
 
     withdraw: (token: string, body: { amount: number; bankCode: string; accountNumber: string; accountName: string }) =>
       fetchAPI('/api/wallet/withdraw', { method: 'POST', body: JSON.stringify(body) }, token),
+
+    bankInfo: () =>
+      fetchAPI('/api/wallet/bank-info'),
+
+    manualDeposit: (token: string, amount: number) =>
+      fetchAPI('/api/wallet/manual-deposit', { method: 'POST', body: JSON.stringify({ amount }) }, token),
+
+    uploadDepositProof: async (token: string, depositId: string, file: File) => {
+      const formData = new FormData();
+      formData.append('proof', file);
+      const res = await fetch(`${BACKEND_URL}/api/wallet/manual-deposit/${depositId}/proof`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new ApiError(data.error || 'Upload failed');
+      return data;
+    },
+
+    myManualDeposits: (token: string) =>
+      fetchAPI('/api/wallet/manual-deposits', {}, token),
+
+    manualWithdraw: (token: string, body: { amount: number; bankName: string; accountNumber: string; accountName: string }) =>
+      fetchAPI('/api/wallet/manual-withdraw', { method: 'POST', body: JSON.stringify(body) }, token),
+
+    myManualWithdrawals: (token: string) =>
+      fetchAPI('/api/wallet/manual-withdrawals', {}, token),
   },
 
 
@@ -157,6 +185,27 @@ export const api = {
 
     queueHealth: (token: string) =>
       fetchAPI('/api/admin/queue-health', {}, token),
+
+    manualDeposits: (token: string, status = 'pending') =>
+      fetchAPI(`/api/admin/manual-deposits?status=${status}`, {}, token),
+
+    approveDeposit: (token: string, id: string) =>
+      fetchAPI(`/api/admin/manual-deposits/${id}/approve`, { method: 'POST' }, token),
+
+    rejectDeposit: (token: string, id: string, note?: string) =>
+      fetchAPI(`/api/admin/manual-deposits/${id}/reject`, { method: 'POST', body: JSON.stringify({ note }) }, token),
+
+    manualWithdrawals: (token: string, status = 'pending') =>
+      fetchAPI(`/api/admin/manual-withdrawals?status=${status}`, {}, token),
+
+    approveWithdrawal: (token: string, id: string, note?: string) =>
+      fetchAPI(`/api/admin/manual-withdrawals/${id}/approve`, { method: 'POST', body: JSON.stringify({ note }) }, token),
+
+    completeWithdrawal: (token: string, id: string, note?: string) =>
+      fetchAPI(`/api/admin/manual-withdrawals/${id}/complete`, { method: 'POST', body: JSON.stringify({ note }) }, token),
+
+    rejectWithdrawal: (token: string, id: string, note?: string) =>
+      fetchAPI(`/api/admin/manual-withdrawals/${id}/reject`, { method: 'POST', body: JSON.stringify({ note }) }, token),
   },
 
   health: () =>

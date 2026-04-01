@@ -276,4 +276,174 @@ const eloHistory = {
   },
 };
 
-module.exports = { supabase, users, wallets, transactions, games, notifications, eloHistory };
+// ── Manual Deposits ───────────────────────────────────────────────────────
+const manualDeposits = {
+  async create(userId, amount) {
+    // Generate unique 3-digit code (001-999) not already pending for this user+amount
+    const code = Math.floor(Math.random() * 999) + 1;
+    const { data, error } = await supabase
+      .from('manual_deposits')
+      .insert({
+        user_id: userId,
+        amount,
+        unique_code: code,
+        transfer_amount: amount + code,
+        status: 'pending',
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async setProof(id, userId, proofUrl) {
+    const { data, error } = await supabase
+      .from('manual_deposits')
+      .update({ proof_url: proofUrl })
+      .eq('id', id)
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async findById(id) {
+    const { data } = await supabase.from('manual_deposits').select('*, users:user_id(id, username, email)').eq('id', id).single();
+    return data;
+  },
+
+  async findByUserId(userId, limit = 20) {
+    const { data } = await supabase
+      .from('manual_deposits').select('*').eq('user_id', userId)
+      .order('created_at', { ascending: false }).limit(limit);
+    return data || [];
+  },
+
+  async listPending(limit = 50) {
+    const { data } = await supabase
+      .from('manual_deposits')
+      .select('*, users:user_id(id, username, email)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true })
+      .limit(limit);
+    return data || [];
+  },
+
+  async listAll(status, limit = 50) {
+    let query = supabase
+      .from('manual_deposits')
+      .select('*, users:user_id(id, username, email)')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (status && status !== 'all') query = query.eq('status', status);
+    const { data } = await query;
+    return data || [];
+  },
+
+  async approve(id, adminId) {
+    const { data, error } = await supabase
+      .from('manual_deposits')
+      .update({ status: 'approved', reviewed_by: adminId, reviewed_at: new Date() })
+      .eq('id', id)
+      .eq('status', 'pending')
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async reject(id, adminId, note) {
+    const { data, error } = await supabase
+      .from('manual_deposits')
+      .update({ status: 'rejected', reviewed_by: adminId, reviewed_at: new Date(), admin_note: note || '' })
+      .eq('id', id)
+      .eq('status', 'pending')
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+};
+
+// ── Manual Withdrawals ────────────────────────────────────────────────────
+const manualWithdrawals = {
+  async create(userId, amount, bankName, accountNumber, accountName) {
+    const { data, error } = await supabase
+      .from('manual_withdrawals')
+      .insert({
+        user_id: userId,
+        amount,
+        bank_name: bankName,
+        account_number: accountNumber,
+        account_name: accountName,
+        status: 'pending',
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async findById(id) {
+    const { data } = await supabase.from('manual_withdrawals').select('*, users:user_id(id, username, email)').eq('id', id).single();
+    return data;
+  },
+
+  async findByUserId(userId, limit = 20) {
+    const { data } = await supabase
+      .from('manual_withdrawals').select('*').eq('user_id', userId)
+      .order('created_at', { ascending: false }).limit(limit);
+    return data || [];
+  },
+
+  async listAll(status, limit = 50) {
+    let query = supabase
+      .from('manual_withdrawals')
+      .select('*, users:user_id(id, username, email)')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (status && status !== 'all') query = query.eq('status', status);
+    const { data } = await query;
+    return data || [];
+  },
+
+  async approve(id, adminId, note) {
+    const { data, error } = await supabase
+      .from('manual_withdrawals')
+      .update({ status: 'approved', reviewed_by: adminId, reviewed_at: new Date(), admin_note: note || '' })
+      .eq('id', id)
+      .eq('status', 'pending')
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async complete(id, adminId, note) {
+    const { data, error } = await supabase
+      .from('manual_withdrawals')
+      .update({ status: 'completed', reviewed_by: adminId, reviewed_at: new Date(), admin_note: note || '' })
+      .eq('id', id)
+      .eq('status', 'approved')
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async reject(id, adminId, note) {
+    const { data, error } = await supabase
+      .from('manual_withdrawals')
+      .update({ status: 'rejected', reviewed_by: adminId, reviewed_at: new Date(), admin_note: note || '' })
+      .eq('id', id)
+      .in('status', ['pending', 'approved'])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+};
+
+module.exports = { supabase, users, wallets, transactions, games, notifications, eloHistory, manualDeposits, manualWithdrawals };

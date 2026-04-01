@@ -19,7 +19,7 @@
 const express  = require('express');
 const router   = express.Router();
 const { requireAdmin } = require('../middleware/adminAuth');
-const { supabase }     = require('../lib/db');
+const { supabase, wallets, transactions, manualDeposits, manualWithdrawals } = require('../lib/db');
 const { logAnticheatAction } = require('../lib/auditLog');
 const { checkQueueHealth }   = require('../lib/monitor');
 
@@ -422,6 +422,172 @@ router.get('/security-events', async (req, res) => {
   } catch (err) {
     console.error('[admin/security-events]', err);
     res.status(500).json({ error: 'Failed to load security events' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// MANUAL PAYMENTS
+// ══════════════════════════════════════════════════════════════════════════
+
+// ── GET /api/admin/manual-deposits ──────────────────────────────────────
+router.get('/manual-deposits', async (req, res) => {
+  try {
+    const status = req.query.status || 'pending'; // pending | approved | rejected | all
+    const deposits = await manualDeposits.listAll(status, 100);
+    res.json({ deposits });
+  } catch (err) {
+    console.error('[admin/manual-deposits]', err);
+    res.status(500).json({ error: 'Failed to load deposits' });
+  }
+});
+
+// ── POST /api/admin/manual-deposits/:id/approve ──────────────────────────
+router.post('/manual-deposits/:id/approve', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deposit = await manualDeposits.findById(id);
+    if (!deposit) return res.status(404).json({ error: 'Deposit not found' });
+    if (deposit.status !== 'pending') return res.status(409).json({ error: 'Deposit already processed' });
+
+    // Approve deposit record
+    await manualDeposits.approve(id, req.userId);
+
+    // Credit user wallet
+    await wallets.credit(deposit.user_id, deposit.amount);
+
+    // Record in transactions for wallet history
+    await transactions.create({
+      user_id: deposit.user_id,
+      type: 'deposit',
+      amount: deposit.amount,
+      status: 'success',
+      description: `Deposit manual disetujui admin (Rp ${deposit.transfer_amount})`,
+    });
+
+    console.info(`[Admin] Deposit ${id} APPROVED — user ${deposit.user_id}, amount ${deposit.amount}`);
+    res.json({ ok: true, depositId: id, userId: deposit.user_id, amount: deposit.amount });
+  } catch (err) {
+    console.error('[admin/manual-deposits/approve]', err);
+    res.status(500).json({ error: 'Failed to approve deposit' });
+  }
+});
+
+// ── POST /api/admin/manual-deposits/:id/reject ───────────────────────────
+router.post('/manual-deposits/:id/reject', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { note } = req.body;
+
+    const deposit = await manualDeposits.findById(id);
+    if (!deposit) return res.status(404).json({ error: 'Deposit not found' });
+    if (deposit.status !== 'pending') return res.status(409).json({ error: 'Deposit already processed' });
+
+    await manualDeposits.reject(id, req.userId, note);
+
+    console.info(`[Admin] Deposit ${id} REJECTED — user ${deposit.user_id}`);
+    res.json({ ok: true, depositId: id });
+  } catch (err) {
+    console.error('[admin/manual-deposits/reject]', err);
+    res.status(500).json({ error: 'Failed to reject deposit' });
+  }
+});
+
+// ── GET /api/admin/manual-withdrawals ────────────────────────────────────
+router.get('/manual-withdrawals', async (req, res) => {
+  try {
+    const status = req.query.status || 'pending';
+    const withdrawals = await manualWithdrawals.listAll(status, 100);
+    res.json({ withdrawals });
+  } catch (err) {
+    console.error('[admin/manual-withdrawals]', err);
+    res.status(500).json({ error: 'Failed to load withdrawals' });
+  }
+});
+
+// ── POST /api/admin/manual-withdrawals/:id/approve ───────────────────────
+router.post('/manual-withdrawals/:id/approve', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { note } = req.body;
+
+    const withdrawal = await manualWithdrawals.findById(id);
+    if (!withdrawal) return res.status(404).json({ error: 'Withdrawal not found' });
+    if (withdrawal.status !== 'pending') return res.status(409).json({ error: 'Withdrawal already processed' });
+
+    await manualWithdrawals.approve(id, req.userId, note);
+
+    console.info(`[Admin] Withdrawal ${id} APPROVED — user ${withdrawal.user_id}`);
+    res.json({ ok: true, withdrawalId: id });
+  } catch (err) {
+    console.error('[admin/manual-withdrawals/approve]', err);
+    res.status(500).json({ error: 'Failed to approve withdrawal' });
+  }
+});
+
+// ── POST /api/admin/manual-withdrawals/:id/complete ──────────────────────
+router.post('/manual-withdrawals/:id/complete', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { note } = req.body;
+
+    const withdrawal = await manualWithdrawals.findById(id);
+    if (!withdrawal) return res.status(404).json({ error: 'Withdrawal not found' });
+    if (withdrawal.status !== 'approved') return res.status(409).json({ error: 'Withdrawal must be approved first' });
+
+    await manualWithdrawals.complete(id, req.userId, note);
+
+    // Update the pending transaction to success
+    const { data: txs } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('user_id', withdrawal.user_id)
+      .eq('type', 'withdraw')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (txs && txs[0]) {
+      await supabase.from('transactions').update({ status: 'success' }).eq('id', txs[0].id);
+    }
+
+    console.info(`[Admin] Withdrawal ${id} COMPLETED — user ${withdrawal.user_id}`);
+    res.json({ ok: true, withdrawalId: id });
+  } catch (err) {
+    console.error('[admin/manual-withdrawals/complete]', err);
+    res.status(500).json({ error: 'Failed to complete withdrawal' });
+  }
+});
+
+// ── POST /api/admin/manual-withdrawals/:id/reject ────────────────────────
+router.post('/manual-withdrawals/:id/reject', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { note } = req.body;
+
+    const withdrawal = await manualWithdrawals.findById(id);
+    if (!withdrawal) return res.status(404).json({ error: 'Withdrawal not found' });
+    if (!['pending', 'approved'].includes(withdrawal.status)) {
+      return res.status(409).json({ error: 'Withdrawal already finalized' });
+    }
+
+    await manualWithdrawals.reject(id, req.userId, note);
+
+    // Refund user balance
+    await wallets.credit(withdrawal.user_id, withdrawal.amount);
+
+    await transactions.create({
+      user_id: withdrawal.user_id,
+      type: 'refund',
+      amount: withdrawal.amount,
+      status: 'success',
+      description: `Refund penarikan ditolak admin: ${note || ''}`,
+    });
+
+    console.info(`[Admin] Withdrawal ${id} REJECTED + REFUNDED — user ${withdrawal.user_id}`);
+    res.json({ ok: true, withdrawalId: id, refunded: withdrawal.amount });
+  } catch (err) {
+    console.error('[admin/manual-withdrawals/reject]', err);
+    res.status(500).json({ error: 'Failed to reject withdrawal' });
   }
 });
 
