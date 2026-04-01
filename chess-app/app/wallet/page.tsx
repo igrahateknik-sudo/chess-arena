@@ -54,6 +54,7 @@ export default function WalletPage() {
   // Deposit state
   const [depositStep, setDepositStep] = useState<DepositStep>('choose');
   const [depositAmount, setDepositAmount] = useState<number | null>(null);
+  const [customAmountStr, setCustomAmountStr] = useState('');
   const [currentDeposit, setCurrentDeposit] = useState<ManualDeposit | null>(null);
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState('');
@@ -115,6 +116,7 @@ export default function WalletPage() {
     setModal('deposit');
     setDepositStep('choose');
     setDepositAmount(null);
+    setCustomAmountStr('');
     setCurrentDeposit(null);
     setProofFile(null);
     setProofPreview('');
@@ -495,9 +497,9 @@ export default function WalletPage() {
                       <label className="text-sm font-medium text-[var(--text-primary)] mb-3 block">Pilih Nominal Deposit</label>
                       <div className="grid grid-cols-3 gap-2">
                         {PRESET_AMOUNTS.map(a => (
-                          <button key={a} onClick={() => setDepositAmount(a === depositAmount ? null : a)}
+                          <button key={a} onClick={() => { setDepositAmount(a === depositAmount && !customAmountStr ? null : a); setCustomAmountStr(''); }}
                             className={`py-3 rounded-xl text-sm font-semibold transition-all border
-                              ${depositAmount === a
+                              ${depositAmount === a && !customAmountStr
                                 ? 'bg-sky-500 text-white border-sky-400'
                                 : 'bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:bg-[var(--border)] border-transparent'}`}>
                             {formatIDR(a)}
@@ -505,10 +507,33 @@ export default function WalletPage() {
                         ))}
                       </div>
                     </div>
+                    <div>
+                      <label className="text-xs text-[var(--text-muted)] mb-1.5 block">Atau masukkan nominal lain (min. Rp 25.000)</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[var(--text-muted)]">Rp</span>
+                        <input
+                          type="number"
+                          min={25000}
+                          step={1000}
+                          placeholder="0"
+                          value={customAmountStr}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setCustomAmountStr(val);
+                            const num = parseInt(val);
+                            setDepositAmount(num > 0 ? num : null);
+                          }}
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-sky-500 transition-colors"
+                        />
+                      </div>
+                      {customAmountStr && parseInt(customAmountStr) < 25000 && (
+                        <p className="text-xs text-red-400 mt-1">Minimum deposit Rp 25.000</p>
+                      )}
+                    </div>
                     <div className="p-3 bg-sky-500/10 rounded-xl border border-sky-500/20 text-xs text-sky-400">
                       Kode unik 3 digit akan ditambahkan ke nominal transfer untuk identifikasi pembayaran kamu.
                     </div>
-                    <button onClick={handleCreateDeposit} disabled={!depositAmount || depositing}
+                    <button onClick={handleCreateDeposit} disabled={!depositAmount || (!!customAmountStr && parseInt(customAmountStr) < 25000) || depositing}
                       className="w-full py-3 bg-sky-500 text-white rounded-xl font-semibold disabled:opacity-40 hover:bg-sky-600 transition-colors flex items-center justify-center gap-2">
                       {depositing ? <><Loader2 className="w-4 h-4 animate-spin" />Membuat...</> : `Lanjut — ${depositAmount ? formatIDR(depositAmount) : 'Pilih nominal'}`}
                     </button>

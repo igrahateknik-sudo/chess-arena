@@ -164,8 +164,8 @@ router.get('/bank-info', (req, res) => {
 router.post('/manual-deposit', requireAuth, async (req, res) => {
   try {
     const { amount } = req.body;
-    if (!PRESET_AMOUNTS.includes(Number(amount))) {
-      return res.status(400).json({ error: 'Nominal tidak valid. Pilih dari: ' + PRESET_AMOUNTS.join(', ') });
+    if (!amount || Number(amount) < 25000) {
+      return res.status(400).json({ error: 'Minimum deposit Rp 25.000' });
     }
 
     // Block if user has a pending deposit already (avoid duplicate)
