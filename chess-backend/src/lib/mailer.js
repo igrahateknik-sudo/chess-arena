@@ -246,4 +246,125 @@ async function sendPasswordResetEmail(email, username, token) {
   });
 }
 
-module.exports = { sendVerificationEmail, sendPasswordResetEmail };
+/**
+ * Kirim email notifikasi deposit disetujui.
+ */
+async function sendDepositApprovedEmail(email, username, amount) {
+  const amountFormatted = `Rp ${Number(amount).toLocaleString('id-ID')}`;
+  const walletUrl = `${BASE_URL}/wallet`;
+  const html = `
+    <!DOCTYPE html>
+    <html lang="id">
+    <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="margin:0; padding:0; background:#0a0f1e; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0f1e; padding:40px 16px;">
+        <tr><td align="center">
+          <table width="100%" style="max-width:520px; background:#0f172a; border-radius:16px; border:1px solid #1e293b; overflow:hidden;">
+            <tr>
+              <td style="background:linear-gradient(135deg,#10b981,#059669); padding:32px; text-align:center;">
+                <div style="font-size:36px; margin-bottom:8px;">♟</div>
+                <h1 style="margin:0; color:#ffffff; font-size:24px; font-weight:900;">Chess Arena</h1>
+                <p style="margin:4px 0 0; color:rgba(255,255,255,0.8); font-size:13px;">Platform Catur Kompetitif</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px 32px 24px;">
+                <h2 style="margin:0 0 12px; color:#f1f5f9; font-size:20px; font-weight:700;">✅ Deposit Berhasil Dikreditkan!</h2>
+                <p style="margin:0 0 20px; color:#94a3b8; font-size:15px; line-height:1.7;">
+                  Halo <strong style="color:#e2e8f0;">${username}</strong>,<br>
+                  Deposit kamu sebesar <strong style="color:#10b981;">${amountFormatted}</strong> telah diverifikasi dan berhasil dikreditkan ke saldo wallet kamu.
+                </p>
+                <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+                  <tr>
+                    <td style="border-radius:10px; background:linear-gradient(135deg,#10b981,#059669);">
+                      <a href="${walletUrl}" style="display:inline-block; padding:14px 32px; color:#ffffff; text-decoration:none; font-weight:700; font-size:15px; border-radius:10px;">
+                        💰 Lihat Saldo
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0; color:#64748b; font-size:13px; line-height:1.5;">Saldo sudah bisa digunakan untuk bermain dan mengikuti turnamen.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 32px 28px; border-top:1px solid #1e293b;">
+                <p style="margin:0; color:#475569; font-size:12px;">© 2025 Chess Arena. Semua hak dilindungi.</p>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+  `;
+  await sendMail({
+    to: email,
+    subject: `Deposit ${amountFormatted} berhasil dikreditkan — Chess Arena`,
+    html,
+    text: `Halo ${username},\n\nDeposit kamu sebesar ${amountFormatted} telah disetujui dan dikreditkan ke saldo wallet kamu.\n\nLihat saldo: ${walletUrl}`,
+  });
+}
+
+/**
+ * Kirim email notifikasi deposit ditolak.
+ */
+async function sendDepositRejectedEmail(email, username, amount, note) {
+  const amountFormatted = `Rp ${Number(amount).toLocaleString('id-ID')}`;
+  const walletUrl = `${BASE_URL}/wallet`;
+  const html = `
+    <!DOCTYPE html>
+    <html lang="id">
+    <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="margin:0; padding:0; background:#0a0f1e; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0f1e; padding:40px 16px;">
+        <tr><td align="center">
+          <table width="100%" style="max-width:520px; background:#0f172a; border-radius:16px; border:1px solid #1e293b; overflow:hidden;">
+            <tr>
+              <td style="background:linear-gradient(135deg,#ef4444,#dc2626); padding:32px; text-align:center;">
+                <div style="font-size:36px; margin-bottom:8px;">♟</div>
+                <h1 style="margin:0; color:#ffffff; font-size:24px; font-weight:900;">Chess Arena</h1>
+                <p style="margin:4px 0 0; color:rgba(255,255,255,0.8); font-size:13px;">Platform Catur Kompetitif</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px 32px 24px;">
+                <h2 style="margin:0 0 12px; color:#f1f5f9; font-size:20px; font-weight:700;">❌ Deposit Tidak Dapat Diproses</h2>
+                <p style="margin:0 0 16px; color:#94a3b8; font-size:15px; line-height:1.7;">
+                  Halo <strong style="color:#e2e8f0;">${username}</strong>,<br>
+                  Deposit kamu sebesar <strong style="color:#f87171;">${amountFormatted}</strong> tidak dapat kami verifikasi.
+                </p>
+                ${note ? `<div style="background:#1e293b; border-left:3px solid #ef4444; padding:12px 16px; border-radius:4px; margin:0 0 20px;">
+                  <p style="margin:0; color:#94a3b8; font-size:13px; line-height:1.5;"><strong style="color:#f1f5f9;">Alasan:</strong> ${note}</p>
+                </div>` : ''}
+                <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+                  <tr>
+                    <td style="border-radius:10px; background:linear-gradient(135deg,#0ea5e9,#3b82f6);">
+                      <a href="${walletUrl}" style="display:inline-block; padding:14px 32px; color:#ffffff; text-decoration:none; font-weight:700; font-size:15px; border-radius:10px;">
+                        🔄 Coba Deposit Lagi
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0; color:#64748b; font-size:13px;">Pastikan nominal transfer sesuai (termasuk kode unik 3 digit) dan bukti transfer jelas.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 32px 28px; border-top:1px solid #1e293b;">
+                <p style="margin:0; color:#475569; font-size:12px;">© 2025 Chess Arena. Semua hak dilindungi.</p>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+  `;
+  await sendMail({
+    to: email,
+    subject: `Deposit ${amountFormatted} tidak dapat diproses — Chess Arena`,
+    html,
+    text: `Halo ${username},\n\nDeposit kamu sebesar ${amountFormatted} tidak dapat kami verifikasi.${note ? `\n\nAlasan: ${note}` : ''}\n\nCoba deposit lagi: ${walletUrl}`,
+  });
+}
+
+module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendDepositApprovedEmail, sendDepositRejectedEmail };

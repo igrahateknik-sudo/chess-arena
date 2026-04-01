@@ -22,6 +22,7 @@ const { requireAdmin } = require('../middleware/adminAuth');
 const { supabase, wallets, transactions, manualDeposits, manualWithdrawals } = require('../lib/db');
 const { logAnticheatAction } = require('../lib/auditLog');
 const { checkQueueHealth }   = require('../lib/monitor');
+const { sendDepositApprovedEmail, sendDepositRejectedEmail } = require('../lib/mailer');
 
 // Semua route require admin
 router.use(requireAdmin);
@@ -465,6 +466,12 @@ router.post('/manual-deposits/:id/approve', async (req, res) => {
       description: `Deposit manual disetujui admin (Rp ${deposit.transfer_amount})`,
     });
 
+    // Send email notification (fire-and-forget)
+    if (deposit.users?.email) {
+      sendDepositApprovedEmail(deposit.users.email, deposit.users.username, deposit.amount)
+        .catch(e => console.error('[mailer] deposit approved email failed:', e));
+    }
+
     console.info(`[Admin] Deposit ${id} APPROVED — user ${deposit.user_id}, amount ${deposit.amount}`);
     res.json({ ok: true, depositId: id, userId: deposit.user_id, amount: deposit.amount });
   } catch (err) {
@@ -484,6 +491,12 @@ router.post('/manual-deposits/:id/reject', async (req, res) => {
     if (deposit.status !== 'pending') return res.status(409).json({ error: 'Deposit already processed' });
 
     await manualDeposits.reject(id, req.userId, note);
+
+    // Send email notification (fire-and-forget)
+    if (deposit.users?.email) {
+      sendDepositRejectedEmail(deposit.users.email, deposit.users.username, deposit.amount, note)
+        .catch(e => console.error('[mailer] deposit rejected email failed:', e));
+    }
 
     console.info(`[Admin] Deposit ${id} REJECTED — user ${deposit.user_id}`);
     res.json({ ok: true, depositId: id });

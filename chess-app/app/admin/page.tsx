@@ -309,6 +309,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!mounted) return;
     if (!user || !token) { router.replace('/login'); return; }
+    if (!user.is_admin) { router.replace('/dashboard'); return; }
     loadStats();
     loadTab('overview');
   }, [mounted, user, token, router, loadStats, loadTab]);
