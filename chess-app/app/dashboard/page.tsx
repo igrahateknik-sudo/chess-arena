@@ -159,7 +159,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-4">
             <div className="relative">
               <div className="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-sky-400/50 shadow-lg shadow-sky-500/20">
-                <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
+                <img src={user.avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${user.username}`} alt={user.username} className="w-full h-full object-cover" />
               </div>
               <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg"
                 style={{ background: `linear-gradient(135deg, ${rankColor}, ${rankColor}aa)` }}>
@@ -395,7 +395,7 @@ export default function DashboardPage() {
                     {idx < 3 ? ['🥇', '🥈', '🥉'][idx] : idx + 1}
                   </div>
                   <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-[var(--bg-hover)]">
-                    <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
+                    <img src={entry.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${entry.username}`} alt="" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">

@@ -127,7 +127,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           <div className={`flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-hover)] transition-colors cursor-pointer ${!sidebarOpen ? '' : ''}`}>
             <div className="relative flex-shrink-0">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center overflow-hidden">
-                <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
+                <img src={user.avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${user.username}`} alt={user.username} className="w-full h-full object-cover" />
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[var(--bg-card)]" />
             </div>

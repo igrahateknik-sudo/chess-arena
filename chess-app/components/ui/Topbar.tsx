@@ -181,7 +181,7 @@ export default function Topbar({ onMenuClick, title }: TopbarProps) {
           <button onClick={() => { setShowProfile((v) => !v); setShowNotifs(false); }}
             className="flex items-center gap-2 hover:bg-[var(--bg-hover)] rounded-xl p-1.5 transition-colors">
             <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-sky-400 to-blue-600 flex-shrink-0">
-              <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
+              <img src={user.avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${user.username}`} alt={user.username} className="w-full h-full object-cover" />
             </div>
             <div className="hidden md:block text-left">
               <div className="text-xs font-semibold text-[var(--text-primary)] leading-none">{user.username}</div>
@@ -196,7 +196,7 @@ export default function Topbar({ onMenuClick, title }: TopbarProps) {
                 <div className="p-4 border-b border-[var(--border)]">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl overflow-hidden">
-                      <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                      <img src={user.avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${user.username}`} alt="" className="w-full h-full object-cover" />
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
