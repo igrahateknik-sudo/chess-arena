@@ -246,6 +246,7 @@ type Tab = 'overview' | 'flagged' | 'collusion' | 'multiAccount' | 'appeals' | '
 export default function AdminPage() {
   const router                 = useRouter();
   const { user, token }        = useAppStore();
+  const [mounted, setMounted]  = useState(false);
   const [tab, setTab]          = useState<Tab>('overview');
   const [loading, setLoading]  = useState(true);
   const [stats, setStats]      = useState<AdminStats | null>(null);
@@ -302,14 +303,18 @@ export default function AdminPage() {
     }
   }, [token, loadStats, router]);
 
+  // Wait for Zustand persist to hydrate before checking auth
+  useEffect(() => { setMounted(true); }, []);
+
   useEffect(() => {
-    if (!user || !token) { router.replace('/'); return; }
+    if (!mounted) return;
+    if (!user || !token) { router.replace('/login'); return; }
     loadStats();
     loadTab('overview');
-  }, [user, token, router, loadStats, loadTab]);
+  }, [mounted, user, token, router, loadStats, loadTab]);
 
-  useEffect(() => { loadTab(tab); }, [tab, loadTab]);
-  useEffect(() => { if (tab === 'payments') loadTab('payments'); }, [paymentStatusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (mounted) loadTab(tab); }, [tab, loadTab, mounted]);
+  useEffect(() => { if (tab === 'payments' && mounted) loadTab('payments'); }, [paymentStatusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── User Review Actions ────────────────────────────────────────────────
   async function handleUserAction(userId: string, action: string, newTrust?: number) {
@@ -452,6 +457,9 @@ export default function AdminPage() {
     { key: 'appeals',      label: 'Appeals',        icon: <AlertTriangle size={15} />, badge: stats?.pendingAppeals },
     { key: 'events',       label: 'Security Log',   icon: <Activity size={15} /> },
   ];
+
+  // Show nothing until Zustand has hydrated — prevents flash redirect
+  if (!mounted) return null;
 
   return (
     <AppLayout>
