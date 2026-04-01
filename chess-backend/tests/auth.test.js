@@ -87,15 +87,15 @@ beforeAll(() => {
 
 describe('POST /api/auth/register', () => {
 
-  it('returns 201 with token on successful registration', async () => {
+  it('returns 201 with requiresVerification on successful registration', async () => {
     const res = await request(app)
       .post('/api/auth/register')
       .send({ username: 'newuser', email: 'new@example.com', password: 'password123' });
 
     expect(res.status).toBe(201);
-    expect(res.body).toHaveProperty('token');
-    expect(res.body).toHaveProperty('user');
-    expect(res.body.user).not.toHaveProperty('password_hash');
+    expect(res.body).toHaveProperty('ok', true);
+    expect(res.body).toHaveProperty('requiresVerification', true);
+    expect(res.body).toHaveProperty('email', 'new@example.com');
   });
 
   it('returns 400 for missing fields', async () => {

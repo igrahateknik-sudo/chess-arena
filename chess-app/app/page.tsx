@@ -74,12 +74,12 @@ export default function LandingPage() {
     setEmailNotVerified(false);
     setResendSuccess('');
     try {
-      let data;
       if (mode === 'register') {
-        data = await api.auth.register({ username: form.username, email: form.email, password: form.password });
-      } else {
-        data = await api.auth.login({ email: form.email, password: form.password });
+        await api.auth.register({ username: form.username, email: form.email, password: form.password });
+        router.push(`/verify-email/pending?email=${encodeURIComponent(form.email)}`);
+        return;
       }
+      const data = await api.auth.login({ email: form.email, password: form.password });
       const u = data.user;
       login({
         id: u.id,

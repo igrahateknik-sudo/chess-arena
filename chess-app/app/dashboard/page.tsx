@@ -14,6 +14,7 @@ import {
 import AppLayout from '@/components/ui/AppLayout';
 import { useAppStore } from '@/lib/store';
 import { api } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
 const FADE = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
 const STAGGER = { show: { transition: { staggerChildren: 0.07 } } };
@@ -49,6 +50,7 @@ interface LeaderboardEntry {
 
 export default function DashboardPage() {
   const { user, token } = useAppStore();
+  const router = useRouter();
   const [recentGames, setRecentGames] = useState<GameHistoryEntry[]>([]);
   const [eloChart, setEloChart] = useState<EloPoint[]>([]);
   const [todayEloChange, setTodayEloChange] = useState<number | null>(null);
@@ -57,6 +59,13 @@ export default function DashboardPage() {
   const [loadingChart, setLoadingChart] = useState(true);
   const [loadingGames, setLoadingGames] = useState(true);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
+
+  // Block unverified registered users — guests (rank === 'Guest') are allowed through
+  useEffect(() => {
+    if (user && !user.verified && user.rank !== 'Guest') {
+      router.replace(`/verify-email/pending?email=${encodeURIComponent(user.email)}`);
+    }
+  }, [user, router]);
 
   useEffect(() => {
     if (!token || !user) return;

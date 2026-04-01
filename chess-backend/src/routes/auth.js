@@ -76,7 +76,7 @@ router.post('/register', registerRateLimit, validate(schemas.register), async (r
     if (existing) return res.status(409).json({ error: 'Username already taken' });
 
     const existingEmail = await users.findByEmail(email);
-    if (existingEmail) return res.status(409).json({ error: 'Email already registered' });
+    if (existingEmail) return res.status(409).json({ error: 'Email sudah terdaftar' });
 
     const passwordHash = await bcrypt.hash(password, 12);
 
@@ -91,11 +91,11 @@ router.post('/register', registerRateLimit, validate(schemas.register), async (r
       console.error('[auth/register] Email send failed:', err.message)
     );
 
-    const token = signToken({ userId: user.id });
     res.status(201).json({
-      token,
-      user: users.public(user),
-      message: 'Registration successful. Please check your email to verify your account.',
+      ok: true,
+      requiresVerification: true,
+      email,
+      message: 'Akun berhasil dibuat. Cek email kamu untuk verifikasi.',
     });
   } catch (err) {
     console.error('[auth/register]', err);
