@@ -37,8 +37,9 @@ export default function ChessGame({
 
   // Keep chess-sounds module in sync with store preference
   useEffect(() => { setChessSoundsEnabled(soundEnabled !== false); }, [soundEnabled]);
+
   const [game, setGame] = useState(new Chess());
-  const [fen, setFen] = useState(new Chess().fen());
+  const [fen, setFen] = useState(new Chess().fen()); // live game FEN (always current position)
   const [moveFrom, setMoveFrom] = useState<Square | null>(null);
   const [optionSquares, setOptionSquares] = useState<Record<string, object>>({});
   const [lastMove, setLastMove] = useState<{ from: Square; to: Square } | null>(null);
@@ -56,12 +57,32 @@ export default function ChessGame({
     { from: 'opponent', text: 'Good luck!', time: '0:00' },
     { from: 'opponent', text: 'Nice move!', time: '1:23' },
   ]);
+
+  // --- History navigation state ---
+  // reviewFen: null = watching live game; string = reviewing a historical position
+  const [reviewFen, setReviewFen] = useState<string | null>(null);
+  // fenHistoryRef tracks all FENs in order (starting position + one per move)
+  const fenHistoryRef = useRef<string[]>([new Chess().fen()]);
+  // viewIndexRef tracks which index of fenHistoryRef we're currently viewing
+  const viewIndexRef = useRef<number>(0);
+
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const moveHistoryRef = useRef<HTMLDivElement>(null);
 
   const theme = BOARD_THEMES[boardTheme as keyof typeof BOARD_THEMES] || BOARD_THEMES.classic;
   const isAI = mode.startsWith('ai-');
   const aiLevel = mode === 'ai-easy' ? 'easy' : mode === 'ai-medium' ? 'medium' : 'hard';
+
+  // The FEN displayed on the board — historical if reviewing, live otherwise
+  const displayFen = reviewFen ?? fen;
+  const isReviewing = reviewFen !== null;
+
+  // Push a new FEN to history and jump to it (used after every move)
+  function pushFenHistory(newFen: string) {
+    fenHistoryRef.current = [...fenHistoryRef.current, newFen];
+    viewIndexRef.current = fenHistoryRef.current.length - 1;
+    setReviewFen(null); // always return to live view on new move
+  }
 
   // Timer
   useEffect(() => {
@@ -86,31 +107,52 @@ export default function ChessGame({
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [game, gameStatus]);
 
-  // AI move
+  // AI move effect
+  // Fires when fen changes (i.e. after every move) or when review state changes.
+  // Uses fen captured at effect-setup time to avoid stale closure issues.
   useEffect(() => {
     if (!isAI || gameStatus !== 'active') return;
+    if (isReviewing) return; // never fire AI while player is reviewing history
+
     const aiColor = playerColor === 'white' ? 'b' : 'w';
     if (game.turn() !== aiColor) return;
 
     setIsAIThinking(true);
-    const delay = aiLevel === 'easy' ? 400 : aiLevel === 'medium' ? 800 : 1200;
+    const baseDelay = aiLevel === 'easy' ? 400 : aiLevel === 'medium' ? 800 : 1200;
+    // Add ±100ms jitter so AI feels more natural
+    const jitter = Math.floor(Math.random() * 201) - 100;
+    const delay = Math.max(200, baseDelay + jitter);
+
+    // Capture current FEN at effect-setup time (same as `game.fen()` since they're always synced)
+    const currentFen = fen;
 
     const timer = setTimeout(() => {
-      const move = getBestMove(game.fen(), aiLevel);
+      let move = getBestMove(currentFen, aiLevel);
+
+      // Fallback: if AI returns null (e.g. edge case in minimax), pick first legal move
+      if (!move) {
+        const fallbackChess = new Chess(currentFen);
+        const legalMoves = fallbackChess.moves({ verbose: true });
+        if (legalMoves.length > 0) {
+          move = legalMoves[Math.floor(Math.random() * legalMoves.length)].san;
+        }
+      }
+
       if (move) {
-        const gameCopy = new Chess(game.fen());
+        const gameCopy = new Chess(currentFen);
         const result = gameCopy.move(move);
         if (result) {
           const moveRecord: MoveRecord = {
             san: result.san, from: result.from, to: result.to, piece: result.piece,
-            captured: result.captured, promotion: result.promotion, timestamp: Date.now(), timeLeft: blackTime
+            captured: result.captured, promotion: result.promotion, timestamp: Date.now(),
+            timeLeft: blackTime,
           };
           setMoveHistory(h => [...h, moveRecord]);
           setHistoryIndex(prev => prev + 1);
           setLastMove({ from: result.from as Square, to: result.to as Square });
+          pushFenHistory(gameCopy.fen());
           setGame(gameCopy);
           setFen(gameCopy.fen());
-          // Play sound for AI move
           playChessSound(soundForMove(result.flags, gameCopy.inCheck(), !!result.captured));
           if (timeControl.increment > 0) {
             if (result.color === 'w') setWhiteTime(t => t + timeControl.increment);
@@ -122,7 +164,7 @@ export default function ChessGame({
       setIsAIThinking(false);
     }, delay);
     return () => clearTimeout(timer);
-  }, [fen, isAI, gameStatus]);
+  }, [fen, isAI, gameStatus, isReviewing]); // isReviewing must be a dep so AI stops when reviewing
 
   // Auto-scroll move history
   useEffect(() => {
@@ -171,7 +213,8 @@ export default function ChessGame({
   }
 
   function onSquareClick(square: Square) {
-    if (gameStatus !== 'active' || isAIThinking) return;
+    // Block moves while reviewing history or AI is thinking
+    if (gameStatus !== 'active' || isAIThinking || isReviewing) return;
     if (isAI && game.turn() !== (playerColor === 'white' ? 'w' : 'b')) return;
 
     if (!moveFrom) {
@@ -204,7 +247,7 @@ export default function ChessGame({
     const moveRecord: MoveRecord = {
       san: move.san, from: move.from, to: move.to, piece: move.piece,
       captured: move.captured, promotion: move.promotion, timestamp: Date.now(),
-      timeLeft: game.turn() === 'w' ? whiteTime : blackTime
+      timeLeft: game.turn() === 'w' ? whiteTime : blackTime,
     };
 
     setMoveHistory(h => [...h, moveRecord]);
@@ -213,7 +256,6 @@ export default function ChessGame({
     setMoveFrom(null);
     setOptionSquares({});
 
-    // Play sound for this move
     playChessSound(soundForMove(move.flags, gameCopy.inCheck(), !!move.captured));
 
     if (timeControl.increment > 0) {
@@ -221,13 +263,15 @@ export default function ChessGame({
       else setBlackTime(t => t + timeControl.increment);
     }
 
+    pushFenHistory(gameCopy.fen());
     setGame(gameCopy);
     setFen(gameCopy.fen());
     checkGameEnd(gameCopy);
   }
 
   function onDrop(sourceSquare: Square, targetSquare: Square) {
-    if (gameStatus !== 'active' || isAIThinking) return false;
+    // Block moves while reviewing history or AI is thinking
+    if (gameStatus !== 'active' || isAIThinking || isReviewing) return false;
     if (isAI && game.turn() !== (playerColor === 'white' ? 'w' : 'b')) return false;
 
     const gameCopy = new Chess(game.fen());
@@ -238,7 +282,7 @@ export default function ChessGame({
     const moveRecord: MoveRecord = {
       san: move.san, from: move.from, to: move.to, piece: move.piece,
       captured: move.captured, promotion: move.promotion, timestamp: Date.now(),
-      timeLeft: game.turn() === 'w' ? whiteTime : blackTime
+      timeLeft: game.turn() === 'w' ? whiteTime : blackTime,
     };
     setMoveHistory(h => [...h, moveRecord]);
     setHistoryIndex(prev => prev + 1);
@@ -246,26 +290,72 @@ export default function ChessGame({
     setMoveFrom(null);
     setOptionSquares({});
 
-    // Play sound for this move
     playChessSound(soundForMove(move.flags, gameCopy.inCheck(), !!move.captured));
 
     if (timeControl.increment > 0) {
       if (move.color === 'w') setWhiteTime(t => t + timeControl.increment);
       else setBlackTime(t => t + timeControl.increment);
     }
+    pushFenHistory(gameCopy.fen());
     setGame(gameCopy);
     setFen(gameCopy.fen());
     checkGameEnd(gameCopy);
     return true;
   }
 
+  // Navigation helpers using fenHistoryRef
+  function navStart() {
+    if (fenHistoryRef.current.length === 0) return;
+    viewIndexRef.current = 0;
+    setReviewFen(fenHistoryRef.current[0]);
+  }
+  function navPrev() {
+    const newIdx = Math.max(0, viewIndexRef.current - 1);
+    viewIndexRef.current = newIdx;
+    if (newIdx === fenHistoryRef.current.length - 1) {
+      setReviewFen(null);
+    } else {
+      setReviewFen(fenHistoryRef.current[newIdx]);
+    }
+  }
+  function navNext() {
+    const newIdx = Math.min(fenHistoryRef.current.length - 1, viewIndexRef.current + 1);
+    viewIndexRef.current = newIdx;
+    if (newIdx === fenHistoryRef.current.length - 1) {
+      setReviewFen(null); // arrived at live position
+    } else {
+      setReviewFen(fenHistoryRef.current[newIdx]);
+    }
+  }
+  function navEnd() {
+    viewIndexRef.current = fenHistoryRef.current.length - 1;
+    setReviewFen(null); // back to live
+  }
+
+  function handleRematch() {
+    const newGame = new Chess();
+    setGame(newGame);
+    setFen(newGame.fen());
+    setReviewFen(null);
+    fenHistoryRef.current = [newGame.fen()];
+    viewIndexRef.current = 0;
+    setMoveHistory([]);
+    setHistoryIndex(-1);
+    setLastMove(null);
+    setOptionSquares({});
+    setGameStatus('active');
+    setWinner(null);
+    setWhiteTime(timeControl.initial);
+    setBlackTime(timeControl.initial);
+  }
+
   const customSquareStyles: Record<string, object> = {
-    ...(showLegalMoves ? optionSquares : {}),
+    ...(showLegalMoves && !isReviewing ? optionSquares : {}),
     ...(lastMove ? {
       [lastMove.from]: { background: 'rgba(255, 213, 0, 0.25)' },
       [lastMove.to]: { background: 'rgba(255, 213, 0, 0.4)' },
     } : {}),
-    ...(game.inCheck() && gameStatus === 'active' ? (() => {
+    ...(game.inCheck() && gameStatus === 'active' && !isReviewing ? (() => {
       const pieces = game.board().flat();
       const king = pieces.find(p => p?.type === 'k' && p.color === game.turn());
       if (king) return { [king.square]: { background: 'rgba(239,68,68,0.5)' } };
@@ -297,25 +387,26 @@ export default function ChessGame({
           elo={boardFlipped ? whiteElo : blackElo}
           avatar={boardFlipped ? whiteAvatar : blackAvatar}
           time={boardFlipped ? whiteTime : blackTime}
-          isActive={boardFlipped ? isWhiteTurn : !isWhiteTurn}
+          isActive={!isReviewing && (boardFlipped ? isWhiteTurn : !isWhiteTurn)}
           color={boardFlipped ? 'white' : 'black'}
-          isThinking={isAI && isAIThinking && (boardFlipped ? game.turn() === 'w' : game.turn() === 'b')}
+          isThinking={isAI && isAIThinking && !isReviewing && (boardFlipped ? game.turn() === 'w' : game.turn() === 'b')}
         />
 
         {/* Board */}
         <div className="chess-board-wrapper relative">
           {gameStatus !== 'active' && (
             <GameEndOverlay status={gameStatus} winner={winner} stakes={stakes}
-              playerColor={playerColor} onRematch={() => {
-                setGame(new Chess()); setFen(new Chess().fen());
-                setMoveHistory([]); setHistoryIndex(-1); setLastMove(null);
-                setOptionSquares({}); setGameStatus('active'); setWinner(null);
-                setWhiteTime(timeControl.initial); setBlackTime(timeControl.initial);
-              }} />
+              playerColor={playerColor} onRematch={handleRematch} />
+          )}
+          {/* Review mode indicator */}
+          {isReviewing && (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-amber-500/90 text-white text-xs font-semibold px-3 py-1 rounded-full pointer-events-none">
+              Reviewing — click End to return to live
+            </div>
           )}
           <Chessboard
             id="main-board"
-            position={fen}
+            position={displayFen}
             onSquareClick={onSquareClick}
             onPieceDrop={onDrop}
             boardOrientation={boardFlipped ? 'black' : 'white'}
@@ -329,6 +420,7 @@ export default function ChessGame({
             animationDuration={animationsEnabled ? 200 : 0}
             showBoardNotation={true}
             boardWidth={Math.min(480, typeof window !== 'undefined' ? window.innerWidth - 48 : 480)}
+            arePiecesDraggable={!isReviewing}
           />
         </div>
 
@@ -338,17 +430,17 @@ export default function ChessGame({
           elo={boardFlipped ? blackElo : whiteElo}
           avatar={boardFlipped ? blackAvatar : whiteAvatar}
           time={boardFlipped ? blackTime : whiteTime}
-          isActive={boardFlipped ? !isWhiteTurn : isWhiteTurn}
+          isActive={!isReviewing && (boardFlipped ? !isWhiteTurn : isWhiteTurn)}
           color={boardFlipped ? 'black' : 'white'}
           isThinking={false}
         />
 
         {/* Controls */}
         <div className="flex items-center gap-2">
-          <ControlBtn icon={SkipBack} onClick={() => { setFen(new Chess().fen()); }} title="Start" />
-          <ControlBtn icon={ChevronLeft} onClick={() => {}} title="Previous" />
-          <ControlBtn icon={ChevronRight} onClick={() => {}} title="Next" />
-          <ControlBtn icon={SkipForward} onClick={() => setFen(game.fen())} title="End" />
+          <ControlBtn icon={SkipBack} onClick={navStart} title="Start" />
+          <ControlBtn icon={ChevronLeft} onClick={navPrev} title="Previous" />
+          <ControlBtn icon={ChevronRight} onClick={navNext} title="Next" />
+          <ControlBtn icon={SkipForward} onClick={navEnd} title="End" active={!isReviewing} />
           <div className="w-px h-6 bg-[var(--border)]" />
           <ControlBtn icon={RotateCcw} onClick={() => setBoardFlipped(f => !f)} title="Flip board" />
           <ControlBtn icon={Share2} onClick={() => {}} title="Share" />
@@ -388,7 +480,7 @@ export default function ChessGame({
               </span>
             </div>
           )}
-          {game.inCheck() && gameStatus === 'active' && (
+          {game.inCheck() && gameStatus === 'active' && !isReviewing && (
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }}
               className="mt-2 text-center text-sm font-bold text-red-400 bg-red-500/10 rounded-lg py-1.5 border border-red-500/20">
               ♚ CHECK!
@@ -410,12 +502,24 @@ export default function ChessGame({
                 <div key={i} className="flex items-center gap-1 text-sm">
                   <span className="w-8 text-[var(--text-muted)] font-mono text-xs flex-shrink-0">{i + 1}.</span>
                   {pair[0] && (
-                    <button className="flex-1 text-left px-2 py-1 rounded hover:bg-[var(--bg-hover)] font-mono font-medium text-[var(--text-primary)] transition-colors">
+                    <button
+                      onClick={() => {
+                        const idx = i * 2 + 1; // +1 because fenHistory[0] is starting pos
+                        viewIndexRef.current = idx;
+                        setReviewFen(fenHistoryRef.current[idx] ?? null);
+                      }}
+                      className="flex-1 text-left px-2 py-1 rounded hover:bg-[var(--bg-hover)] font-mono font-medium text-[var(--text-primary)] transition-colors">
                       {pair[0].san}
                     </button>
                   )}
                   {pair[1] ? (
-                    <button className="flex-1 text-left px-2 py-1 rounded hover:bg-[var(--bg-hover)] font-mono font-medium text-[var(--text-primary)] transition-colors">
+                    <button
+                      onClick={() => {
+                        const idx = i * 2 + 2;
+                        viewIndexRef.current = idx;
+                        setReviewFen(fenHistoryRef.current[idx] ?? null);
+                      }}
+                      className="flex-1 text-left px-2 py-1 rounded hover:bg-[var(--bg-hover)] font-mono font-medium text-[var(--text-primary)] transition-colors">
                       {pair[1].san}
                     </button>
                   ) : <div className="flex-1" />}

@@ -70,6 +70,19 @@ const ENFORCE_THRESHOLDS = {
 
 // ── Layer 1: Timing Analysis ───────────────────────────────────────────────
 
+/**
+ * Analyze move timings for a single player's moves.
+ *
+ * moveHistory is already pre-filtered to one color's moves only
+ * (e.g., all white moves or all black moves), so consecutive entries in the
+ * array are two turns apart in wall-clock time (opponent's think time is in
+ * between).
+ *
+ * We use timeLeft deltas when available — since the clock only ticks during
+ * the player's own turn, consecutive timeLeft values for the same player give
+ * accurate per-move think times without including the opponent's time.
+ * Falls back to wall-clock timestamps only if timeLeft is absent.
+ */
 function analyzeMoveTimings(moveHistory) {
   const flags = [];
   let suspicionScore = 0;
@@ -82,7 +95,13 @@ function analyzeMoveTimings(moveHistory) {
   for (let i = 1; i < moveHistory.length; i++) {
     const prev = moveHistory[i - 1];
     const curr = moveHistory[i];
-    if (prev?.timestamp && curr?.timestamp) {
+
+    // Prefer timeLeft delta (accurate per-player think time)
+    if (prev?.timeLeft !== undefined && curr?.timeLeft !== undefined && prev.timeLeft > 0) {
+      const dt = prev.timeLeft - curr.timeLeft; // seconds spent on this move
+      if (dt > 0 && dt < 300) moveTimes.push(dt);
+    } else if (prev?.timestamp && curr?.timestamp) {
+      // Fallback: wall-clock — inaccurate for per-color analysis but better than nothing
       const dt = (curr.timestamp - prev.timestamp) / 1000;
       if (dt > 0 && dt < 300) moveTimes.push(dt);
     }
@@ -240,8 +259,9 @@ async function detectEloAnomaly(userId, { playerElo, opponentElo, result }) {
  */
 async function runStockfishBackground(gameId, moveHistory, existingFlags, io) {
   try {
-    // Hanya jalankan jika sudah ada suspicious flag dari timing
-    if (existingFlags.length === 0) return;
+    // Run Stockfish when there are any pre-existing flags (timing, accuracy, or ELO),
+    // OR unconditionally on ~20% of games as a random spot-check for slow engine users.
+    if (existingFlags.length === 0 && Math.random() > 0.20) return;
 
     const sfResult = await runStockfishComparison(moveHistory, {
       maxSamples: 15,
