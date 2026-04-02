@@ -106,6 +106,37 @@ export default function OnlineGame({
   // Keep soundEnabled in sync with the chess-sounds module
   useEffect(() => { setChessSoundsEnabled(soundEnabled !== false); }, [soundEnabled]);
 
+  // ── [SECURITY] Tab-switching detection ───────────────────────────────────
+  // Detects when user hides the tab (possible engine assistance window).
+  // Reports cumulative hidden time to server via socket; server logs as security event.
+  useEffect(() => {
+    if (status !== 'active') return;
+
+    let hiddenSince: number | null = null;
+    let totalHiddenMs = 0;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        hiddenSince = Date.now();
+      } else {
+        if (hiddenSince !== null) {
+          const hiddenMs = Date.now() - hiddenSince;
+          totalHiddenMs += hiddenMs;
+          hiddenSince = null;
+          // Report tab switch to server — server logs as security event
+          socketRef.current?.emit('game:tab-hidden', {
+            gameId,
+            hiddenMs,
+            totalHiddenMs,
+          });
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [gameId, status]);
+
   // ── Start/restart local clock interpolation ───────────────────────────────
   const startClockInterpolation = useCallback((turn: 'w' | 'b') => {
     if (clockIntervalRef.current) clearInterval(clockIntervalRef.current);

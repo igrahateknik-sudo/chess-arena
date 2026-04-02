@@ -35,12 +35,25 @@ function extractIp(socket) {
 }
 
 /**
- * Buat fingerprint hash dari IP + User-Agent.
+ * Buat fingerprint hash dari IP + User-Agent + optional extra signals.
  * Privacy-safe: raw IP tidak pernah disimpan ke DB.
+ *
+ * Extra signals (dari socket handshake headers) memperkuat deteksi:
+ *  - Accept-Language  (language preference — varies by system locale)
+ *  - Accept-Encoding  (consistent per browser engine)
+ *  - sec-ch-ua        (Client Hints UA string — Chromium only, very precise)
+ *  - sec-ch-ua-platform (OS platform hint)
+ *
+ * Attacker yang ganti IP/UA tapi lupa ganti Accept-Language atau sec-ch-ua
+ * akan tetap menghasilkan fingerprint yang sama.
  */
-function buildFingerprintHash(ip, ua) {
-  // Kombinasikan IP + UA sebagai fingerprint device
-  return sha256(`${ip}|${ua}`);
+function buildFingerprintHash(ip, ua, extra = {}) {
+  const lang     = extra.acceptLanguage || '';
+  const encoding = extra.acceptEncoding || '';
+  const chUa     = extra.secChUa        || '';
+  const platform = extra.secChUaPlatform || '';
+  // Kombinasikan semua sinyal sebagai fingerprint device
+  return sha256(`${ip}|${ua}|${lang}|${encoding}|${chUa}|${platform}`);
 }
 
 // ── Core: Record & Detect ──────────────────────────────────────────────────
@@ -53,7 +66,15 @@ async function recordAndDetect(socket, userId, gameId) {
   const ip = extractIp(socket);
   const ua = socket.handshake.headers['user-agent'] || 'unknown';
 
-  const fingerprintHash = buildFingerprintHash(ip, ua);
+  // [SECURITY-BUG-FIX] Include extra browser signals for stronger fingerprinting
+  const extra = {
+    acceptLanguage:   socket.handshake.headers['accept-language']    || '',
+    acceptEncoding:   socket.handshake.headers['accept-encoding']    || '',
+    secChUa:          socket.handshake.headers['sec-ch-ua']          || '',
+    secChUaPlatform:  socket.handshake.headers['sec-ch-ua-platform'] || '',
+  };
+
+  const fingerprintHash = buildFingerprintHash(ip, ua, extra);
   const ipHash = sha256(ip);
   const uaHash = sha256(ua);
 

@@ -87,6 +87,12 @@ const DB_LOGGED_EVENTS = new Set([
   'UNAUTHORIZED_MOVE_ATTEMPT',
   'MULTI_ACCOUNT_DETECTED',
   'REALTIME_SUSPICIOUS',
+  // Tab switching detection
+  'TAB_HIDDEN_EXCESSIVE',
+  // Draw manipulation
+  'DRAW_SELF_ACCEPT_ATTEMPT',
+  // Disconnect abuse
+  'DISCONNECT_ABUSE_DETECTED',
 ]);
 
 function logSecurityEvent(eventType, details) {

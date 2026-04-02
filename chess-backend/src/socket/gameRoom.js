@@ -21,7 +21,7 @@ const { games, users, wallets, transactions, notifications, eloHistory } = requi
 const { calculateBothElo } = require('../lib/elo');
 const {
   analyzeGame, analyzeRealtime, enforceAnticheat,
-  detectEloAnomaly, runStockfishBackground,
+  detectEloAnomaly, runStockfishBackground, detectDisconnectAbuse,
 } = require('../lib/anticheat');
 const { netWinnings } = require('../lib/midtrans');
 const { logMove, logSecurityEvent } = require('../lib/auditLog');
@@ -45,6 +45,10 @@ const timers = new Map();
 
 // Map<`${gameId}:${userId}`, setTimeout> — disconnect forfeit timers
 const disconnectTimers = new Map();
+
+// [SECURITY-DISCONNECT] In-memory disconnect history for abuse detection
+// Array of { userId, gameId, timestamp }
+const disconnectHistory = [];
 
 // [SECURITY-1] Rate limiting: Map<userId, lastMoveTimestamp>
 const moveCooldowns = new Map();
@@ -731,6 +735,38 @@ function registerGameRoom(io, socket, userId) {
     }
   });
 
+  // ── [SECURITY] Tab-switching report ───────────────────────────────────
+  // Client reports when the game tab is hidden (potential engine use window).
+  // Server logs the event; cumulative hidden time > 30s per game is flagged.
+  socket.on('game:tab-hidden', ({ gameId, hiddenMs, totalHiddenMs }) => {
+    const game = gameCache.get(gameId);
+    if (!game || game.status !== 'active') return;
+    if (game.whiteId !== userId && game.blackId !== userId) return;
+
+    // Sanity-check values (client could lie — log anyway, enforce only on excess)
+    const safeHiddenMs    = Math.max(0, Math.min(Number(hiddenMs)      || 0, 3_600_000));
+    const safeTotalHidden = Math.max(0, Math.min(Number(totalHiddenMs) || 0, 3_600_000));
+
+    logSecurityEvent('TAB_HIDDEN', {
+      userId,
+      gameId,
+      hiddenMs:      safeHiddenMs,
+      totalHiddenMs: safeTotalHidden,
+    });
+
+    // Escalate if total hidden time exceeds 30 seconds in one game
+    if (safeTotalHidden >= 30_000) {
+      logSecurityEvent('TAB_HIDDEN_EXCESSIVE', {
+        userId, gameId, totalHiddenMs: safeTotalHidden,
+      });
+      // Apply a light trust penalty (non-suspension — may be innocent AFK)
+      enforceAnticheat(userId, gameId, {
+        flags: [`TAB_HIDDEN:${Math.round(safeTotalHidden / 1000)}s`],
+        score: Math.min(30, Math.floor(safeTotalHidden / 10_000) * 5),
+      }, io).catch(e => console.error('[TabHidden:enforce]', e.message));
+    }
+  });
+
   // ── Resign ─────────────────────────────────────────────────────────────
   socket.on('game:resign', ({ gameId }) => {
     const game = gameCache.get(gameId);
@@ -746,6 +782,8 @@ function registerGameRoom(io, socket, userId) {
   socket.on('game:draw-offer', ({ gameId }) => {
     const game = gameCache.get(gameId);
     if (!game || game.status !== 'active') return;
+    // [SECURITY] Only a player in this game can offer a draw
+    if (game.whiteId !== userId && game.blackId !== userId) return;
     updateGameState(gameId, { drawOfferedBy: userId });
     socket.to(gameId).emit('game:draw-offered', { by: userId });
   });
@@ -753,11 +791,25 @@ function registerGameRoom(io, socket, userId) {
   socket.on('game:draw-accept', ({ gameId }) => {
     const game = gameCache.get(gameId);
     if (!game || game.status !== 'active' || !game.drawOfferedBy) return;
+    // [SECURITY-BUG-FIX] Only the OTHER player (not the offerer) can accept
+    if (game.drawOfferedBy === userId) {
+      logSecurityEvent('DRAW_SELF_ACCEPT_ATTEMPT', { userId, gameId });
+      return socket.emit('error', { message: 'Cannot accept your own draw offer.' });
+    }
+    // [SECURITY] Only a player in this game can accept
+    if (game.whiteId !== userId && game.blackId !== userId) return;
     stopTimer(gameId);
     endGame(io, gameId, 'draw', 'draw-agreement');
   });
 
   socket.on('game:draw-decline', ({ gameId }) => {
+    const game = gameCache.get(gameId);
+    if (!game || game.status !== 'active') return;
+    // [SECURITY-BUG-FIX] Only a player in this game can decline; offerer cannot decline (must withdraw)
+    if (game.whiteId !== userId && game.blackId !== userId) return;
+    if (game.drawOfferedBy === userId) {
+      // Offerer withdrawing their own offer is allowed
+    }
     updateGameState(gameId, { drawOfferedBy: null });
     socket.to(gameId).emit('game:draw-declined');
   });
@@ -786,6 +838,22 @@ function registerGameRoom(io, socket, userId) {
       if (game.whiteId !== userId && game.blackId !== userId) continue;
 
       socket.to(gameId).emit('opponent:disconnected', { userId, reconnectWindow: 60 });
+
+      // [SECURITY-DISCONNECT] Record disconnect event for abuse tracking
+      disconnectHistory.push({ userId, gameId, timestamp: Date.now() });
+      // Prune entries older than 24h to prevent memory growth
+      const cutoff = Date.now() - 86_400_000;
+      while (disconnectHistory.length > 0 && disconnectHistory[0].timestamp < cutoff) {
+        disconnectHistory.shift();
+      }
+
+      // [SECURITY-DISCONNECT] Check for disconnect abuse (≥3 disconnects in 24h)
+      const abuseResult = detectDisconnectAbuse(userId, disconnectHistory);
+      if (abuseResult.abusive) {
+        logSecurityEvent('DISCONNECT_ABUSE_DETECTED', { userId, gameId, count: abuseResult.count });
+        enforceAnticheat(userId, gameId, { flags: abuseResult.flags, score: 10 * abuseResult.count }, io)
+          .catch(e => console.error('[DisconnectAbuse:enforce]', e.message));
+      }
 
       const dcKey = `${gameId}:${userId}`;
       const dcTimer = setTimeout(() => {
