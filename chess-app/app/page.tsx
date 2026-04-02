@@ -96,6 +96,7 @@ export default function LandingPage() {
         createdAt: u.created_at || new Date().toISOString(),
         country: u.country || 'ID',
         title: u.title,
+        is_admin: u.is_admin || false,
       }, data.token);
       router.push('/dashboard');
     } catch (err: unknown) {
