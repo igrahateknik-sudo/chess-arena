@@ -208,12 +208,12 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#060c18] text-white overflow-hidden relative">
-      {/* Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[20%] w-[700px] h-[700px] bg-sky-600/8 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[10%] w-[600px] h-[600px] bg-violet-600/8 rounded-full blur-[120px]" />
-        <div className="absolute top-[40%] left-[-5%] w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px]" />
+    <div className="min-h-screen bg-[#060c18] text-white overflow-x-hidden relative">
+      {/* Background — absolute (not fixed) to avoid GPU compositor issues */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[20%] w-[700px] h-[700px] bg-sky-600/10 rounded-full blur-[80px]" />
+        <div className="absolute bottom-[-10%] right-[10%] w-[600px] h-[600px] bg-violet-600/10 rounded-full blur-[80px]" />
+        <div className="absolute top-[40%] left-[-5%] w-[400px] h-[400px] bg-emerald-500/6 rounded-full blur-[60px]" />
         <div className="absolute inset-0 opacity-[0.025]"
           style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
       </div>
@@ -330,7 +330,7 @@ export default function LandingPage() {
             {/* ── Live Stats Ticker ─────────────────────────────── */}
             <div className="relative z-10 max-w-7xl mx-auto px-6 pb-6">
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-                className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03] backdrop-blur-sm">
+                className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.04]">
                 <LiveStatsTicker />
               </motion.div>
             </div>
