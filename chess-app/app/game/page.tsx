@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, Brain, Users, Clock, DollarSign, ChevronRight, X, Search, Shield, Wifi } from 'lucide-react';
 import AppLayout from '@/components/ui/AppLayout';
@@ -141,7 +141,12 @@ export default function GamePage() {
     setStep('mode');
   };
 
-  const actualColor: 'white' | 'black' = playerColor === 'random' ? (Math.random() > 0.5 ? 'white' : 'black') : playerColor;
+  // Compute once per playerColor selection — NOT on every render.
+  // Without useMemo, re-renders from socket events would re-randomize mid-game.
+  const actualColor = useMemo<'white' | 'black'>(
+    () => playerColor === 'random' ? (Math.random() > 0.5 ? 'white' : 'black') : playerColor,
+    [playerColor]
+  );
 
   const aiOpponent: Player = {
     id: 'ai',

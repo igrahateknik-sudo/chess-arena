@@ -47,6 +47,7 @@ export default function ChessGame({
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [gameStatus, setGameStatus] = useState<'active' | 'finished' | 'draw' | 'resigned'>('active');
   const [winner, setWinner] = useState<string | null>(null);
+  const [gameEndReason, setGameEndReason] = useState<'checkmate' | 'timeout' | 'resignation' | null>(null);
   const [whiteTime, setWhiteTime] = useState(timeControl.initial);
   const [blackTime, setBlackTime] = useState(timeControl.initial);
   const [isAIThinking, setIsAIThinking] = useState(false);
@@ -84,28 +85,42 @@ export default function ChessGame({
     setReviewFen(null); // always return to live view on new move
   }
 
-  // Timer
+  // Timer — depends on `fen` (string, stable equality) instead of `game` (object reference,
+  // always a new Chess() on each move which caused extra interval restarts).
+  // Parse the turn directly from the FEN string (field 2) to avoid stale-closure on `game`.
+  // IMPORTANT: loser param = the player whose clock hit 0 (they lose).
+  //   White times out → handleTimeout('white') → Black wins
+  //   Black times out → handleTimeout('black') → White wins
   useEffect(() => {
     if (gameStatus !== 'active') {
       if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
+    // Parse turn from FEN: "... w KQkq ..." or "... b KQkq ..."
+    const fenTurn = fen.split(' ')[1] as 'w' | 'b';
     timerRef.current = setInterval(() => {
-      const currentTurn = game.turn();
-      if (currentTurn === 'w') {
-        setWhiteTime(t => {
-          if (t <= 1) { handleTimeout('black'); return 0; }
-          return t - 1;
+      if (fenTurn === 'w') {
+        setWhiteTime(prev => {
+          if (prev <= 1) {
+            // white's clock ran out → white loses
+            setTimeout(() => handleTimeout('white'), 0);
+            return 0;
+          }
+          return prev - 1;
         });
       } else {
-        setBlackTime(t => {
-          if (t <= 1) { handleTimeout('white'); return 0; }
-          return t - 1;
+        setBlackTime(prev => {
+          if (prev <= 1) {
+            // black's clock ran out → black loses
+            setTimeout(() => handleTimeout('black'), 0);
+            return 0;
+          }
+          return prev - 1;
         });
       }
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [game, gameStatus]);
+  }, [fen, gameStatus]);
 
   // AI move effect
   // Fires when fen changes (i.e. after every move) or when review state changes.
@@ -173,9 +188,11 @@ export default function ChessGame({
     }
   }, [moveHistory]);
 
-  const handleTimeout = (loser: string) => {
+  const handleTimeout = (loser: 'white' | 'black') => {
+    const winnerColor = loser === 'white' ? 'Black' : 'White';
     setGameStatus('finished');
-    setWinner(loser === 'white' ? 'Black' : 'White');
+    setWinner(winnerColor);
+    setGameEndReason('timeout');
     onGameEnd?.(loser === playerColor ? 'loss' : 'win');
   };
 
@@ -184,12 +201,14 @@ export default function ChessGame({
       setGameStatus('finished');
       const w = g.turn() === 'w' ? 'Black' : 'White';
       setWinner(w);
+      setGameEndReason('checkmate');
       const result = g.turn() === (playerColor === 'white' ? 'w' : 'b') ? 'loss' : 'win';
       playChessSound(result === 'win' ? 'win' : 'lose');
       onGameEnd?.(result);
     } else if (g.isDraw() || g.isStalemate() || g.isThreefoldRepetition() || g.isInsufficientMaterial()) {
       setGameStatus('draw');
       setWinner(null);
+      setGameEndReason(null);
       playChessSound('draw');
       onGameEnd?.('draw');
     }
@@ -345,6 +364,7 @@ export default function ChessGame({
     setOptionSquares({});
     setGameStatus('active');
     setWinner(null);
+    setGameEndReason(null);
     setWhiteTime(timeControl.initial);
     setBlackTime(timeControl.initial);
   }
@@ -396,7 +416,7 @@ export default function ChessGame({
         <div className="chess-board-wrapper relative">
           {gameStatus !== 'active' && (
             <GameEndOverlay status={gameStatus} winner={winner} stakes={stakes}
-              playerColor={playerColor} onRematch={handleRematch} />
+              playerColor={playerColor} endReason={gameEndReason} onRematch={handleRematch} />
           )}
           {/* Review mode indicator */}
           {isReviewing && (
@@ -576,6 +596,7 @@ export default function ChessGame({
                   setShowResignConfirm(false);
                   setGameStatus('resigned');
                   setWinner(playerColor === 'white' ? 'Black' : 'White');
+                  setGameEndReason('resignation');
                   onGameEnd?.('loss');
                 }}
                   className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors">
@@ -642,11 +663,16 @@ function ControlBtn({ icon: Icon, onClick, title, active, badge }: {
   );
 }
 
-function GameEndOverlay({ status, winner, stakes, playerColor, onRematch }: {
-  status: string; winner: string | null; stakes: number; playerColor: string; onRematch: () => void;
+function GameEndOverlay({ status, winner, stakes, playerColor, endReason, onRematch }: {
+  status: string; winner: string | null; stakes: number; playerColor: string;
+  endReason: 'checkmate' | 'timeout' | 'resignation' | null; onRematch: () => void;
 }) {
   const isWin = winner === (playerColor === 'white' ? 'White' : 'Black');
   const isDraw = status === 'draw';
+
+  const reasonText = endReason === 'resignation' ? 'resignation'
+    : endReason === 'timeout' ? 'timeout'
+    : 'checkmate';
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -658,7 +684,7 @@ function GameEndOverlay({ status, winner, stakes, playerColor, onRematch }: {
           {isDraw ? 'Draw!' : isWin ? 'You Win!' : 'You Lose!'}
         </div>
         {winner && !isDraw && (
-          <div className="text-white/70 text-sm mb-2">{winner} wins by {status === 'resigned' ? 'resignation' : 'checkmate'}</div>
+          <div className="text-white/70 text-sm mb-2">{winner} wins by {reasonText}</div>
         )}
         {stakes > 0 && (
           <div className={`text-lg font-bold mb-4 ${isWin ? 'text-emerald-400' : isDraw ? 'text-yellow-400' : 'text-red-400'}`}>
