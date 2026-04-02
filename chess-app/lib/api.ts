@@ -101,6 +101,9 @@ export const api = {
     list: (status?: string) =>
       fetchAPI(`/api/tournament${status ? `?status=${status}` : ''}`),
 
+    upcomingHourly: () =>
+      fetchAPI('/api/tournament/upcoming-hourly'),
+
     get: (id: string) =>
       fetchAPI(`/api/tournament/${id}`),
 

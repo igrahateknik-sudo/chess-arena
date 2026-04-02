@@ -11,6 +11,7 @@ const { registerGameRoom, gameCache } = require('./socket/gameRoom');
 const { registerSpectator }           = require('./socket/spectator');
 const { startMonitor }                = require('./lib/monitor');
 const { startWalletCleanupJob }       = require('./lib/walletCleanup');
+const { startTournamentScheduler }    = require('./lib/tournamentScheduler');
 const logger                          = require('./lib/logger');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
@@ -354,6 +355,7 @@ const PORT = process.env.PORT || 4000;
 
     startMonitor();
     startWalletCleanupJob();
+    startTournamentScheduler();
   });
 })();
 

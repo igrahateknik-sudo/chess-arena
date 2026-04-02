@@ -38,6 +38,66 @@ router.get('/', async (req, res) => {
   }
 });
 
+// ── GET /api/tournament/upcoming-hourly ───────────────────────────────────────
+// Returns next hourly tournament for each tier (Bronze, Silver, Gold)
+// Must be defined BEFORE /:id to avoid route conflict
+router.get('/upcoming-hourly', async (req, res) => {
+  try {
+    const tiers = ['Bronze', 'Silver', 'Gold'];
+    const entryFees    = { Bronze: 10_000, Silver: 25_000, Gold: 50_000 };
+    const timeControls = {
+      Bronze: { type: 'blitz', initial: 180, increment: 2, label: '3+2' },
+      Silver: { type: 'blitz', initial: 300, increment: 3, label: '5+3' },
+      Gold:   { type: 'rapid', initial: 600, increment: 5, label: '10+5' },
+    };
+    const maxPlayersMap = { Bronze: 32, Silver: 32, Gold: 16 };
+
+    const result = [];
+
+    for (const tier of tiers) {
+      const { data, error } = await supabase
+        .from('tournaments')
+        .select('id, name, entry_fee, max_players, time_control, status, starts_at, ends_at, prize_pool')
+        .ilike('name', `Hourly ${tier} %`)
+        .in('status', ['upcoming', 'active'])
+        .order('starts_at', { ascending: true })
+        .limit(1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const t = data[0];
+        const { count } = await supabase
+          .from('tournament_registrations')
+          .select('id', { count: 'exact', head: true })
+          .eq('tournament_id', t.id);
+
+        result.push({ ...t, tier: tier.toLowerCase(), registrations_count: count || 0 });
+      } else {
+        // Placeholder — belum ada tournament yang dibuat untuk slot ini
+        result.push({
+          id: null,
+          name: `Hourly ${tier}`,
+          entry_fee: entryFees[tier],
+          max_players: maxPlayersMap[tier],
+          time_control: timeControls[tier],
+          status: 'upcoming',
+          starts_at: null,
+          ends_at: null,
+          prize_pool: 0,
+          tier: tier.toLowerCase(),
+          registrations_count: 0,
+        });
+      }
+    }
+
+    res.json({ tiers: result });
+  } catch (err) {
+    console.error('[tournament/upcoming-hourly]', err);
+    res.status(500).json({ error: 'Failed to fetch upcoming hourly tournaments' });
+  }
+});
+
 // ── GET /api/tournament/:id ───────────────────────────────────────────────────
 // Get a single tournament with registration count
 router.get('/:id', async (req, res) => {

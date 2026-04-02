@@ -6,24 +6,87 @@ import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { api, ApiError } from '@/lib/api';
 import {
-  Eye, EyeOff, Crown, Zap, Shield, Globe, TrendingUp,
-  ChevronRight, DollarSign, Award, MailWarning
+  Eye, EyeOff, Crown, Zap, Shield, TrendingUp,
+  ChevronRight, Award, MailWarning, Target, Clock,
+  Trophy, Users, Swords, Ticket
 } from 'lucide-react';
 
-const FEATURES = [
-  { icon: Zap, label: 'Bullet & Blitz', desc: 'Fast-paced competitive chess' },
-  { icon: DollarSign, label: 'Real Money', desc: 'Play & earn real rewards' },
-  { icon: Shield, label: 'Anti-Cheat', desc: 'Fair play guaranteed' },
-  { icon: Globe, label: 'Global', desc: 'Players from 150+ countries' },
-  { icon: Award, label: 'Tournaments', desc: 'Weekly prize pools' },
-  { icon: TrendingUp, label: 'ELO Rating', desc: 'FIDE-standard ranking' },
+const HOW_IT_WORKS = [
+  {
+    step: '01',
+    icon: Users,
+    title: 'Daftar Gratis',
+    desc: 'Buat akun dalam 30 detik. Verifikasi email dan mulai bermain langsung.',
+    color: 'sky',
+  },
+  {
+    step: '02',
+    icon: Ticket,
+    title: 'Beli Tiket',
+    desc: 'Pilih tier Bronze, Silver, atau Gold sesuai budget dan skill kamu.',
+    color: 'amber',
+  },
+  {
+    step: '03',
+    icon: Swords,
+    title: 'Join Tournament',
+    desc: 'Tournament otomatis setiap jam. Daftar, tunggu start, dan bertarung.',
+    color: 'purple',
+  },
+  {
+    step: '04',
+    icon: Trophy,
+    title: 'Menang Hadiah',
+    desc: '80% prize pool ke juara 1, 10% ke juara 2. Langsung cair ke wallet.',
+    color: 'emerald',
+  },
+];
+
+const TIERS = [
+  {
+    key: 'bronze',
+    label: 'Bronze',
+    icon: '🥉',
+    fee: 'Rp 10.000',
+    tc: '3+2',
+    max: 32,
+    prize: '~Rp 256K',
+    color: 'from-amber-700/30 to-amber-900/20',
+    border: 'border-amber-700/30',
+    badge: 'bg-amber-700/20 text-amber-500',
+  },
+  {
+    key: 'silver',
+    label: 'Silver',
+    icon: '🥈',
+    fee: 'Rp 25.000',
+    tc: '5+3',
+    max: 32,
+    prize: '~Rp 640K',
+    color: 'from-slate-400/20 to-slate-600/10',
+    border: 'border-slate-400/30',
+    badge: 'bg-slate-400/20 text-slate-300',
+    featured: true,
+  },
+  {
+    key: 'gold',
+    label: 'Gold',
+    icon: '🥇',
+    fee: 'Rp 50.000',
+    tc: '10+5',
+    max: 16,
+    prize: '~Rp 640K',
+    color: 'from-yellow-500/20 to-yellow-700/10',
+    border: 'border-yellow-500/30',
+    badge: 'bg-yellow-500/20 text-yellow-400',
+  },
 ];
 
 const STATS = [
-  { value: '2.4M+', label: 'Active Players' },
-  { value: '$12M+', label: 'Prize Paid Out' },
-  { value: '50M+', label: 'Games Played' },
-  { value: '150+', label: 'Countries' },
+  { value: '10K+', label: 'Pemain Aktif' },
+  { value: '24/7', label: 'Tournament Jalan' },
+  { value: 'Rp 0', label: 'Biaya Daftar' },
+  { value: '< 1 jam', label: 'Cair ke Wallet' },
 ];
 
 export default function LandingPage() {
@@ -130,7 +193,6 @@ export default function LandingPage() {
       }, data.token);
       router.push('/dashboard');
     } catch {
-      // Fallback to local guest if backend unreachable
       const guestId = Math.random().toString(36).slice(2, 10);
       login({
         id: guestId,
@@ -146,161 +208,283 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050a14] text-white overflow-hidden relative">
-      {/* Animated background */}
+    <div className="min-h-screen bg-[#060c18] text-white overflow-hidden relative">
+      {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[100px] animate-pulse-slow" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-cyan-500/5 rounded-full blur-[80px]" />
-        {/* Grid pattern */}
-        <div className="absolute inset-0 opacity-[0.03]"
-          style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '50px 50px' }} />
+        <div className="absolute top-[-10%] left-[20%] w-[700px] h-[700px] bg-sky-600/8 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[10%] w-[600px] h-[600px] bg-violet-600/8 rounded-full blur-[120px]" />
+        <div className="absolute top-[40%] left-[-5%] w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px]" />
+        <div className="absolute inset-0 opacity-[0.025]"
+          style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
       </div>
 
       <AnimatePresence mode="wait">
         {mode === 'landing' && (
           <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.98 }}>
-            {/* Nav */}
+
+            {/* ── Nav ───────────────────────────────────────────── */}
             <nav className="relative z-10 flex items-center justify-between px-6 py-5 max-w-7xl mx-auto">
-              <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="flex items-center gap-2">
+              <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="flex items-center gap-2.5">
                 <div className="w-9 h-9 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
                   <span className="text-xl">♔</span>
                 </div>
-                <span className="text-xl font-bold tracking-tight">Chess<span className="gradient-text">Arena</span></span>
+                <span className="text-xl font-black tracking-tight">Chess<span className="gradient-text">Arena</span></span>
               </motion.div>
-              <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="flex items-center gap-3">
+              <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="flex items-center gap-2">
                 <button onClick={() => setMode('login')}
                   className="px-5 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors">
-                  Sign In
+                  Masuk
                 </button>
                 <button onClick={() => setMode('register')}
-                  className="px-5 py-2 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-blue-500/25">
-                  Get Started
+                  className="px-5 py-2 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity shadow-lg shadow-blue-500/25">
+                  Daftar Gratis
                 </button>
               </motion.div>
             </nav>
 
-            {/* Hero */}
-            <section className="relative z-10 max-w-7xl mx-auto px-6 pt-16 pb-24 grid lg:grid-cols-2 gap-16 items-center">
+            {/* ── Hero ──────────────────────────────────────────── */}
+            <section className="relative z-10 max-w-7xl mx-auto px-6 pt-12 pb-20 grid lg:grid-cols-2 gap-12 items-center">
               <div>
                 <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-sm font-medium mb-6">
-                  <Zap className="w-4 h-4" />
-                  <span>World-Class Chess Platform</span>
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-semibold mb-6 tracking-wide uppercase">
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+                  Platform Kompetitif Catur #1 Indonesia
                 </motion.div>
-                <motion.h1 initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}
-                  className="text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.05] mb-6">
-                  Play Chess.<br />
-                  <span className="gradient-text">Earn Real</span><br />
-                  Rewards.
+
+                <motion.h1 initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.15 }}
+                  className="text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.05] tracking-tight mb-5">
+                  Kuasai Papan Catur.<br />
+                  <span className="bg-gradient-to-r from-sky-400 via-blue-400 to-violet-400 bg-clip-text text-transparent">
+                    Raih Hadiah Nyata.
+                  </span>
                 </motion.h1>
-                <motion.p initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
-                  className="text-lg text-slate-400 mb-10 max-w-lg leading-relaxed">
-                  The most advanced chess platform with real money stakes, professional tournaments, and AI powered by Stockfish. Join 2.4M+ players worldwide.
+
+                <motion.p initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}
+                  className="text-base text-slate-400 mb-8 max-w-lg leading-relaxed">
+                  Tournament catur berhadiah uang nyata setiap jam. Beli tiket, bertanding, menangkan prize pool.
+                  Sistem Swiss yang adil, anti-cheat ketat, hasil langsung ke dompet.
                 </motion.p>
-                <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.4 }}
-                  className="flex flex-wrap gap-4">
+
+                <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.25 }}
+                  className="flex flex-wrap gap-3 mb-10">
                   <button onClick={() => setMode('register')}
-                    className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-sky-500 to-blue-600 rounded-2xl text-base font-bold hover:opacity-90 transition-all shadow-2xl shadow-blue-500/30 neon-blue">
-                    Start Playing Free <ChevronRight className="w-5 h-5" />
+                    className="flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-2xl text-sm font-bold hover:opacity-90 transition-all shadow-2xl shadow-blue-500/30">
+                    Mulai Bermain <ChevronRight className="w-4 h-4" />
                   </button>
                   <button onClick={handleGuest}
-                    className="flex items-center gap-2 px-8 py-4 bg-white/5 border border-white/10 rounded-2xl text-base font-semibold hover:bg-white/10 transition-all">
-                    {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
-                    Play as Guest
+                    className="flex items-center gap-2 px-7 py-3.5 bg-white/5 border border-white/10 rounded-2xl text-sm font-semibold hover:bg-white/10 transition-all">
+                    {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
+                    Coba Dulu (Guest)
                   </button>
                 </motion.div>
-                {/* Mini stats */}
-                <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}
-                  className="flex flex-wrap gap-8 mt-12">
+
+                {/* Stats strip */}
+                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
+                  className="grid grid-cols-4 gap-4 pt-6 border-t border-white/8">
                   {STATS.map((s) => (
                     <div key={s.label}>
-                      <div className="text-2xl font-black gradient-gold">{s.value}</div>
-                      <div className="text-xs text-slate-500 mt-0.5">{s.label}</div>
+                      <div className="text-xl font-black text-sky-400">{s.value}</div>
+                      <div className="text-xs text-slate-500 mt-0.5 leading-tight">{s.label}</div>
                     </div>
                   ))}
                 </motion.div>
               </div>
 
-              {/* Chess board visual */}
-              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, type: 'spring' }}
+              {/* Chess board */}
+              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.2, type: 'spring', stiffness: 100 }}
                 className="hidden lg:flex items-center justify-center">
                 <div className="relative">
-                  <div className="w-[420px] h-[420px] rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(56,189,248,0.15)] border border-white/10">
+                  <div className="w-[400px] h-[400px] rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(56,189,248,0.12)] border border-white/8">
                     <ChessBoardVisual />
                   </div>
-                  {/* Floating cards */}
-                  <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 3, repeat: Infinity }}
-                    className="absolute -left-14 top-8 glass rounded-2xl p-4 flex items-center gap-3 border border-white/10">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                      <TrendingUp className="w-5 h-5 text-emerald-400" />
+                  {/* Floating info cards */}
+                  <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+                    className="absolute -left-16 top-10 glass rounded-2xl p-3.5 flex items-center gap-3 border border-white/10 backdrop-blur-sm shadow-xl min-w-[160px]">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                      <TrendingUp className="w-4 h-4 text-emerald-400" />
                     </div>
                     <div>
-                      <div className="text-xs text-slate-400">ELO Rating</div>
-                      <div className="text-lg font-bold text-emerald-400">+42 today</div>
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider">ELO Hari Ini</div>
+                      <div className="text-base font-black text-emerald-400">+42 pts</div>
                     </div>
                   </motion.div>
-                  <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 3.5, repeat: Infinity }}
-                    className="absolute -right-14 bottom-12 glass rounded-2xl p-4 flex items-center gap-3 border border-white/10">
-                    <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-                      <DollarSign className="w-5 h-5 text-yellow-400" />
+                  <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut' }}
+                    className="absolute -right-16 bottom-16 glass rounded-2xl p-3.5 flex items-center gap-3 border border-white/10 backdrop-blur-sm shadow-xl min-w-[165px]">
+                    <div className="w-9 h-9 rounded-xl bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                      <Trophy className="w-4 h-4 text-yellow-400" />
                     </div>
                     <div>
-                      <div className="text-xs text-slate-400">Tournament Prize</div>
-                      <div className="text-lg font-bold text-yellow-400">Rp 5.000.000</div>
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider">Prize Diklaim</div>
+                      <div className="text-base font-black text-yellow-400">Rp 640K</div>
                     </div>
                   </motion.div>
-                  <motion.div animate={{ y: [-4, 4, -4] }} transition={{ duration: 4, repeat: Infinity }}
-                    className="absolute -left-10 bottom-8 glass rounded-2xl p-3 flex items-center gap-2 border border-white/10">
-                    <div className="flex -space-x-2">
-                      {['🇮🇩', '🇺🇸', '🇷🇺', '🇳🇴'].map((f, i) => (
-                        <div key={i} className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-sm border border-white/20">{f}</div>
-                      ))}
-                    </div>
-                    <span className="text-sm text-slate-300 font-medium">+2.4M players</span>
+                  <motion.div animate={{ y: [-4, 4, -4] }} transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+                    className="absolute -left-12 bottom-10 glass rounded-2xl p-2.5 flex items-center gap-2 border border-white/10 backdrop-blur-sm shadow-xl">
+                    <Clock className="w-3.5 h-3.5 text-sky-400" />
+                    <span className="text-xs text-slate-300 font-medium">Tournament tiap jam</span>
                   </motion.div>
                 </div>
               </motion.div>
             </section>
 
-            {/* Features */}
+            {/* ── Cara Bermain ──────────────────────────────────── */}
             <section className="relative z-10 max-w-7xl mx-auto px-6 py-20 border-t border-white/5">
               <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }}
                 className="text-center mb-14">
-                <h2 className="text-3xl font-bold mb-3">Everything You Need to Compete</h2>
-                <p className="text-slate-400">Professional-grade tools for serious players</p>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-semibold uppercase tracking-wider mb-4">
+                  <Target className="w-3.5 h-3.5" /> Cara Bermain
+                </div>
+                <h2 className="text-3xl font-black mb-3">Dari Daftar ke Menang dalam 4 Langkah</h2>
+                <p className="text-slate-400 max-w-md mx-auto">Tidak perlu deposit minimum. Mulai dari tiket Rp 10.000 dan langsung bertanding.</p>
               </motion.div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {FEATURES.map((f, i) => (
-                  <motion.div key={f.label} initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }}
-                    viewport={{ once: true }} transition={{ delay: i * 0.08 }}
-                    className="glass rounded-2xl p-6 hover:bg-white/10 transition-all group cursor-default">
-                    <div className="w-12 h-12 rounded-xl bg-sky-500/10 flex items-center justify-center mb-4 group-hover:bg-sky-500/20 transition-colors">
-                      <f.icon className="w-6 h-6 text-sky-400" />
+
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {HOW_IT_WORKS.map((step, i) => {
+                  const colorMap: Record<string, string> = {
+                    sky: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
+                    amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                    purple: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+                    emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                  };
+                  const cls = colorMap[step.color];
+                  return (
+                    <motion.div key={step.step}
+                      initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }}
+                      viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                      className="relative glass rounded-2xl p-6 border border-white/8 hover:border-white/15 transition-all group">
+                      <div className="text-5xl font-black text-white/4 absolute top-4 right-5 select-none">{step.step}</div>
+                      <div className={`w-11 h-11 rounded-xl border flex items-center justify-center mb-4 ${cls}`}>
+                        <step.icon className="w-5 h-5" />
+                      </div>
+                      <h3 className="font-bold text-white mb-2">{step.title}</h3>
+                      <p className="text-sm text-slate-400 leading-relaxed">{step.desc}</p>
+                      {i < 3 && (
+                        <div className="hidden lg:block absolute -right-2.5 top-1/2 -translate-y-1/2 w-5 h-0.5 bg-white/10 z-10" />
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* ── Tournament Tiers ──────────────────────────────── */}
+            <section className="relative z-10 max-w-7xl mx-auto px-6 py-20 border-t border-white/5">
+              <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }}
+                className="text-center mb-14">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-semibold uppercase tracking-wider mb-4">
+                  <Trophy className="w-3.5 h-3.5" /> Tier Tournament
+                </div>
+                <h2 className="text-3xl font-black mb-3">Pilih Tier, Bertanding, Menangkan Hadiah</h2>
+                <p className="text-slate-400">Tournament otomatis setiap jam. 80% prize ke juara, 10% ke runner-up.</p>
+              </motion.div>
+
+              <div className="grid md:grid-cols-3 gap-5">
+                {TIERS.map((tier, i) => (
+                  <motion.div key={tier.key}
+                    initial={{ y: 25, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }}
+                    viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                    className={`relative rounded-2xl p-6 border bg-gradient-to-b ${tier.color} ${tier.border} ${tier.featured ? 'ring-1 ring-slate-400/20 shadow-xl' : ''} transition-all hover:-translate-y-1 hover:shadow-2xl`}>
+                    {tier.featured && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-slate-400/20 border border-slate-400/30 rounded-full text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                        Populer
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 mb-5">
+                      <span className="text-3xl">{tier.icon}</span>
+                      <div>
+                        <div className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${tier.badge}`}>{tier.label}</div>
+                      </div>
                     </div>
-                    <div className="font-semibold mb-1">{f.label}</div>
-                    <div className="text-sm text-slate-400">{f.desc}</div>
+                    <div className="mb-5">
+                      <div className="text-3xl font-black text-white mb-0.5">{tier.fee}</div>
+                      <div className="text-xs text-slate-500">per tournament</div>
+                    </div>
+                    <div className="space-y-2.5 mb-6">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400">Time Control</span>
+                        <span className="font-bold text-white font-mono">{tier.tc}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400">Max Pemain</span>
+                        <span className="font-bold text-white">{tier.max}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400">Est. Prize Pool</span>
+                        <span className="font-bold text-yellow-400">{tier.prize}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400">Jadwal</span>
+                        <span className="font-bold text-sky-400">Setiap jam</span>
+                      </div>
+                    </div>
+                    <button onClick={() => setMode('register')}
+                      className="w-full py-2.5 rounded-xl text-sm font-bold bg-white/8 border border-white/10 hover:bg-white/15 transition-all">
+                      Daftar & Join →
+                    </button>
                   </motion.div>
                 ))}
               </div>
             </section>
 
-            {/* CTA */}
+            {/* ── Features strip ────────────────────────────────── */}
+            <section className="relative z-10 max-w-7xl mx-auto px-6 py-16 border-t border-white/5">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { icon: Zap, label: 'Bullet & Blitz', desc: '1+0, 3+2, 5+3', color: 'sky' },
+                  { icon: Shield, label: 'Anti-Cheat', desc: '5 lapis keamanan', color: 'emerald' },
+                  { icon: Award, label: 'ELO Rating', desc: 'Standard FIDE', color: 'violet' },
+                  { icon: Clock, label: 'Tournament Tiap Jam', desc: '24 jam sehari', color: 'amber' },
+                ].map((f, i) => (
+                  <motion.div key={f.label}
+                    initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }}
+                    viewport={{ once: true }} transition={{ delay: i * 0.07 }}
+                    className="glass rounded-2xl p-5 border border-white/8 hover:border-white/15 transition-all">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${
+                      f.color === 'sky' ? 'bg-sky-500/10' :
+                      f.color === 'emerald' ? 'bg-emerald-500/10' :
+                      f.color === 'violet' ? 'bg-violet-500/10' : 'bg-amber-500/10'
+                    }`}>
+                      <f.icon className={`w-5 h-5 ${
+                        f.color === 'sky' ? 'text-sky-400' :
+                        f.color === 'emerald' ? 'text-emerald-400' :
+                        f.color === 'violet' ? 'text-violet-400' : 'text-amber-400'
+                      }`} />
+                    </div>
+                    <div className="font-semibold text-sm mb-0.5">{f.label}</div>
+                    <div className="text-xs text-slate-500">{f.desc}</div>
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+
+            {/* ── CTA ───────────────────────────────────────────── */}
             <section className="relative z-10 max-w-4xl mx-auto px-6 py-20 text-center">
               <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }}
-                className="glass rounded-3xl p-12 border border-white/10">
-                <Crown className="w-12 h-12 text-yellow-400 mx-auto mb-6" />
-                <h2 className="text-3xl font-black mb-4">Ready to Dominate the Board?</h2>
-                <p className="text-slate-400 mb-8">Join the world&apos;s most competitive chess platform today.</p>
-                <button onClick={() => setMode('register')}
-                  className="px-10 py-4 bg-gradient-to-r from-sky-500 to-blue-600 rounded-2xl font-bold text-lg hover:opacity-90 transition-opacity shadow-2xl shadow-blue-500/30">
-                  Create Free Account
-                </button>
+                className="relative overflow-hidden glass rounded-3xl p-12 border border-white/10">
+                <div className="absolute inset-0 bg-gradient-to-br from-sky-600/10 to-violet-600/10" />
+                <div className="relative z-10">
+                  <Crown className="w-12 h-12 text-yellow-400 mx-auto mb-5" />
+                  <h2 className="text-3xl font-black mb-3">Siap Naik ke Level Berikutnya?</h2>
+                  <p className="text-slate-400 mb-8 max-w-md mx-auto">
+                    Daftar gratis, deposit Rp 10.000, dan ikut tournament pertama kamu hari ini.
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <button onClick={() => setMode('register')}
+                      className="px-8 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-2xl font-bold text-base hover:opacity-90 transition-opacity shadow-2xl shadow-blue-500/30">
+                      Buat Akun Gratis
+                    </button>
+                    <button onClick={handleGuest}
+                      className="px-8 py-3.5 bg-white/5 border border-white/10 rounded-2xl font-semibold text-base hover:bg-white/10 transition-all">
+                      Coba Sebagai Guest
+                    </button>
+                  </div>
+                </div>
               </motion.div>
             </section>
           </motion.div>
         )}
 
+        {/* ── Forgot Password ─────────────────────────────────────── */}
         {mode === 'forgot' && (
           <motion.div key="forgot" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
             className="min-h-screen flex items-center justify-center px-4">
@@ -310,7 +494,7 @@ export default function LandingPage() {
                   <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
                     <span className="text-2xl">♔</span>
                   </div>
-                  <span className="text-2xl font-bold">Chess<span className="gradient-text">Arena</span></span>
+                  <span className="text-2xl font-black">Chess<span className="gradient-text">Arena</span></span>
                 </button>
                 <h1 className="text-2xl font-bold">Reset Password</h1>
                 <p className="text-slate-400 mt-2 text-sm">Masukkan email kamu dan kami akan kirim link reset.</p>
@@ -350,24 +534,24 @@ export default function LandingPage() {
           </motion.div>
         )}
 
+        {/* ── Auth Form (Login / Register) ────────────────────────── */}
         {(mode === 'login' || mode === 'register') && (
           <motion.div key="auth" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
             className="min-h-screen flex items-center justify-center px-4">
             <div className="w-full max-w-md">
-              {/* Logo */}
               <div className="text-center mb-8">
                 <button onClick={() => setMode('landing')} className="inline-flex items-center gap-2 mb-6 hover:opacity-80 transition-opacity">
                   <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
                     <span className="text-2xl">♔</span>
                   </div>
-                  <span className="text-2xl font-bold">Chess<span className="gradient-text">Arena</span></span>
+                  <span className="text-2xl font-black">Chess<span className="gradient-text">Arena</span></span>
                 </button>
-                <h1 className="text-2xl font-bold">{mode === 'login' ? 'Welcome back' : 'Create your account'}</h1>
+                <h1 className="text-2xl font-bold">{mode === 'login' ? 'Selamat datang kembali' : 'Buat akun baru'}</h1>
                 <p className="text-slate-400 mt-2 text-sm">
-                  {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+                  {mode === 'login' ? 'Belum punya akun? ' : 'Sudah punya akun? '}
                   <button onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
                     className="text-sky-400 hover:text-sky-300 font-medium transition-colors">
-                    {mode === 'login' ? 'Sign up' : 'Sign in'}
+                    {mode === 'login' ? 'Daftar sekarang' : 'Masuk'}
                   </button>
                 </p>
               </div>
@@ -427,7 +611,7 @@ export default function LandingPage() {
                   </div>
                   {mode === 'login' && (
                     <div className="text-right">
-                      <button type="button" onClick={() => { setMode('forgot'); setAuthError(''); setForgotSuccess(''); }} className="text-sm text-sky-400 hover:text-sky-300 transition-colors">Forgot password?</button>
+                      <button type="button" onClick={() => { setMode('forgot'); setAuthError(''); setForgotSuccess(''); }} className="text-sm text-sky-400 hover:text-sky-300 transition-colors">Lupa password?</button>
                     </div>
                   )}
                   <button type="submit" disabled={loading}
@@ -435,25 +619,23 @@ export default function LandingPage() {
                     {loading ? (
                       <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
-                      mode === 'login' ? 'Sign In' : 'Create Account'
+                      mode === 'login' ? 'Masuk' : 'Buat Akun'
                     )}
                   </button>
                 </form>
 
-                {/* TODO: Implement OAuth (Google, Discord) in future */}
-
                 <p className="text-xs text-slate-500 text-center mt-6">
-                  By continuing, you agree to our{' '}
-                  <a href="/terms" className="underline hover:text-slate-300 transition-colors">Terms of Service</a>
-                  {' '}and{' '}
-                  <a href="/privacy" className="underline hover:text-slate-300 transition-colors">Privacy Policy</a>.
+                  Dengan mendaftar, kamu menyetujui{' '}
+                  <a href="/terms" className="underline hover:text-slate-300 transition-colors">Syarat & Ketentuan</a>
+                  {' '}dan{' '}
+                  <a href="/privacy" className="underline hover:text-slate-300 transition-colors">Kebijakan Privasi</a>.
                 </p>
               </div>
 
               <div className="mt-4 text-center">
                 <button onClick={handleGuest}
                   className="text-sm text-slate-400 hover:text-slate-300 transition-colors underline underline-offset-2">
-                  Continue as Guest
+                  Lanjutkan sebagai Guest
                 </button>
               </div>
             </div>
@@ -464,7 +646,7 @@ export default function LandingPage() {
   );
 }
 
-// Static chess board visual for hero section
+// ── Chess board visual ────────────────────────────────────────────────────────
 function ChessBoardVisual() {
   const BOARD = [
     ['♜','♞','♝','♛','♚','♝','♞','♜'],
@@ -485,9 +667,9 @@ function ChessBoardVisual() {
           const isHighlight = (r === 4 && c === 4) || (r === 6 && c === 4);
           return (
             <div key={`${r}-${c}`}
-              className={`flex items-center justify-center text-3xl select-none
-                ${isHighlight ? 'bg-yellow-500/40' : isLight ? 'bg-slate-200/15' : 'bg-slate-800/50'}`}>
-              <span className={piece ? (r < 2 ? 'text-slate-300' : 'text-white drop-shadow-lg') : ''}>
+              className={`flex items-center justify-center text-[clamp(1rem,3.5vw,1.75rem)] select-none transition-colors
+                ${isHighlight ? 'bg-sky-500/30' : isLight ? 'bg-slate-200/10' : 'bg-slate-900/60'}`}>
+              <span className={piece ? (r < 2 ? 'text-slate-400 drop-shadow' : 'text-white drop-shadow-lg') : ''}>
                 {piece}
               </span>
             </div>

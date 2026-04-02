@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Trophy, ChevronRight, Zap, Calendar, CheckCircle, Loader2, AlertCircle
+  Trophy, ChevronRight, Zap, CheckCircle, Loader2,
+  AlertCircle, Clock, Users, Ticket, Crown, TrendingUp
 } from 'lucide-react';
 import AppLayout from '@/components/ui/AppLayout';
 import { useAppStore } from '@/lib/store';
 import { api } from '@/lib/api';
+
+// ── Formatters ────────────────────────────────────────────────────────────────
 
 function formatIDR(n: number) {
   if (n >= 1_000_000) return `Rp ${(n / 1_000_000).toFixed(1)}M`;
@@ -19,12 +22,15 @@ function getTimeUntil(date: string) {
   const now = new Date();
   const target = new Date(date);
   const diff = target.getTime() - now.getTime();
-  if (diff < 0) return 'Started';
+  if (diff < 0) return 'Sudah Mulai';
   const hours = Math.floor(diff / 3600000);
   const mins = Math.floor((diff % 3600000) / 60000);
-  if (hours > 24) return `${Math.floor(hours / 24)}d ${hours % 24}h`;
-  return `${hours}h ${mins}m`;
+  if (hours > 24) return `${Math.floor(hours / 24)}h ${hours % 24}j`;
+  if (hours > 0) return `${hours}j ${mins}m`;
+  return `${mins} menit`;
 }
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface ApiTournament {
   id: string;
@@ -45,19 +51,133 @@ interface ApiTournament {
   registrations_count?: number;
 }
 
+interface HourlyTier {
+  id: string | null;
+  name: string;
+  entry_fee: number;
+  max_players: number;
+  time_control: { type: string; initial: number; increment: number; label: string };
+  status: 'upcoming' | 'active' | 'finished';
+  starts_at: string | null;
+  ends_at: string | null;
+  prize_pool: number;
+  tier: 'bronze' | 'silver' | 'gold';
+  registrations_count: number;
+}
+
+// ── Hourly Countdown ──────────────────────────────────────────────────────────
+
+type PhaseType = 'registering' | 'active' | 'idle';
+
+function useHourlyPhase() {
+  const [phase, setPhase] = useState<PhaseType>('idle');
+  const [countdown, setCountdown] = useState('');
+  const [phaseLabel, setPhaseLabel] = useState('');
+
+  useEffect(() => {
+    function update() {
+      const now = new Date();
+      const min = now.getMinutes();
+      const sec = now.getSeconds();
+      const totalSec = min * 60 + sec;
+
+      let targetMs: number;
+      let newPhase: PhaseType;
+      let label: string;
+
+      if (totalSec < 5 * 60) {
+        // :00 – :05 → registration open for this hour's tournament
+        const next = new Date(now);
+        next.setMinutes(5, 0, 0);
+        targetMs = next.getTime() - now.getTime();
+        newPhase = 'registering';
+        label = 'Registrasi Dibuka — Tournament Mulai Dalam';
+      } else if (totalSec < 55 * 60) {
+        // :05 – :55 → tournament active
+        const next = new Date(now);
+        next.setHours(next.getHours() + 1, 0, 0, 0);
+        targetMs = next.getTime() - now.getTime();
+        newPhase = 'active';
+        label = 'Tournament Berlangsung — Berakhir Dalam';
+      } else {
+        // :55 – :60 → registration for next hour
+        const next = new Date(now);
+        next.setHours(next.getHours() + 1, 5, 0, 0);
+        targetMs = next.getTime() - now.getTime();
+        newPhase = 'registering';
+        label = 'Registrasi Dibuka — Tournament Mulai Dalam';
+      }
+
+      const totalMs = Math.max(0, targetMs);
+      const m = Math.floor(totalMs / 60000);
+      const s = Math.floor((totalMs % 60000) / 1000);
+      setCountdown(`${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
+      setPhase(newPhase);
+      setPhaseLabel(label);
+    }
+
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return { phase, countdown, phaseLabel };
+}
+
+// ── Tier config ───────────────────────────────────────────────────────────────
+
+const TIER_META = {
+  bronze: {
+    label: 'Bronze',
+    icon: '🥉',
+    gradient: 'from-amber-900/40 to-amber-950/20',
+    border: 'border-amber-700/30',
+    accent: 'text-amber-500',
+    badgeBg: 'bg-amber-700/20',
+    badgeText: 'text-amber-500',
+    glow: 'shadow-amber-900/20',
+  },
+  silver: {
+    label: 'Silver',
+    icon: '🥈',
+    gradient: 'from-slate-600/30 to-slate-800/20',
+    border: 'border-slate-500/30',
+    accent: 'text-slate-300',
+    badgeBg: 'bg-slate-500/20',
+    badgeText: 'text-slate-300',
+    glow: 'shadow-slate-800/30',
+    featured: true,
+  },
+  gold: {
+    label: 'Gold',
+    icon: '🥇',
+    gradient: 'from-yellow-800/30 to-yellow-950/20',
+    border: 'border-yellow-600/30',
+    accent: 'text-yellow-400',
+    badgeBg: 'bg-yellow-600/20',
+    badgeText: 'text-yellow-400',
+    glow: 'shadow-yellow-900/20',
+  },
+} as const;
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
 export default function TournamentPage() {
   const { user, token } = useAppStore();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'live' | 'finished'>('live');
   const [tournaments, setTournaments] = useState<ApiTournament[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hourlyTiers, setHourlyTiers] = useState<HourlyTier[]>([]);
+  const [tiersLoading, setTiersLoading] = useState(true);
   const [joining, setJoining] = useState<string | null>(null);
   const [joined, setJoined] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [joinError, setJoinError] = useState<string | null>(null);
 
+  const { phase, countdown, phaseLabel } = useHourlyPhase();
+
+  // Fetch tournament list
   useEffect(() => {
     setLoading(true);
-    setError(null);
     const statusParam = activeTab === 'live' ? 'active' : activeTab;
     api.tournament.list(statusParam)
       .then(data => setTournaments(data.tournaments || []))
@@ -65,20 +185,38 @@ export default function TournamentPage() {
       .finally(() => setLoading(false));
   }, [activeTab]);
 
-  const handleJoin = async (t: ApiTournament) => {
-    if (!token) { setJoinError('Please log in to register'); return; }
+  // Fetch hourly tiers
+  const fetchHourlyTiers = useCallback(() => {
+    setTiersLoading(true);
+    api.tournament.upcomingHourly()
+      .then((data: { tiers: HourlyTier[] }) => setHourlyTiers(data.tiers || []))
+      .catch(() => {})
+      .finally(() => setTiersLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetchHourlyTiers();
+    // Refresh setiap 60 detik
+    const interval = setInterval(fetchHourlyTiers, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchHourlyTiers]);
+
+  const handleJoin = async (t: ApiTournament | HourlyTier) => {
+    if (!t.id) return;
+    if (!token) { setJoinError('Harap login untuk bergabung'); return; }
     setJoining(t.id);
     setJoinError(null);
     try {
       await api.tournament.register(t.id, token);
-      setJoined(prev => [...prev, t.id]);
-      // Refresh count
+      setJoined(prev => [...prev, t.id!]);
       setTournaments(prev => prev.map(x =>
         x.id === t.id ? { ...x, registrations_count: (x.registrations_count || 0) + 1 } : x
       ));
+      setHourlyTiers(prev => prev.map(x =>
+        x.id === t.id ? { ...x, registrations_count: x.registrations_count + 1 } : x
+      ));
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Registration failed';
-      setJoinError(msg);
+      setJoinError(err instanceof Error ? err.message : 'Gagal bergabung');
     } finally {
       setJoining(null);
     }
@@ -90,245 +228,366 @@ export default function TournamentPage() {
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto space-y-6">
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
-            <Trophy className="w-7 h-7 text-yellow-400" />
-            Tournaments
-          </h1>
-          <p className="text-[var(--text-muted)] mt-1">Compete for real prize pools</p>
+
+        {/* ── Header ───────────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
+              <Trophy className="w-6 h-6 text-yellow-400" />
+              Tournaments
+            </h1>
+            <p className="text-[var(--text-muted)] text-sm mt-0.5">Tournament otomatis setiap jam — bertanding &amp; menangkan hadiah nyata</p>
+          </div>
         </motion.div>
 
-        {/* Hero banner */}
+        {/* ── Countdown Banner ─────────────────────────────────── */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-yellow-600 via-orange-600 to-red-700 p-6 md:p-8">
-          <div className="absolute inset-0 opacity-10"
-            style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-          <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-            <div className="flex-1">
-              <div className="text-yellow-200 text-sm font-bold mb-2 flex items-center gap-2">
-                <Zap className="w-4 h-4" /> FEATURED TOURNAMENT
+          className={`relative overflow-hidden rounded-2xl border p-5
+            ${phase === 'active'
+              ? 'bg-gradient-to-r from-red-500/15 to-orange-500/10 border-red-500/20'
+              : 'bg-gradient-to-r from-sky-500/15 to-blue-500/10 border-sky-500/20'
+            }`}>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
+                ${phase === 'active' ? 'bg-red-500/20' : 'bg-sky-500/20'}`}>
+                {phase === 'active'
+                  ? <Zap className="w-5 h-5 text-red-400" />
+                  : <Ticket className="w-5 h-5 text-sky-400" />
+                }
               </div>
-              <h2 className="text-3xl font-black text-white mb-2">Weekly Blitz Championship</h2>
-              <p className="text-white/70 mb-4">Swiss system • 64 players • Register now to compete</p>
-              <div className="flex flex-wrap gap-3">
-                <div className="bg-white/20 rounded-xl px-4 py-2 text-center">
-                  <div className="text-2xl font-black text-white">Rp 5M</div>
-                  <div className="text-xs text-white/70">Prize Pool</div>
+              <div>
+                <div className={`text-xs font-bold uppercase tracking-wider mb-0.5
+                  ${phase === 'active' ? 'text-red-400' : 'text-sky-400'}`}>
+                  {phase === 'active' ? '● Live Sekarang' : '● Registrasi Dibuka'}
                 </div>
-                <div className="bg-white/20 rounded-xl px-4 py-2 text-center">
-                  <div className="text-2xl font-black text-white">64</div>
-                  <div className="text-xs text-white/70">Max Players</div>
-                </div>
-                <div className="bg-white/20 rounded-xl px-4 py-2 text-center">
-                  <div className="text-2xl font-black text-white">5+3</div>
-                  <div className="text-xs text-white/70">Time Control</div>
-                </div>
+                <div className="text-sm text-[var(--text-secondary)]">{phaseLabel}</div>
               </div>
             </div>
-            <div className="text-center">
-              <div className="text-7xl mb-3">🏆</div>
-              <button className="px-6 py-3 bg-white text-orange-700 rounded-2xl font-bold hover:bg-yellow-50 transition-colors shadow-lg">
-                View Tournaments
-              </button>
+            <div className="flex items-center gap-2">
+              <Clock className={`w-5 h-5 ${phase === 'active' ? 'text-red-400' : 'text-sky-400'}`} />
+              <span className={`text-3xl font-black font-mono tabular-nums
+                ${phase === 'active' ? 'text-red-400' : 'text-sky-400'}`}>
+                {countdown}
+              </span>
             </div>
           </div>
         </motion.div>
 
-        {/* Join error */}
-        {joinError && (
-          <div className="flex items-center gap-2 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            {joinError}
+        {/* ── Hourly Tier Cards ─────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Crown className="w-4 h-4 text-yellow-400" />
+            <h2 className="font-bold text-[var(--text-primary)] text-sm">Tournament Jam Ini</h2>
+            <span className="text-xs text-[var(--text-muted)]">— pilih tier &amp; daftar sekarang</span>
           </div>
-        )}
 
-        {/* Tabs */}
-        <div className="flex p-1 bg-[var(--bg-hover)] rounded-xl w-fit gap-1">
-          {(['live', 'upcoming', 'finished'] as const).map(t => (
-            <button key={t} onClick={() => setActiveTab(t)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2
-                ${activeTab === t ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}>
-              {t === 'live' && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
-              {t.charAt(0).toUpperCase() + t.slice(1)}
-            </button>
-          ))}
-        </div>
+          {tiersLoading ? (
+            <div className="grid md:grid-cols-3 gap-4">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="h-52 rounded-2xl bg-[var(--bg-hover)] animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-4">
+              {hourlyTiers.map((tier, i) => {
+                const meta = TIER_META[tier.tier];
+                const estPrize = tier.id
+                  ? formatIDR(Math.floor(tier.prize_pool * 0.8))
+                  : formatIDR(Math.floor(tier.entry_fee * tier.max_players * 0.8 * 0.8));
+                const isJoined = tier.id ? joined.includes(tier.id) : false;
+                const isTierFull = tier.max_players > 0 && tier.registrations_count >= tier.max_players;
+                const canJoin = tier.id && !isJoined && !isTierFull && tier.status !== 'finished';
 
-        {/* Tournament cards */}
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 text-sky-400 animate-spin" />
-          </div>
-        ) : tournaments.length === 0 ? (
-          <div className="card rounded-2xl p-12 text-center text-[var(--text-muted)]">
-            <Trophy className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">No {activeTab === 'live' ? 'live' : activeTab} tournaments</p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-4">
-            <AnimatePresence>
-              {tournaments.map((tournament, i) => (
-                <motion.div key={tournament.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ delay: i * 0.08 }}
-                  className="card rounded-2xl overflow-hidden hover:border-[var(--accent)] transition-all group">
-                  {/* Card header */}
-                  <div className={`relative overflow-hidden px-5 py-4
-                    ${tournament.status === 'active' ? 'bg-gradient-to-r from-red-500/10 to-orange-500/10' : tournament.status === 'upcoming' ? 'bg-gradient-to-r from-sky-500/10 to-blue-500/10' : 'bg-gradient-to-r from-slate-500/10 to-gray-500/10'}`}>
-                    {tournament.status === 'active' && (
-                      <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                        LIVE
+                return (
+                  <motion.div key={tier.tier}
+                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+                    className={`relative rounded-2xl border bg-gradient-to-b ${meta.gradient} ${meta.border}
+                      ${'featured' in meta && meta.featured ? 'ring-1 ring-slate-500/20' : ''}
+                      hover:-translate-y-0.5 transition-all shadow-lg ${meta.glow}`}>
+
+                    {'featured' in meta && meta.featured && (
+                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-[var(--bg-card)] border border-slate-500/30 rounded-full text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Populer
                       </div>
                     )}
-                    <div className="pr-16">
-                      <h3 className="font-bold text-[var(--text-primary)] text-lg mb-1">{tournament.name}</h3>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--bg-hover)] text-[var(--text-muted)] capitalize font-medium">{tournament.format}</span>
-                        {tournament.time_control?.label && (
-                          <span className="text-xs font-mono font-bold text-[var(--text-secondary)]">{tournament.time_control.label}</span>
-                        )}
-                        {tournament.time_control?.type && (
-                          <span className="text-xs text-[var(--text-muted)] capitalize">{tournament.time_control.type}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Card body */}
-                  <div className="p-5">
-                    <div className="grid grid-cols-2 gap-4 mb-5">
-                      <div>
-                        <div className="text-xs text-[var(--text-muted)] mb-1">Prize Pool</div>
-                        <div className="text-xl font-black text-yellow-400">{formatIDR(tournament.prize_pool)}</div>
+                    <div className="p-5">
+                      {/* Header */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{meta.icon}</span>
+                          <span className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${meta.badgeBg} ${meta.badgeText}`}>
+                            {meta.label}
+                          </span>
+                        </div>
+                        {tier.status === 'active' && (
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                            LIVE
+                          </span>
+                        )}
                       </div>
-                      <div>
-                        <div className="text-xs text-[var(--text-muted)] mb-1">Entry Fee</div>
-                        <div className="text-xl font-black text-[var(--text-primary)]">
-                          {tournament.entry_fee === 0 ? 'FREE' : formatIDR(tournament.entry_fee)}
+
+                      {/* Stats */}
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-[var(--text-muted)]">Tiket</span>
+                          <span className="font-black text-[var(--text-primary)]">{formatIDR(tier.entry_fee)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-[var(--text-muted)]">Time Control</span>
+                          <span className="font-bold text-[var(--text-primary)] font-mono">{tier.time_control?.label || '–'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-[var(--text-muted)]">Pemain</span>
+                          <span className="font-bold text-[var(--text-primary)]">
+                            {tier.registrations_count}/{tier.max_players}
+                            {isTierFull && <span className="ml-1 text-red-400 text-xs">FULL</span>}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-[var(--text-muted)]">Prize 1st</span>
+                          <span className={`font-black ${meta.accent}`}>{estPrize}</span>
                         </div>
                       </div>
-                      <div>
-                        <div className="text-xs text-[var(--text-muted)] mb-1">Players</div>
+
+                      {/* Progress bar */}
+                      {tier.max_players > 0 && (
+                        <div className="h-1 bg-white/5 rounded-full overflow-hidden mb-4">
+                          <div className={`h-full rounded-full transition-all ${
+                            isTierFull ? 'bg-red-500' : 'bg-gradient-to-r from-sky-500 to-blue-500'
+                          }`}
+                            style={{ width: `${Math.min((tier.registrations_count / tier.max_players) * 100, 100)}%` }} />
+                        </div>
+                      )}
+
+                      {/* CTA */}
+                      {!tier.id ? (
+                        <div className="w-full py-2 rounded-xl text-center text-xs text-[var(--text-muted)] bg-[var(--bg-hover)] border border-[var(--border)]">
+                          Dibuka pukul :55
+                        </div>
+                      ) : isJoined ? (
+                        <button className="w-full py-2 rounded-xl text-sm font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center gap-1.5">
+                          <CheckCircle className="w-4 h-4" /> Terdaftar
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleJoin(tier)}
+                          disabled={joining === tier.id || !canJoin || !token}
+                          className="w-full py-2 rounded-xl text-sm font-bold transition-all
+                            bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:opacity-90
+                            disabled:opacity-40 flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/20">
+                          {joining === tier.id
+                            ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            : <Ticket className="w-4 h-4" />
+                          }
+                          {!token ? 'Login untuk Daftar' : `Beli Tiket — ${formatIDR(tier.entry_fee)}`}
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
+
+        {/* ── Prize split info ──────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+          className="flex items-center gap-4 px-5 py-3 bg-[var(--bg-hover)] rounded-xl border border-[var(--border)] text-sm">
+          <TrendingUp className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+          <span className="text-[var(--text-muted)]">
+            Prize pool = jumlah tiket terkumpul.&nbsp;
+            <span className="text-yellow-400 font-semibold">80%</span> ke juara 1 ·&nbsp;
+            <span className="text-slate-300 font-semibold">10%</span> ke juara 2 ·&nbsp;
+            <span className="text-[var(--text-muted)] font-medium">10%</span> platform fee
+          </span>
+        </motion.div>
+
+        {/* ── Join error ────────────────────────────────────────── */}
+        {joinError && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {joinError}
+            <button onClick={() => setJoinError(null)} className="ml-auto text-red-400/60 hover:text-red-400">✕</button>
+          </motion.div>
+        )}
+
+        {/* ── Tabs ─────────────────────────────────────────────── */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-[var(--text-primary)]">Semua Tournament</h2>
+            <div className="flex p-1 bg-[var(--bg-hover)] rounded-xl gap-1">
+              {(['live', 'upcoming', 'finished'] as const).map(t => (
+                <button key={t} onClick={() => setActiveTab(t)}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5
+                    ${activeTab === t
+                      ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-sm'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                    }`}>
+                  {t === 'live' && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+                  {t === 'live' ? 'Live' : t === 'upcoming' ? 'Upcoming' : 'Selesai'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tournament cards */}
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-6 h-6 text-sky-400 animate-spin" />
+            </div>
+          ) : tournaments.length === 0 ? (
+            <div className="card rounded-2xl p-12 text-center text-[var(--text-muted)]">
+              <Trophy className="w-10 h-10 mx-auto mb-3 opacity-20" />
+              <p className="font-medium text-sm">Tidak ada tournament {activeTab === 'live' ? 'live' : activeTab === 'upcoming' ? 'upcoming' : 'yang selesai'}</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-4">
+              <AnimatePresence>
+                {tournaments.map((tournament, i) => (
+                  <motion.div key={tournament.id}
+                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }} transition={{ delay: i * 0.07 }}
+                    className="card rounded-2xl overflow-hidden hover:border-[var(--accent)]/50 transition-all">
+
+                    {/* Card header */}
+                    <div className={`relative overflow-hidden px-5 py-4
+                      ${tournament.status === 'active'
+                        ? 'bg-gradient-to-r from-red-500/10 to-orange-500/10'
+                        : tournament.status === 'upcoming'
+                        ? 'bg-gradient-to-r from-sky-500/10 to-blue-500/10'
+                        : 'bg-gradient-to-r from-slate-500/8 to-gray-500/8'
+                      }`}>
+                      {tournament.status === 'active' && (
+                        <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                          LIVE
+                        </div>
+                      )}
+                      <div className="pr-16">
+                        <h3 className="font-bold text-[var(--text-primary)] mb-1">{tournament.name}</h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--bg-hover)] text-[var(--text-muted)] capitalize font-medium">
+                            {tournament.format}
+                          </span>
+                          {tournament.time_control?.label && (
+                            <span className="text-xs font-mono font-bold text-[var(--text-secondary)]">
+                              {tournament.time_control.label}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card body */}
+                    <div className="p-5">
+                      <div className="grid grid-cols-2 gap-3 mb-4">
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="text-xs text-[var(--text-muted)] mb-0.5">Prize Pool</div>
+                          <div className="text-xl font-black text-yellow-400">{formatIDR(tournament.prize_pool)}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-[var(--text-muted)] mb-0.5">Entry Fee</div>
+                          <div className="text-xl font-black text-[var(--text-primary)]">
+                            {tournament.entry_fee === 0 ? 'GRATIS' : formatIDR(tournament.entry_fee)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-[var(--text-muted)] mb-1">Pemain</div>
+                          <div className="flex items-center gap-1.5">
+                            <Users className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                             <span className="text-sm font-bold text-[var(--text-primary)]">
                               {currentCount(tournament)}{tournament.max_players ? `/${tournament.max_players}` : ''}
                             </span>
                             {tournament.max_players && (
                               <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${isFull(tournament) ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                                {isFull(tournament) ? 'FULL' : `${tournament.max_players - currentCount(tournament)} spots left`}
+                                {isFull(tournament) ? 'FULL' : `${tournament.max_players - currentCount(tournament)} slot`}
                               </span>
                             )}
                           </div>
                           {tournament.max_players && (
-                            <div className="h-1.5 bg-[var(--bg-hover)] rounded-full overflow-hidden">
+                            <div className="mt-1.5 h-1 bg-[var(--bg-hover)] rounded-full overflow-hidden">
                               <div className="h-full bg-gradient-to-r from-sky-500 to-blue-600 rounded-full transition-all"
                                 style={{ width: `${Math.min((currentCount(tournament) / tournament.max_players) * 100, 100)}%` }} />
                             </div>
                           )}
                         </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-[var(--text-muted)] mb-1">
-                          {tournament.status === 'finished' ? 'Status' : tournament.status === 'active' ? 'Started' : 'Starts in'}
+                        <div>
+                          <div className="text-xs text-[var(--text-muted)] mb-0.5">
+                            {tournament.status === 'finished' ? 'Status' : tournament.status === 'active' ? 'Dimulai' : 'Mulai Dalam'}
+                          </div>
+                          <div className={`text-sm font-bold ${tournament.status === 'active' ? 'text-red-400' : tournament.status === 'finished' ? 'text-slate-400' : 'text-sky-400'}`}>
+                            {tournament.status === 'finished' ? 'Selesai' :
+                             tournament.status === 'active' ? '● Live Sekarang' :
+                             getTimeUntil(tournament.starts_at)}
+                          </div>
                         </div>
-                        <div className={`text-sm font-bold ${tournament.status === 'active' ? 'text-red-400' : tournament.status === 'finished' ? 'text-slate-400' : 'text-sky-400'}`}>
-                          {tournament.status === 'finished' ? 'Finished' :
-                           tournament.status === 'active' ? '● LIVE NOW' :
-                           getTimeUntil(tournament.starts_at)}
-                        </div>
                       </div>
+
+                      {/* Prize distribution */}
+                      {tournament.prize_pool > 0 && (
+                        <div className="mb-4 p-3 bg-[var(--bg-hover)] rounded-xl">
+                          <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Distribusi Hadiah</div>
+                          <div className="flex gap-3">
+                            {[
+                              { place: '1st', pct: tournament.prize_distribution?.['1'] ?? 0.80, color: 'text-yellow-400' },
+                              { place: '2nd', pct: tournament.prize_distribution?.['2'] ?? 0.10, color: 'text-slate-300' },
+                            ].map(p => (
+                              <div key={p.place} className="flex-1 text-center">
+                                <div className={`text-xs font-bold ${p.color}`}>{p.place}</div>
+                                <div className="text-sm font-black text-[var(--text-primary)]">
+                                  {formatIDR(Math.floor(tournament.prize_pool * p.pct))}
+                                </div>
+                                <div className="text-xs text-[var(--text-muted)]">{Math.round(p.pct * 100)}%</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action */}
+                      {tournament.status === 'finished' ? (
+                        <button className="w-full py-2.5 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] text-sm font-medium hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center gap-2">
+                          Lihat Hasil <ChevronRight className="w-4 h-4" />
+                        </button>
+                      ) : tournament.status === 'active' ? (
+                        joined.includes(tournament.id) ? (
+                          <button className="w-full py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-sm font-semibold flex items-center justify-center gap-2">
+                            <CheckCircle className="w-4 h-4" /> Sudah Bergabung — Lihat Bracket
+                          </button>
+                        ) : (
+                          <button onClick={() => handleJoin(tournament)}
+                            disabled={joining === tournament.id}
+                            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white text-sm font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 disabled:opacity-60">
+                            {joining === tournament.id ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Zap className="w-4 h-4" />}
+                            Gabung Tournament Live
+                          </button>
+                        )
+                      ) : (
+                        joined.includes(tournament.id) ? (
+                          <button className="w-full py-2.5 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 text-sm font-semibold flex items-center justify-center gap-2">
+                            <CheckCircle className="w-4 h-4" /> Terdaftar
+                          </button>
+                        ) : (
+                          <button onClick={() => handleJoin(tournament)}
+                            disabled={joining === tournament.id || isFull(tournament)}
+                            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20">
+                            {joining === tournament.id ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Trophy className="w-4 h-4" />}
+                            Daftar {tournament.entry_fee > 0 ? `— ${formatIDR(tournament.entry_fee)}` : '— GRATIS'}
+                          </button>
+                        )
+                      )}
                     </div>
-
-                    {/* Prize distribution */}
-                    {tournament.prize_pool > 0 && (
-                      <div className="mb-4 p-3 bg-[var(--bg-hover)] rounded-xl">
-                        <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Prize Distribution</div>
-                        <div className="flex gap-3">
-                          {[
-                            { place: '1st', pct: 50, color: 'yellow' },
-                            { place: '2nd', pct: 30, color: 'slate' },
-                            { place: '3rd', pct: 20, color: 'amber' },
-                          ].map(p => (
-                            <div key={p.place} className="flex-1 text-center">
-                              <div className={`text-xs font-bold ${p.color === 'yellow' ? 'text-yellow-400' : p.color === 'slate' ? 'text-slate-300' : 'text-amber-600'}`}>{p.place}</div>
-                              <div className="text-sm font-black text-[var(--text-primary)]">{formatIDR(tournament.prize_pool * p.pct / 100)}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Action */}
-                    {tournament.status === 'finished' ? (
-                      <button className="w-full py-2.5 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] text-sm font-medium hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center gap-2">
-                        View Results <ChevronRight className="w-4 h-4" />
-                      </button>
-                    ) : tournament.status === 'active' ? (
-                      joined.includes(tournament.id) ? (
-                        <button className="w-full py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-sm font-semibold flex items-center justify-center gap-2">
-                          <CheckCircle className="w-4 h-4" /> Joined — View Bracket
-                        </button>
-                      ) : (
-                        <button onClick={() => handleJoin(tournament)}
-                          disabled={joining === tournament.id}
-                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white text-sm font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 disabled:opacity-60">
-                          {joining === tournament.id ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Zap className="w-4 h-4" />}
-                          Join Live Tournament
-                        </button>
-                      )
-                    ) : (
-                      joined.includes(tournament.id) ? (
-                        <button className="w-full py-2.5 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 text-sm font-semibold flex items-center justify-center gap-2">
-                          <CheckCircle className="w-4 h-4" /> Registered
-                        </button>
-                      ) : (
-                        <button onClick={() => handleJoin(tournament)}
-                          disabled={joining === tournament.id || isFull(tournament)}
-                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20">
-                          {joining === tournament.id ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Trophy className="w-4 h-4" />}
-                          Register {tournament.entry_fee > 0 ? `— ${formatIDR(tournament.entry_fee)}` : '— FREE'}
-                        </button>
-                      )
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
-
-        {/* Schedule */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="card rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[var(--border)]">
-            <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-sky-400" /> Upcoming Schedule
-            </h3>
-          </div>
-          <div className="divide-y divide-[var(--border)]">
-            {[
-              { name: 'Daily Bullet Arena', time: 'Today 22:00', prize: 'Rp 1M', fee: 'Free', players: 'Open', tc: '1+0' },
-              { name: 'Weekend Blitz Open', time: 'Sat 10:00', prize: 'Rp 3M', fee: 'Rp 30K', players: '128 max', tc: '3+2' },
-              { name: 'Monthly Championship', time: 'Apr 1, 10:00', prize: 'Rp 20M', fee: 'Rp 200K', players: '256 max', tc: '10+5' },
-              { name: 'GM Invitational', time: 'Apr 15, 14:00', prize: 'Rp 100M', fee: 'Invite only', players: '16', tc: '15+10' },
-            ].map((t, i) => (
-              <div key={i} className="flex items-center gap-4 px-5 py-3.5 hover:bg-[var(--bg-hover)] transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-[var(--bg-hover)] flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-5 h-5 text-[var(--text-muted)]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm text-[var(--text-primary)]">{t.name}</div>
-                  <div className="text-xs text-[var(--text-muted)]">{t.time} • {t.tc} • {t.players}</div>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <div className="font-bold text-sm text-yellow-400">{t.prize}</div>
-                  <div className="text-xs text-[var(--text-muted)]">{t.fee}</div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0" />
-              </div>
-            ))}
-          </div>
-        </motion.div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
       </div>
     </AppLayout>
   );
