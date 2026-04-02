@@ -70,6 +70,17 @@ export default function ChessGame({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const moveHistoryRef = useRef<HTMLDivElement>(null);
 
+  // Refs so the single persistent timer always reads the latest values
+  // without needing to be re-created on every move (which caused multiple
+  // overlapping intervals draining the clock too fast).
+  const fenRef = useRef(fen);
+  const gameStatusRef = useRef(gameStatus);
+  const handleTimeoutRef = useRef<(loser: 'white' | 'black') => void>(() => {});
+
+  // Keep refs in sync on every render so timer callback always sees latest state
+  fenRef.current = fen;
+  gameStatusRef.current = gameStatus;
+
   const theme = BOARD_THEMES[boardTheme as keyof typeof BOARD_THEMES] || BOARD_THEMES.classic;
   const isAI = mode.startsWith('ai-');
   const aiLevel = mode === 'ai-easy' ? 'easy' : mode === 'ai-medium' ? 'medium' : 'hard';
@@ -85,34 +96,33 @@ export default function ChessGame({
     setReviewFen(null); // always return to live view on new move
   }
 
-  // Timer — depends on `fen` (string, stable equality) instead of `game` (object reference,
-  // always a new Chess() on each move which caused extra interval restarts).
-  // Parse the turn directly from the FEN string (field 2) to avoid stale-closure on `game`.
+  // Single persistent timer — created ONCE on mount, never re-created on moves.
+  // Reads whose turn it is via fenRef (updated each render) to avoid stale closures
+  // AND to prevent multiple overlapping intervals that previously drained clocks
+  // at 10× speed (one new interval per move × moves accumulating).
+  //
   // IMPORTANT: loser param = the player whose clock hit 0 (they lose).
   //   White times out → handleTimeout('white') → Black wins
   //   Black times out → handleTimeout('black') → White wins
   useEffect(() => {
-    if (gameStatus !== 'active') {
-      if (timerRef.current) clearInterval(timerRef.current);
-      return;
-    }
-    // Parse turn from FEN: "... w KQkq ..." or "... b KQkq ..."
-    const fenTurn = fen.split(' ')[1] as 'w' | 'b';
     timerRef.current = setInterval(() => {
+      if (gameStatusRef.current !== 'active') return;
+      // Parse active turn from the latest FEN (ref is always current)
+      const fenTurn = fenRef.current.split(' ')[1] as 'w' | 'b';
       if (fenTurn === 'w') {
         setWhiteTime(prev => {
-          if (prev <= 1) {
-            // white's clock ran out → white loses
-            setTimeout(() => handleTimeout('white'), 0);
+          if (prev <= 0) return 0; // already stopped
+          if (prev === 1) {
+            setTimeout(() => handleTimeoutRef.current('white'), 0);
             return 0;
           }
           return prev - 1;
         });
       } else {
         setBlackTime(prev => {
-          if (prev <= 1) {
-            // black's clock ran out → black loses
-            setTimeout(() => handleTimeout('black'), 0);
+          if (prev <= 0) return 0;
+          if (prev === 1) {
+            setTimeout(() => handleTimeoutRef.current('black'), 0);
             return 0;
           }
           return prev - 1;
@@ -120,7 +130,7 @@ export default function ChessGame({
       }
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [fen, gameStatus]);
+  }, []); // Empty deps — single interval for the component lifetime
 
   // AI move effect
   // Fires when fen changes (i.e. after every move) or when review state changes.
@@ -195,6 +205,8 @@ export default function ChessGame({
     setGameEndReason('timeout');
     onGameEnd?.(loser === playerColor ? 'loss' : 'win');
   };
+  // Keep ref in sync so the single timer interval always calls the latest version
+  handleTimeoutRef.current = handleTimeout;
 
   const checkGameEnd = (g: Chess) => {
     if (g.isCheckmate()) {
