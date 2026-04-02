@@ -8,6 +8,7 @@ import {
   Loader2, Copy, Upload, CheckCheck, Building2, CreditCard
 } from 'lucide-react';
 import AppLayout from '@/components/ui/AppLayout';
+import BankLogo, { BankSelector } from '@/components/ui/BankLogo';
 import { useAppStore } from '@/lib/store';
 import { api, ApiError } from '@/lib/api';
 
@@ -552,10 +553,13 @@ export default function WalletPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between bg-[var(--bg-hover)] rounded-xl p-4">
                         <div>
-                          <p className="text-xs text-[var(--text-muted)]">Bank</p>
-                          <p className="font-bold text-[var(--text-primary)]">BCA</p>
+                          <p className="text-xs text-[var(--text-muted)] mb-1.5">Bank Tujuan Transfer</p>
+                          <BankLogo bank="BCA" size="lg" />
                         </div>
-                        <Building2 className="w-5 h-5 text-sky-400" />
+                        <div className="text-right">
+                          <p className="text-xs text-[var(--text-muted)]">Verified</p>
+                          <p className="text-xs font-semibold text-emerald-400">✓ Rekening Aktif</p>
+                        </div>
                       </div>
                       <div className="flex items-center justify-between bg-[var(--bg-hover)] rounded-xl p-4">
                         <div>
@@ -665,11 +669,14 @@ export default function WalletPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-[var(--text-primary)] mb-2 block">Bank Tujuan</label>
-                  <select value={withdrawBank} onChange={e => setWithdrawBank(e.target.value)}
-                    className="w-full bg-[var(--bg-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-sky-500 transition-colors">
-                    <option value="">Pilih Bank</option>
-                    {BANKS.map(b => <option key={b} value={b}>{b}</option>)}
-                  </select>
+                  <BankSelector
+                    banks={BANKS}
+                    selected={withdrawBank}
+                    onSelect={setWithdrawBank}
+                  />
+                  {withdrawBank && (
+                    <p className="text-xs text-sky-400 mt-1.5 font-medium">✓ {withdrawBank} dipilih</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium text-[var(--text-primary)] mb-2 block">Nomor Rekening</label>

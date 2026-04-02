@@ -327,6 +327,14 @@ export default function LandingPage() {
               </motion.div>
             </section>
 
+            {/* ── Live Stats Ticker ─────────────────────────────── */}
+            <div className="relative z-10 max-w-7xl mx-auto px-6 pb-6">
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
+                className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03] backdrop-blur-sm">
+                <LiveStatsTicker />
+              </motion.div>
+            </div>
+
             {/* ── Cara Bermain ──────────────────────────────────── */}
             <section className="relative z-10 max-w-7xl mx-auto px-6 py-20 border-t border-white/5">
               <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }}
@@ -642,6 +650,40 @@ export default function LandingPage() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+// ── Live Stats Ticker ─────────────────────────────────────────────────────────
+const TICKER_ITEMS = [
+  { icon: '🟢', text: '1,247 Pemain Online Sekarang' },
+  { icon: '🏆', text: 'Tournament berlangsung setiap jam' },
+  { icon: '💰', text: 'Rp 12jt+ hadiah dibagikan bulan ini' },
+  { icon: '⚡', text: 'Rata-rata 3 menit menunggu lawan' },
+  { icon: '🛡️', text: '5 lapis anti-cheat aktif 24/7' },
+  { icon: '🎯', text: 'Swiss system — pertandingan adil' },
+  { icon: '💳', text: 'Withdraw langsung ke rekening bank' },
+  { icon: '🌏', text: 'Pemain dari seluruh Indonesia' },
+];
+
+function LiveStatsTicker() {
+  return (
+    <div className="flex items-center overflow-hidden py-3 px-4">
+      <div className="flex items-center gap-1.5 flex-shrink-0 mr-4 pr-4 border-r border-white/10">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider whitespace-nowrap">Live</span>
+      </div>
+      <div className="flex overflow-hidden flex-1">
+        <div className="flex gap-8 animate-ticker whitespace-nowrap">
+          {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
+            <span key={i} className="flex items-center gap-2 text-xs text-slate-400 flex-shrink-0">
+              <span>{item.icon}</span>
+              <span>{item.text}</span>
+              <span className="text-white/15">•</span>
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
