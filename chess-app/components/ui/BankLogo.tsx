@@ -11,22 +11,18 @@ interface BankLogoProps {
   showLabel?: boolean;
 }
 
-// Banks that have real SVG assets in /public/banks/
+// All banks use real official SVG assets from /public/banks/
 const SVG_BANKS: Record<string, string> = {
   BCA:     '/banks/bca.svg',
   Mandiri: '/banks/mandiri.svg',
   BRI:     '/banks/bri.svg',
   BNI:     '/banks/bni.svg',
   OCBC:    '/banks/ocbc.svg',
-};
-
-// Fallback branded colors for banks without SVG assets
-const BADGE_BANKS: Record<string, { bg: string; text: string; label: string }> = {
-  CIMB:    { bg: '#C00000', text: '#FFFFFF', label: 'CIMB' },
-  BSI:     { bg: '#00805F', text: '#FFFFFF', label: 'BSI' },
-  Danamon: { bg: '#EB1C24', text: '#FFFFFF', label: 'Danamon' },
-  Permata: { bg: '#6C3FA0', text: '#FFFFFF', label: 'Permata' },
-  BTN:     { bg: '#003087', text: '#FFD600', label: 'BTN' },
+  CIMB:    '/banks/cimb.svg',
+  BSI:     '/banks/bsi.svg',
+  Danamon: '/banks/danamon.svg',
+  Permata: '/banks/permata.svg',
+  BTN:     '/banks/btn.svg',
 };
 
 const SIZE_PX = {
@@ -60,23 +56,14 @@ export default function BankLogo({ bank, size = 'md', showLabel = false }: BankL
     );
   }
 
-  // Fallback text badge for banks without SVG
-  const badge = BADGE_BANKS[bank] || { bg: '#334155', text: '#FFFFFF', label: bank };
-  const fontSize = size === 'sm' ? 9 : size === 'md' ? 11 : 14;
-
+  // Unknown bank — generic grey badge fallback
   return (
     <div className="inline-flex flex-col items-center gap-1">
       <div
-        className="flex items-center justify-center rounded-lg font-extrabold tracking-wide"
-        style={{
-          width: dim.w,
-          height: dim.h,
-          backgroundColor: badge.bg,
-          color: badge.text,
-          fontSize,
-        }}
+        className="flex items-center justify-center rounded-lg font-extrabold tracking-wide bg-slate-600 text-white"
+        style={{ width: dim.w, height: dim.h, fontSize: size === 'sm' ? 9 : size === 'md' ? 11 : 14 }}
       >
-        {badge.label}
+        {bank}
       </div>
       {showLabel && (
         <span className="text-[10px] text-[var(--text-muted)] font-medium">{bank}</span>
