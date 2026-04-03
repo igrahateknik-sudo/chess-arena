@@ -2,14 +2,15 @@ import Link from 'next/link';
 import { Shield, ChevronRight } from 'lucide-react';
 
 export const metadata = {
-  title: 'Terms of Service — Chess Arena',
-  description: 'Terms of Service for Chess Arena real-money chess platform',
+  title: 'Syarat & Ketentuan — Chess Arena',
+  description: 'Syarat & Ketentuan Chess Arena — platform kompetisi catur skill-based Indonesia. Bukan perjudian.',
+  robots: 'index, follow',
 };
 
-const EFFECTIVE_DATE = '25 Maret 2026';
+const EFFECTIVE_DATE = '3 April 2026';
 const COMPANY       = 'Chess Arena';
-const CONTACT_EMAIL = 'legal@chess-arena.com';
-const SUPPORT_EMAIL = 'support@chess-arena.com';
+const CONTACT_EMAIL = 'igrahateknik@gmail.com';
+const SUPPORT_EMAIL = 'igrahateknik@gmail.com';
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
@@ -57,9 +58,19 @@ export default function TermsPage() {
           <p className="text-zinc-400 text-sm">
             Berlaku sejak: <strong className="text-zinc-200">{EFFECTIVE_DATE}</strong>
           </p>
-          <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-sm text-yellow-300">
-            <strong>Penting:</strong> Dengan menggunakan platform {COMPANY}, termasuk fitur permainan uang nyata,
-            kamu menyetujui seluruh syarat dalam dokumen ini. Baca dengan seksama sebelum mendaftar.
+          {/* Skill-based competition notice */}
+          <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-sm text-emerald-300">
+            <strong>⚡ Kompetisi Berbasis Skill — Bukan Perjudian</strong>
+            <p className="mt-2 text-emerald-200/80">
+              Chess Arena adalah platform <strong>turnamen catur kompetitif</strong> yang beroperasi seperti
+              Chess.com Tournaments, FIDE events, dan kompetisi esports. Tournament entry fee adalah
+              <strong> biaya partisipasi kompetisi</strong> — bukan taruhan. Hadiah diberikan kepada pemain terbaik
+              berdasarkan skill bermain catur, bukan keberuntungan. Permainan Quick Play (halaman Play) sepenuhnya gratis.
+            </p>
+          </div>
+          <div className="mt-3 p-4 bg-zinc-800/60 border border-white/10 rounded-xl text-sm text-zinc-300">
+            <strong>Penting:</strong> Dengan menggunakan platform {COMPANY}, kamu menyetujui seluruh syarat
+            dalam dokumen ini. Baca dengan seksama sebelum mendaftar.
           </div>
         </div>
 
@@ -71,7 +82,7 @@ export default function TermsPage() {
               ['#acceptance', '1. Penerimaan Syarat'],
               ['#eligibility', '2. Kelayakan Pengguna'],
               ['#account', '3. Akun & Keamanan'],
-              ['#real-money', '4. Fitur Uang Nyata'],
+              ['#real-money', '4. Sistem Kompetisi & Hadiah'],
               ['#anticheat', '5. Kebijakan Anti-Cheat'],
               ['#enforcement', '6. Penegakan & Sanksi'],
               ['#appeal', '7. Proses Banding'],
@@ -104,9 +115,9 @@ export default function TermsPage() {
         <Section id="eligibility" title="2. Kelayakan Pengguna">
           <p>Untuk menggunakan Platform, kamu harus memenuhi syarat berikut:</p>
           <ul className="list-disc pl-5 space-y-1 mt-2">
-            <li>Berusia minimal <strong>18 tahun</strong> atau usia dewasa yang berlaku di yurisdiksimu</li>
+            <li>Berusia minimal <strong>18 tahun</strong></li>
             <li>Mampu secara hukum untuk mengikat perjanjian yang mengikat secara hukum</li>
-            <li>Tidak berada dalam yurisdiksi yang melarang permainan uang nyata online</li>
+            <li>Berdomisili di Indonesia atau yurisdiksi yang mengizinkan kompetisi skill-based online</li>
             <li>Tidak sebelumnya di-banned permanen dari Platform</li>
           </ul>
           <p className="mt-3">
@@ -139,34 +150,51 @@ export default function TermsPage() {
           </Sub>
         </Section>
 
-        <Section id="real-money" title="4. Fitur Uang Nyata">
+        <Section id="real-money" title="4. Sistem Kompetisi & Hadiah">
+          <p className="mb-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-300 text-xs">
+            <strong>Quick Play (halaman Play) sepenuhnya GRATIS</strong> — tidak ada biaya apapun.
+            Biaya entry hanya berlaku untuk Tournament, mirip seperti biaya pendaftaran turnamen catur resmi.
+          </p>
           <Sub title="4.1 Setoran (Deposit)">
             <p>
-              Setoran diproses melalui Midtrans Payment Gateway. Minimum setoran adalah Rp 10.000.
+              Setoran ke wallet Chess Arena diproses melalui Midtrans Payment Gateway yang berlisensi OJK.
+              Minimum setoran adalah Rp 10.000. Dana setoran digunakan untuk membayar entry fee tournament.
               Setoran tidak dapat dikembalikan kecuali ada kesalahan teknis yang dapat diverifikasi.
             </p>
           </Sub>
           <Sub title="4.2 Penarikan (Withdrawal)">
             <p>
-              Penarikan dana memerlukan verifikasi identitas. Diproses dalam 1–3 hari kerja.
-              Biaya penarikan dapat berlaku sesuai metode yang dipilih. {COMPANY} berhak menahan
-              penarikan untuk keperluan investigasi anti-penipuan.
+              Penarikan hadiah tournament memerlukan verifikasi identitas. Diproses dalam 1–3 hari kerja.
+              Biaya admin penarikan dapat berlaku sesuai metode yang dipilih. {COMPANY} berhak menahan
+              penarikan untuk keperluan investigasi anti-kecurangan.
             </p>
           </Sub>
-          <Sub title="4.3 Taruhan Permainan">
+          <Sub title="4.3 Entry Fee Tournament">
             <p>
-              Taruhan dalam permainan ("stakes") adalah kesepakatan antara dua pemain.
-              Platform mengambil komisi platform dari setiap kemenangan. Komisi diinformasikan
-              sebelum permainan dimulai. Semua transaksi bersifat final setelah game selesai,
-              kecuali terbukti ada pelanggaran anti-cheat.
+              Entry fee tournament adalah <strong>biaya partisipasi kompetisi</strong>, bukan taruhan.
+              Konsepnya identik dengan pendaftaran turnamen catur FIDE, liga esports, atau kompetisi
+              skill-based lainnya. Hadiah tournament (prize pool) dikumpulkan dari entry fee peserta
+              dan didistribusikan kepada pemain dengan performa terbaik berdasarkan hasil pertandingan.
+            </p>
+            <p className="mt-2">
+              Platform fee (10%) digunakan untuk biaya operasional, infrastruktur server, dan
+              pengembangan platform. Rincian distribusi hadiah ditampilkan secara transparan
+              sebelum mendaftar tournament.
             </p>
           </Sub>
           <Sub title="4.4 Pengembalian Dana">
             <p>
-              Pengembalian dana hanya diberikan dalam kondisi: (a) kesalahan teknis platform yang
-              terdokumentasi, (b) akun lawan terbukti menggunakan cheat dan permainan dibatalkan
-              oleh admin, atau (c) situasi luar biasa atas kebijaksanaan {COMPANY}. Pengajuan
-              melalui {SUPPORT_EMAIL} dalam 7 hari setelah kejadian.
+              Pengembalian entry fee tournament diberikan dalam kondisi: (a) tournament dibatalkan
+              oleh platform, (b) kesalahan teknis platform yang terdokumentasi, atau (c) terbukti ada
+              pelanggaran anti-cheat oleh lawan yang mempengaruhi hasil. Pengajuan melalui {SUPPORT_EMAIL}
+              dalam 7 hari setelah kejadian.
+            </p>
+          </Sub>
+          <Sub title="4.5 Natura Kompetisi Skill-Based">
+            <p>
+              Hasil tournament sepenuhnya ditentukan oleh kemampuan bermain catur (skill), bukan
+              keberuntungan. {COMPANY} beroperasi sebagai penyelenggara kompetisi (organizer),
+              bukan sebagai bandar. Platform tidak mengambil posisi bertentangan dengan pemain.
             </p>
           </Sub>
         </Section>

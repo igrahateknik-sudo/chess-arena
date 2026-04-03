@@ -650,6 +650,18 @@ export default function LandingPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Site-wide footer */}
+      <footer className="border-t border-white/10 mt-4 px-6 py-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-xs text-slate-500">
+        <span>© 2026 Chess Arena</span>
+        <span className="text-white/10">·</span>
+        <span>Platform kompetisi catur skill-based</span>
+        <span className="text-white/10">·</span>
+        <a href="/terms" className="hover:text-slate-300 transition-colors">Syarat & Ketentuan</a>
+        <a href="/privacy" className="hover:text-slate-300 transition-colors">Kebijakan Privasi</a>
+        <a href="/appeal" className="hover:text-slate-300 transition-colors">Banding</a>
+        <a href="mailto:igrahateknik@gmail.com" className="hover:text-slate-300 transition-colors">Kontak</a>
+      </footer>
     </div>
   );
 }

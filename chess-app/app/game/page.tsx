@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Brain, Users, Clock, DollarSign, ChevronRight, X, Search, Shield, Wifi } from 'lucide-react';
+import { Zap, Brain, Users, Clock, ChevronRight, X, Search, Shield, Wifi, Star } from 'lucide-react';
 import AppLayout from '@/components/ui/AppLayout';
 import ChessGame from '@/components/chess/ChessGame';
 import OnlineGame from '@/components/chess/OnlineGame';
@@ -20,8 +20,6 @@ const AI_LEVELS = [
   { id: 'ai-hard' as GameMode, name: 'Hard', elo: 2200, desc: 'Deep calculation. Very difficult to beat.', icon: '😤', color: 'red' },
 ];
 
-const STAKES_OPTIONS = [0, 10000, 25000, 50000, 100000, 250000];
-
 interface FoundGame {
   gameId: string;
   white: Player & { title?: string };
@@ -36,7 +34,6 @@ export default function GamePage() {
   const [step, setStep] = useState<Step>('lobby');
   const [gameMode, setGameMode] = useState<GameMode>('pvp-online');
   const [selectedTC, setSelectedTC] = useState(TIME_CONTROLS[3]);
-  const [stakes, setStakes] = useState(0);
   const [playerColor, setPlayerColor] = useState<'white' | 'black' | 'random'>('random');
   const [aiLevel, setAiLevel] = useState<GameMode>('ai-medium');
 
@@ -122,7 +119,7 @@ export default function GamePage() {
 
     socket.emit('queue:join', {
       timeControl: selectedTC,
-      stakes,
+      stakes: 0,
       color: playerColor === 'random' ? null : playerColor,
     });
 
@@ -188,7 +185,6 @@ export default function GamePage() {
               </h1>
               <p className="text-sm text-[var(--text-muted)]">
                 {foundGame.white.username} vs {foundGame.black.username} • {foundGame.timeControl.label}
-                {foundGame.stakes > 0 && ` • Rp ${foundGame.stakes.toLocaleString('id-ID')}`}
               </p>
             </div>
             <button onClick={() => { setStep('lobby'); setFoundGame(null); }}
@@ -244,10 +240,10 @@ export default function GamePage() {
                       <h3 className="text-xl font-black text-[var(--text-primary)]">Player vs Player</h3>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">LIVE</span>
                     </div>
-                    <p className="text-sm text-[var(--text-muted)] mb-4">Real-time matchmaking with ELO-based pairing. Play for free or with stakes.</p>
+                    <p className="text-sm text-[var(--text-muted)] mb-4">Real-time matchmaking with ELO-based pairing. Free to play, no entry fee.</p>
                     <div className="flex flex-wrap gap-2">
                       <span className="text-xs px-2 py-1 rounded-lg bg-sky-500/10 text-sky-400 font-medium">WebSocket</span>
-                      <span className="text-xs px-2 py-1 rounded-lg bg-yellow-500/10 text-yellow-400 font-medium">Real Money</span>
+                      <span className="text-xs px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 font-medium">Free</span>
                       <span className="text-xs px-2 py-1 rounded-lg bg-purple-500/10 text-purple-400 font-medium">ELO Rated</span>
                     </div>
                     <div className="flex items-center gap-1.5 mt-4 text-sky-400 font-semibold text-sm">
@@ -282,7 +278,7 @@ export default function GamePage() {
                 {[
                   { icon: Users, label: 'Online Now', value: onlineUsers > 0 ? onlineUsers.toLocaleString() : '12,481', color: 'sky' },
                   { icon: Zap, label: 'Games Today', value: '89,234', color: 'yellow' },
-                  { icon: DollarSign, label: 'Prize Today', value: 'Rp 45M', color: 'emerald' },
+                  { icon: Star, label: 'ELO Matches', value: '100% Free', color: 'emerald' },
                 ].map(s => (
                   <div key={s.label} className="card p-4 rounded-xl text-center">
                     <s.icon className={`w-5 h-5 mx-auto mb-2 ${s.color === 'sky' ? 'text-sky-400' : s.color === 'yellow' ? 'text-yellow-400' : 'text-emerald-400'}`} />
@@ -304,8 +300,11 @@ export default function GamePage() {
               {gameMode === 'pvp-online' ? (
                 <>
                   <h2 className="text-2xl font-black text-[var(--text-primary)] mb-6">Online Match Settings</h2>
+                  <div className="mb-5 flex items-center gap-2 p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-sm text-emerald-400">
+                    <Shield className="w-4 h-4 flex-shrink-0" />
+                    Quick Play selalu gratis — untuk kompetisi berhadiah, buka halaman <a href="/tournament" className="underline font-semibold">Tournament</a>.
+                  </div>
                   <TimeControlSelector selected={selectedTC} onSelect={setSelectedTC} />
-                  <StakesSelector stakes={stakes} onSelect={setStakes} balance={user?.balance || 0} />
                   <ColorSelector color={playerColor} onSelect={setPlayerColor} />
                   <button onClick={startMatchmaking}
                     className="w-full mt-6 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl font-bold text-white shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
@@ -359,7 +358,6 @@ export default function GamePage() {
 
               <h2 className="text-2xl font-black text-[var(--text-primary)] mb-2">Finding Opponent...</h2>
               <p className="text-[var(--text-muted)] mb-1">Searching for a <strong>{selectedTC.label}</strong> match</p>
-              {stakes > 0 && <p className="text-yellow-400 font-semibold mb-1">Stakes: Rp {stakes.toLocaleString('id-ID')}</p>}
 
               <p className="text-sm text-[var(--text-muted)] mt-4">
                 <span className="font-mono text-sky-400 text-lg">
@@ -419,33 +417,6 @@ function TimeControlSelector({ selected, onSelect }: { selected: typeof TIME_CON
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-function StakesSelector({ stakes, onSelect, balance }: { stakes: number; onSelect: (n: number) => void; balance: number }) {
-  return (
-    <div className="mb-6">
-      <h3 className="font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-        <DollarSign className="w-4 h-4 text-[var(--text-muted)]" /> Stakes
-        <span className="text-xs text-[var(--text-muted)] font-normal ml-auto">Balance: Rp {balance.toLocaleString('id-ID')}</span>
-      </h3>
-      <div className="flex flex-wrap gap-2">
-        {STAKES_OPTIONS.map(s => (
-          <button key={s} onClick={() => onSelect(s)}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${stakes === s ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/25' : 'bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:bg-[var(--border)]'}`}>
-            {s === 0 ? 'Free' : `Rp ${(s / 1000).toFixed(0)}K`}
-          </button>
-        ))}
-      </div>
-      {stakes > 0 && (
-        <div className="mt-3 flex items-start gap-2 p-3 bg-yellow-500/10 rounded-xl border border-yellow-500/20">
-          <Shield className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-yellow-600 dark:text-yellow-400">
-            Stakes held in escrow. Platform fee: 4% on winnings only.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

@@ -3,12 +3,13 @@ import { Lock } from 'lucide-react';
 
 export const metadata = {
   title: 'Privacy Policy — Chess Arena',
-  description: 'Privacy Policy for Chess Arena real-money chess platform',
+  description: 'Kebijakan Privasi Chess Arena — platform kompetisi catur skill-based Indonesia.',
+  robots: 'index, follow',
 };
 
-const EFFECTIVE_DATE = '25 Maret 2026';
+const EFFECTIVE_DATE = '3 April 2026';
 const COMPANY       = 'Chess Arena';
-const CONTACT_EMAIL = 'privacy@chess-arena.com';
+const CONTACT_EMAIL = 'igrahateknik@gmail.com';
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
@@ -83,6 +84,10 @@ export default function PrivacyPage() {
           <p className="text-zinc-400 text-sm">
             Berlaku sejak: <strong className="text-zinc-200">{EFFECTIVE_DATE}</strong>
           </p>
+          <div className="mt-4 p-3 bg-sky-500/10 border border-sky-500/20 rounded-xl text-xs text-sky-300">
+            <strong>Chess Arena</strong> adalah platform <strong>kompetisi catur berbasis skill</strong> — bukan platform perjudian.
+            Tournament entry fee adalah biaya partisipasi kompetisi, dan hadiah diberikan berdasarkan performa bermain catur.
+          </div>
           <p className="mt-3 text-sm">
             {COMPANY} berkomitmen melindungi privasi pengguna. Dokumen ini menjelaskan data apa yang
             kami kumpulkan, bagaimana kami menggunakannya, dan hak-hak kamu atas datamu.
@@ -300,7 +305,7 @@ export default function PrivacyPage() {
           <p>Untuk pertanyaan, permintaan hak pengguna, atau pelaporan kerentanan privasi:</p>
           <ul className="list-none space-y-2 mt-2">
             <li>📧 Privacy & DPO: <a href={`mailto:${CONTACT_EMAIL}`} className="text-sky-400">{CONTACT_EMAIL}</a></li>
-            <li>📧 Support umum: <a href="mailto:support@chess-arena.com" className="text-sky-400">support@chess-arena.com</a></li>
+            <li>📧 Support umum: <a href={`mailto:${CONTACT_EMAIL}`} className="text-sky-400">{CONTACT_EMAIL}</a></li>
           </ul>
           <p className="mt-3 text-zinc-500 text-xs">
             Kami berusaha merespons semua permintaan privasi dalam 30 hari kerja.
