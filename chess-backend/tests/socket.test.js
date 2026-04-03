@@ -72,6 +72,7 @@ jest.mock('../src/lib/anticheat', () => ({
   enforceAnticheat: jest.fn(async () => {}),
   detectEloAnomaly: jest.fn(async () => ({ suspicious: false, flags: [], score: 0 })),
   runStockfishBackground: jest.fn(async () => {}),
+  detectDisconnectAbuse: jest.fn(() => ({ abusive: false, disconnects: 0, threshold: 3 })),
 }));
 
 jest.mock('../src/lib/collusion', () => ({

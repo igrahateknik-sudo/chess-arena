@@ -1,6 +1,6 @@
 /**
- * BankLogo — Inline SVG bank logos for Indonesian banks
- * No CDN dependency, renders cleanly on dark/light backgrounds.
+ * BankLogo — Official bank logos via SVG files in /public/banks/
+ * Falls back to branded text badge for banks without SVG assets.
  */
 
 export type BankKey = 'BCA' | 'Mandiri' | 'BRI' | 'BNI' | 'OCBC' | 'CIMB' | 'BSI' | 'Danamon' | 'Permata' | 'BTN';
@@ -11,151 +11,73 @@ interface BankLogoProps {
   showLabel?: boolean;
 }
 
-const BANK_META: Record<string, { bg: string; text: string; accent?: string; abbr: string }> = {
-  BCA:     { bg: '#0066B3', text: '#FFFFFF', abbr: 'BCA' },
-  Mandiri: { bg: '#003087', text: '#F9A01B', accent: '#F9A01B', abbr: 'Mandiri' },
-  BRI:     { bg: '#005BAA', text: '#FFFFFF', accent: '#F47920', abbr: 'BRI' },
-  BNI:     { bg: '#F16521', text: '#FFFFFF', accent: '#003087', abbr: 'BNI' },
-  OCBC:    { bg: '#D0021B', text: '#FFFFFF', abbr: 'OCBC' },
-  CIMB:    { bg: '#C00000', text: '#FFFFFF', abbr: 'CIMB' },
-  BSI:     { bg: '#00805F', text: '#FFFFFF', abbr: 'BSI' },
-  Danamon: { bg: '#EB1C24', text: '#FFFFFF', abbr: 'Danamon' },
-  Permata: { bg: '#6C3FA0', text: '#FFFFFF', abbr: 'Permata' },
-  BTN:     { bg: '#003087', text: '#FFD600', abbr: 'BTN' },
+// Banks that have real SVG assets in /public/banks/
+const SVG_BANKS: Record<string, string> = {
+  BCA:     '/banks/bca.svg',
+  Mandiri: '/banks/mandiri.svg',
+  BRI:     '/banks/bri.svg',
+  BNI:     '/banks/bni.svg',
+  OCBC:    '/banks/ocbc.svg',
 };
 
-const SIZE = {
-  sm: { w: 48, h: 24, font: 9 },
-  md: { w: 64, h: 32, font: 11 },
-  lg: { w: 96, h: 48, font: 15 },
+// Fallback branded colors for banks without SVG assets
+const BADGE_BANKS: Record<string, { bg: string; text: string; label: string }> = {
+  CIMB:    { bg: '#C00000', text: '#FFFFFF', label: 'CIMB' },
+  BSI:     { bg: '#00805F', text: '#FFFFFF', label: 'BSI' },
+  Danamon: { bg: '#EB1C24', text: '#FFFFFF', label: 'Danamon' },
+  Permata: { bg: '#6C3FA0', text: '#FFFFFF', label: 'Permata' },
+  BTN:     { bg: '#003087', text: '#FFD600', label: 'BTN' },
+};
+
+const SIZE_PX = {
+  sm: { w: 56, h: 28 },
+  md: { w: 80, h: 40 },
+  lg: { w: 120, h: 56 },
 };
 
 export default function BankLogo({ bank, size = 'md', showLabel = false }: BankLogoProps) {
-  const meta = BANK_META[bank] || { bg: '#334155', text: '#FFFFFF', abbr: bank };
-  const dim = SIZE[size];
+  const dim = SIZE_PX[size];
+
+  // Use real SVG image if available
+  if (SVG_BANKS[bank]) {
+    return (
+      <div className="inline-flex flex-col items-center gap-1">
+        <div
+          className="flex items-center justify-center bg-white rounded-lg overflow-hidden"
+          style={{ width: dim.w, height: dim.h, padding: size === 'sm' ? 4 : size === 'md' ? 6 : 8 }}
+        >
+          <img
+            src={SVG_BANKS[bank]}
+            alt={bank}
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            draggable={false}
+          />
+        </div>
+        {showLabel && (
+          <span className="text-[10px] text-[var(--text-muted)] font-medium">{bank}</span>
+        )}
+      </div>
+    );
+  }
+
+  // Fallback text badge for banks without SVG
+  const badge = BADGE_BANKS[bank] || { bg: '#334155', text: '#FFFFFF', label: bank };
+  const fontSize = size === 'sm' ? 9 : size === 'md' ? 11 : 14;
 
   return (
     <div className="inline-flex flex-col items-center gap-1">
-      <svg
-        width={dim.w}
-        height={dim.h}
-        viewBox={`0 0 ${dim.w} ${dim.h}`}
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        role="img"
-        aria-label={bank}
+      <div
+        className="flex items-center justify-center rounded-lg font-extrabold tracking-wide"
+        style={{
+          width: dim.w,
+          height: dim.h,
+          backgroundColor: badge.bg,
+          color: badge.text,
+          fontSize,
+        }}
       >
-        {/* Background rounded rect */}
-        <rect width={dim.w} height={dim.h} rx={6} fill={meta.bg} />
-
-        {/* Bank-specific designs */}
-        {bank === 'BCA' && (
-          <>
-            {/* BCA stripe */}
-            <rect x={dim.w - 12} y={0} width={12} height={dim.h} rx={0} fill="#004D8D" opacity="0.6" />
-            <text
-              x={dim.w / 2 - 4}
-              y={dim.h / 2 + dim.font * 0.38}
-              textAnchor="middle"
-              fontFamily="Arial, sans-serif"
-              fontWeight="800"
-              fontSize={dim.font + 2}
-              fill={meta.text}
-              letterSpacing="1"
-            >
-              BCA
-            </text>
-          </>
-        )}
-
-        {bank === 'Mandiri' && (
-          <>
-            {/* Mandiri yellow accent bar */}
-            <rect x={0} y={dim.h - 5} width={dim.w} height={5} rx={0} fill="#F9A01B" />
-            <text
-              x={dim.w / 2}
-              y={dim.h / 2 + dim.font * 0.35}
-              textAnchor="middle"
-              fontFamily="Arial, sans-serif"
-              fontWeight="800"
-              fontSize={dim.font}
-              fill={meta.text}
-              letterSpacing="0.5"
-            >
-              Mandiri
-            </text>
-          </>
-        )}
-
-        {bank === 'BRI' && (
-          <>
-            <rect x={0} y={0} width={8} height={dim.h} fill="#F47920" />
-            <text
-              x={dim.w / 2 + 4}
-              y={dim.h / 2 + dim.font * 0.38}
-              textAnchor="middle"
-              fontFamily="Arial, sans-serif"
-              fontWeight="900"
-              fontSize={dim.font + 1}
-              fill={meta.text}
-              letterSpacing="1"
-            >
-              BRI
-            </text>
-          </>
-        )}
-
-        {bank === 'BNI' && (
-          <>
-            <rect x={0} y={0} width={dim.w / 2} height={dim.h} fill="#003087" />
-            <text
-              x={dim.w / 2}
-              y={dim.h / 2 + dim.font * 0.38}
-              textAnchor="middle"
-              fontFamily="Arial, sans-serif"
-              fontWeight="900"
-              fontSize={dim.font + 2}
-              fill={meta.text}
-              letterSpacing="1"
-            >
-              BNI
-            </text>
-          </>
-        )}
-
-        {bank === 'OCBC' && (
-          <>
-            <circle cx={dim.w - dim.h / 2} cy={dim.h / 2} r={dim.h / 2 - 3} fill="rgba(255,255,255,0.15)" />
-            <text
-              x={dim.w / 2 - 3}
-              y={dim.h / 2 + dim.font * 0.38}
-              textAnchor="middle"
-              fontFamily="Arial, sans-serif"
-              fontWeight="800"
-              fontSize={dim.font}
-              fill={meta.text}
-              letterSpacing="0.5"
-            >
-              OCBC
-            </text>
-          </>
-        )}
-
-        {(bank === 'CIMB' || bank === 'BSI' || bank === 'Danamon' || bank === 'Permata' || bank === 'BTN') && (
-          <text
-            x={dim.w / 2}
-            y={dim.h / 2 + dim.font * 0.38}
-            textAnchor="middle"
-            fontFamily="Arial, sans-serif"
-            fontWeight="800"
-            fontSize={bank === 'Danamon' || bank === 'Permata' ? dim.font - 1 : dim.font}
-            fill={meta.text}
-            letterSpacing="0.3"
-          >
-            {meta.abbr}
-          </text>
-        )}
-      </svg>
+        {badge.label}
+      </div>
       {showLabel && (
         <span className="text-[10px] text-[var(--text-muted)] font-medium">{bank}</span>
       )}
