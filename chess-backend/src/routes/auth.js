@@ -155,6 +155,65 @@ router.post('/login', loginRateLimit, validate(schemas.login), async (req, res) 
   }
 });
 
+// ── POST /api/auth/google ────────────────────────────────────────────────────
+// Login/register via Google ID token from Google Identity Services
+router.post('/google', async (req, res) => {
+  try {
+    const { credential } = req.body || {};
+    if (!credential || typeof credential !== 'string') {
+      return res.status(400).json({ error: 'Google credential is required' });
+    }
+
+    const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
+    if (!verifyRes.ok) {
+      return res.status(401).json({ error: 'Google token invalid' });
+    }
+
+    const payload = await verifyRes.json();
+    const aud = payload.aud;
+    const email = (payload.email || '').toLowerCase();
+    const emailVerified = payload.email_verified === 'true' || payload.email_verified === true;
+    const googleName = payload.name || '';
+
+    if (!email || !emailVerified) {
+      return res.status(401).json({ error: 'Google account email is not verified' });
+    }
+    if (process.env.GOOGLE_CLIENT_ID && aud !== process.env.GOOGLE_CLIENT_ID) {
+      return res.status(401).json({ error: 'Google client mismatch' });
+    }
+
+    let user = await users.findByEmail(email);
+    if (!user) {
+      const base = (googleName || email.split('@')[0] || 'player')
+        .replace(/[^a-zA-Z0-9_]/g, '')
+        .slice(0, 14) || 'player';
+      let username = base;
+      let i = 1;
+      while (await users.findByUsername(username)) {
+        username = `${base}${i}`;
+        i += 1;
+      }
+      const passwordHash = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 12);
+      user = await users.create({
+        username,
+        email,
+        passwordHash,
+      });
+    }
+
+    // Ensure Google accounts can log in directly
+    if (!user.verified) {
+      user = await users.update(user.id, { verified: true, verify_token: null });
+    }
+
+    const token = signToken({ userId: user.id });
+    res.json({ token, user: users.public(user) });
+  } catch (err) {
+    console.error('[auth/google]', err);
+    res.status(500).json({ error: 'Google login failed' });
+  }
+});
+
 // ── POST /api/auth/guest ─────────────────────────────────────────────────────
 router.post('/guest', async (req, res) => {
   try {

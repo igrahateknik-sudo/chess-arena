@@ -32,6 +32,9 @@ export const api = {
     login: (body: { email?: string; username?: string; password: string }) =>
       fetchAPI('/api/auth/login', { method: 'POST', body: JSON.stringify(body) }),
 
+    google: (credential: string) =>
+      fetchAPI('/api/auth/google', { method: 'POST', body: JSON.stringify({ credential }) }),
+
     guest: () =>
       fetchAPI('/api/auth/guest', { method: 'POST' }),
 

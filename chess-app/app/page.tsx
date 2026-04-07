@@ -1,20 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAppStore } from '@/lib/store';
 import { api, ApiError } from '@/lib/api';
+import { Chessboard } from 'react-chessboard';
+import { Chess } from 'chess.js';
 import {
   Eye, EyeOff, Crown, Zap, Shield, TrendingUp,
   ChevronRight, Award, MailWarning, Target, Clock,
   Trophy, Users, Swords, Ticket
 } from 'lucide-react';
 
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
 const HOW_IT_WORKS = [
   {
     step: '01',
     icon: Users,
+    art: '/illustrations/register-card.svg',
     title: 'Daftar Gratis',
     desc: 'Buat akun dalam 30 detik. Verifikasi email dan mulai bermain langsung.',
     color: 'sky',
@@ -22,6 +32,7 @@ const HOW_IT_WORKS = [
   {
     step: '02',
     icon: Ticket,
+    art: '/illustrations/ticket-card.svg',
     title: 'Pilih Divisi',
     desc: 'Pilih divisi Bronze, Silver, atau Gold sesuai target performa kamu.',
     color: 'amber',
@@ -29,6 +40,7 @@ const HOW_IT_WORKS = [
   {
     step: '03',
     icon: Swords,
+    art: '/illustrations/battle-card.svg',
     title: 'Gabung Turnamen',
     desc: 'Turnamen otomatis setiap jam. Daftar, tunggu mulai, lalu bertanding.',
     color: 'purple',
@@ -36,6 +48,7 @@ const HOW_IT_WORKS = [
   {
     step: '04',
     icon: Trophy,
+    art: '/illustrations/battle-card.svg',
     title: 'Naik Peringkat',
     desc: 'Kumpulkan poin ranking, naik leaderboard, dan raih badge kompetitif.',
     color: 'emerald',
@@ -101,6 +114,71 @@ export default function LandingPage() {
   const [emailNotVerified, setEmailNotVerified] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSuccess, setResendSuccess] = useState('');
+  const googleBtnRef = useRef<HTMLDivElement | null>(null);
+  const [googleReady, setGoogleReady] = useState(false);
+
+  useEffect(() => {
+    const scriptId = 'google-identity-services';
+    if (document.getElementById(scriptId)) {
+      setGoogleReady(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setGoogleReady(true);
+    document.body.appendChild(script);
+  }, []);
+
+  useEffect(() => {
+    if (!googleReady || mode !== 'login' || !googleBtnRef.current || !window.google?.accounts?.id) return;
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) return;
+
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      callback: async (response: { credential?: string }) => {
+        if (!response?.credential) return;
+        setLoading(true);
+        setAuthError('');
+        try {
+          const data = await api.auth.google(response.credential);
+          const u = data.user;
+          login({
+            id: u.id,
+            username: u.username,
+            email: u.email,
+            avatar: u.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${u.username}`,
+            elo: u.elo || 1200,
+            rank: u.title || 'Unrated',
+            wins: u.wins || 0,
+            losses: u.losses || 0,
+            draws: u.draws || 0,
+            balance: u.balance || 0,
+            verified: !!u.verified,
+            createdAt: u.created_at || new Date().toISOString(),
+            country: u.country || 'ID',
+            title: u.title,
+            is_admin: !!u.is_admin,
+          }, data.token);
+          router.push('/dashboard');
+        } catch (err: unknown) {
+          setAuthError(err instanceof Error ? err.message : 'Gagal masuk dengan Google');
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+    window.google.accounts.id.renderButton(googleBtnRef.current, {
+      theme: 'filled_black',
+      size: 'large',
+      width: 360,
+      shape: 'pill',
+      text: 'signin_with',
+    });
+  }, [googleReady, mode, login, router]);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -321,6 +399,9 @@ export default function LandingPage() {
                       initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }}
                       viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                       className="relative glass rounded-2xl p-6 border border-white/8 hover:border-white/15 transition-all group">
+                      <div className="absolute inset-x-0 top-0 h-20 opacity-30">
+                        <Image src={step.art} alt={step.title} fill className="object-cover rounded-t-2xl" />
+                      </div>
                       <div className="text-5xl font-black text-white/4 absolute top-4 right-5 select-none">{step.step}</div>
                       <div className={`w-11 h-11 rounded-xl border flex items-center justify-center mb-4 ${cls}`}>
                         <step.icon className="w-5 h-5" />
@@ -599,6 +680,22 @@ export default function LandingPage() {
                       mode === 'login' ? 'Masuk' : 'Buat Akun'
                     )}
                   </button>
+                  {mode === 'login' && (
+                    <>
+                      <div className="flex items-center gap-3 my-1">
+                        <span className="h-px bg-white/10 flex-1" />
+                        <span className="text-xs text-slate-500">atau</span>
+                        <span className="h-px bg-white/10 flex-1" />
+                      </div>
+                      <div className="w-full flex justify-center">
+                        {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? (
+                          <div ref={googleBtnRef} />
+                        ) : (
+                          <p className="text-xs text-slate-500">Google Sign-In belum dikonfigurasi</p>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </form>
 
                 <p className="text-xs text-slate-500 text-center mt-6">
@@ -665,34 +762,37 @@ function LiveStatsTicker() {
 
 // ── Chess board visual ────────────────────────────────────────────────────────
 function ChessBoardVisual() {
-  const BOARD = [
-    ['♜','♞','♝','♛','♚','♝','♞','♜'],
-    ['♟','♟','♟','♟','♟','♟','♟','♟'],
-    ['','','','','','','',''],
-    ['','','','','','','',''],
-    ['','','','','♙','','',''],
-    ['','','','','','','',''],
-    ['♙','♙','♙','♙','','♙','♙','♙'],
-    ['♖','♘','♗','♕','♔','♗','♘','♖'],
-  ];
+  const [chess] = useState(() => new Chess());
+  const [position, setPosition] = useState('start');
+  const [moveIndex, setMoveIndex] = useState(0);
+  const sequence = ['e4', 'e5', 'Qh5', 'Nc6', 'Bc4', 'Nf6', 'Qxf7#'];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (moveIndex >= sequence.length) {
+        chess.reset();
+        setPosition(chess.fen());
+        setMoveIndex(0);
+        return;
+      }
+      chess.move(sequence[moveIndex]);
+      setPosition(chess.fen());
+      setMoveIndex((v) => v + 1);
+    }, 1300);
+    return () => clearInterval(timer);
+  }, [moveIndex, chess]);
 
   return (
-    <div className="w-full h-full grid grid-cols-8 grid-rows-8">
-      {BOARD.map((row, r) =>
-        row.map((piece, c) => {
-          const isLight = (r + c) % 2 === 0;
-          const isHighlight = (r === 4 && c === 4) || (r === 6 && c === 4);
-          return (
-            <div key={`${r}-${c}`}
-              className={`flex items-center justify-center text-[clamp(1rem,3.5vw,1.75rem)] select-none transition-colors
-                ${isHighlight ? 'bg-sky-500/30' : isLight ? 'bg-slate-200/10' : 'bg-slate-900/60'}`}>
-              <span className={piece ? (r < 2 ? 'text-slate-400 drop-shadow' : 'text-white drop-shadow-lg') : ''}>
-                {piece}
-              </span>
-            </div>
-          );
-        })
-      )}
+    <div className="w-full h-full">
+      <Chessboard
+        position={position}
+        arePiecesDraggable={false}
+        areArrowsAllowed={false}
+        boardOrientation="white"
+        customDarkSquareStyle={{ backgroundColor: '#7b5a3e' }}
+        customLightSquareStyle={{ backgroundColor: '#f0d9b5' }}
+        customBoardStyle={{ borderRadius: '14px' }}
+      />
     </div>
   );
 }
