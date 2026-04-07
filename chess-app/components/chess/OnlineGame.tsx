@@ -283,6 +283,10 @@ export default function OnlineGame({
       setPremoveSquares({});
       setMoveFrom(null);
       setOptionSquares({});
+      if (data?.requestTokenRefresh) {
+        // Rejoin to fetch fresh server-authoritative state + move token.
+        socket.emit('game:join', { gameId });
+      }
     });
 
     socket.on('game:chat', (data: any) => {

@@ -99,8 +99,8 @@ export default function GamePage() {
     });
 
     socket.on('queue:joined', (data: any) => console.log('[Queue]', data));
-    socket.once('queue:error', () => {
-      setMatchmakingError('Gagal masuk antrean. Coba lagi dalam beberapa detik.');
+    socket.once('queue:error', (data: { message?: string }) => {
+      setMatchmakingError(data?.message || 'Gagal masuk antrean. Coba lagi dalam beberapa detik.');
     });
   };
 

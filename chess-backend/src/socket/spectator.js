@@ -57,7 +57,6 @@ function registerSpectator(io, socket) {
       // Join spectator room (separate from game room to isolate events)
       const spectateRoom = `spectate:${gameId}`;
       socket.join(spectateRoom);
-      socket.join(gameId); // Also join game room to receive move/over events
 
       // Track this spectator
       if (!spectators.has(gameId)) spectators.set(gameId, new Set());
@@ -106,7 +105,6 @@ function registerSpectator(io, socket) {
 function removeSpectator(io, socket, gameId) {
   const spectateRoom = `spectate:${gameId}`;
   socket.leave(spectateRoom);
-  socket.leave(gameId);
 
   const set = spectators.get(gameId);
   if (set) {

@@ -27,11 +27,15 @@ function registerMatchmaking(io, socket, userId) {
   socket.on('queue:join', async ({ timeControl, stakes = 0, color }) => {
     try {
       const user = await users.findById(userId);
-      if (!user) return socket.emit('error', { message: 'User not found' });
+      if (!user) {
+        socket.emit('queue:error', { message: 'User not found' });
+        return socket.emit('error', { message: 'User not found' });
+      }
 
       // Check active game — don't allow joining queue while in a game
       const activeGame = await games.findActiveByUser(userId);
       if (activeGame) {
+        socket.emit('queue:error', { message: 'You already have an active game' });
         return socket.emit('error', { message: 'You already have an active game' });
       }
 
@@ -42,6 +46,7 @@ function registerMatchmaking(io, socket, userId) {
           await wallets.lock(userId, stakes);
           recordLock(userId, stakes);
         } catch (lockErr) {
+          socket.emit('queue:error', { message: 'Insufficient balance for this stake' });
           return socket.emit('error', { message: 'Insufficient balance for this stake' });
         }
       }
@@ -67,6 +72,7 @@ function registerMatchmaking(io, socket, userId) {
       await tryPairPlayers(io, key, timeControl, stakes, color);
     } catch (err) {
       console.error('[queue:join]', err);
+      socket.emit('queue:error', { message: 'Failed to join queue' });
       socket.emit('error', { message: 'Failed to join queue' });
     }
   });

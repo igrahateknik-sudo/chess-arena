@@ -75,6 +75,11 @@ function generateMoveToken() {
   return crypto.randomBytes(16).toString('hex');
 }
 
+function emitToGameAndSpectators(io, gameId, event, payload) {
+  io.to(gameId).emit(event, payload);
+  io.to(`spectate:${gameId}`).emit(event, payload);
+}
+
 /**
  * Determine time control category from initial time in seconds.
  * Used to update the correct per-time-control ELO column.
@@ -150,7 +155,7 @@ function startTimer(io, gameId) {
     if (turn === 'w') {
       const newTime = Math.max(0, game.whiteTimeLeft - 1);
       updateGameState(gameId, { whiteTimeLeft: newTime });
-      io.to(gameId).emit('game:clock', { whiteTimeLeft: newTime, blackTimeLeft: game.blackTimeLeft, turn: 'w' });
+      emitToGameAndSpectators(io, gameId, 'game:clock', { whiteTimeLeft: newTime, blackTimeLeft: game.blackTimeLeft, turn: 'w' });
       if (newTime === 0) {
         clearInterval(interval);
         timers.delete(gameId);
@@ -159,7 +164,7 @@ function startTimer(io, gameId) {
     } else {
       const newTime = Math.max(0, game.blackTimeLeft - 1);
       updateGameState(gameId, { blackTimeLeft: newTime });
-      io.to(gameId).emit('game:clock', { whiteTimeLeft: game.whiteTimeLeft, blackTimeLeft: newTime, turn: 'b' });
+      emitToGameAndSpectators(io, gameId, 'game:clock', { whiteTimeLeft: game.whiteTimeLeft, blackTimeLeft: newTime, turn: 'b' });
       if (newTime === 0) {
         clearInterval(interval);
         timers.delete(gameId);
@@ -391,7 +396,7 @@ async function endGame(io, gameId, winner, endReason) {
     }
 
     // Emit game over
-    io.to(gameId).emit('game:over', {
+    emitToGameAndSpectators(io, gameId, 'game:over', {
       gameId, winner, endReason,
       eloChanges: {
         [game.whiteId]: whiteChange,
@@ -508,7 +513,16 @@ function registerGameRoom(io, socket, userId) {
 
       // Start timer ketika kedua player sudah ada di room
       const room = io.sockets.adapter.rooms.get(gameId);
-      if (room && room.size >= 2 && game.status === 'active') {
+      const whiteSocketId = activeGameSockets.get(`${gameId}:${game.whiteId}`);
+      const blackSocketId = activeGameSockets.get(`${gameId}:${game.blackId}`);
+      const hasBothPlayersInRoom = !!(
+        room &&
+        whiteSocketId &&
+        blackSocketId &&
+        room.has(whiteSocketId) &&
+        room.has(blackSocketId)
+      );
+      if (hasBothPlayersInRoom && game.status === 'active') {
         startTimer(io, gameId);
       }
 
@@ -691,12 +705,21 @@ function registerGameRoom(io, socket, userId) {
     });
 
     // Broadcast move ke kedua player
-    io.to(gameId).emit('game:move', {
+    emitToGameAndSpectators(io, gameId, 'game:move', {
       move: moveRecord,
       fen: chess.fen(),
       whiteTimeLeft,
       blackTimeLeft,
     });
+
+    // Persist live snapshot so active game can recover after process restart.
+    games.update(gameId, {
+      fen: chess.fen(),
+      move_history: newMoveHistory,
+      white_time_left: whiteTimeLeft,
+      black_time_left: blackTimeLeft,
+      updated_at: new Date(),
+    }).catch((e) => console.error('[game:move persist]', e));
 
     // [SECURITY-5] Real-time anticheat: every 10 moves for blitz/rapid, every 20 for bullet
     const tcType = getTimeControlType(game.timeControl?.initial);
@@ -812,6 +835,20 @@ function registerGameRoom(io, socket, userId) {
     }
     updateGameState(gameId, { drawOfferedBy: null });
     socket.to(gameId).emit('game:draw-declined');
+  });
+
+  // ── In-game chat ────────────────────────────────────────────────────────
+  socket.on('game:chat', ({ gameId, message }) => {
+    const game = gameCache.get(gameId);
+    if (!game || game.status !== 'active') return;
+    if (game.whiteId !== userId && game.blackId !== userId) return;
+    const text = typeof message === 'string' ? message.trim().slice(0, 200) : '';
+    if (!text) return;
+    socket.to(gameId).emit('game:chat', {
+      username: socket.username || 'Player',
+      message: text,
+      timestamp: Date.now(),
+    });
   });
 
   // ── Disconnect ─────────────────────────────────────────────────────────
