@@ -51,6 +51,8 @@ jest.mock('../src/lib/db', () => ({
     })),
     update: jest.fn(async (id, updates) => ({ id, ...updates })),
     findActiveByUser: jest.fn(async () => null),
+    getRecentNoContestCount: jest.fn(async () => 0),
+    updateIfStatus: jest.fn(async (id, expectedStatus, updates) => ({ id, status: updates.status || expectedStatus, ...updates })),
   },
   transactions: { create: jest.fn(async () => ({})) },
   notifications: {
@@ -110,6 +112,7 @@ jest.mock('../src/lib/auth', () => ({
     return null;
   }),
   signToken: jest.fn(() => 'mock-token'),
+  passwordHashVersion: jest.fn(() => 'mock-phv'),
 }));
 
 // ── Server Setup ──────────────────────────────────────────────────────────────
