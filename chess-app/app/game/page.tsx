@@ -75,6 +75,9 @@ export default function GamePage() {
     matchTimerRef.current = setInterval(() => setMatchmakingTime(t => t + 1), 1000);
 
     const socket = getSocket(token);
+    socket.off('game:found');
+    socket.off('queue:joined');
+    socket.off('queue:error');
 
     // Listen for match found
     socket.once('game:found', (data: any) => {
@@ -98,10 +101,12 @@ export default function GamePage() {
       color: playerColor === 'random' ? null : playerColor,
     });
 
-    socket.on('queue:joined', (data: any) => console.log('[Queue]', data));
-    socket.once('queue:error', (data: { message?: string }) => {
+    const handleQueueJoined = (data: any) => console.log('[Queue]', data);
+    const handleQueueError = (data: { message?: string }) => {
       setMatchmakingError(data?.message || 'Gagal masuk antrean. Coba lagi dalam beberapa detik.');
-    });
+    };
+    socket.on('queue:joined', handleQueueJoined);
+    socket.once('queue:error', handleQueueError);
   };
 
   const cancelMatchmaking = () => {
@@ -111,10 +116,24 @@ export default function GamePage() {
         const socket = getSocket(token);
         socket.emit('queue:leave');
         socket.off('game:found');
+        socket.off('queue:joined');
+        socket.off('queue:error');
       } catch {}
     }
     setStep('mode');
   };
+
+  useEffect(() => {
+    return () => {
+      if (!token) return;
+      try {
+        const socket = getSocket(token);
+        socket.off('game:found');
+        socket.off('queue:joined');
+        socket.off('queue:error');
+      } catch {}
+    };
+  }, [token]);
 
   useEffect(() => {
     if (step !== 'matchmaking') return;

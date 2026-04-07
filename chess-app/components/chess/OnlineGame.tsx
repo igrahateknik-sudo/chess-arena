@@ -67,7 +67,7 @@ export default function OnlineGame({
   const moveTokenRef = useRef<string | null>(null);
 
   // [OPTIMISTIC UPDATE] Simpan FEN sebelum move untuk rollback jika server menolak
-  const pendingMoveRef = useRef<string | null>(null);
+  const pendingMoveRef = useRef<{ prevFen: string; from: Square; to: Square } | null>(null);
 
   // Socket disimpan di ref agar semua handler menggunakan INSTANCE YANG SAMA
   const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
@@ -176,6 +176,8 @@ export default function OnlineGame({
     socket.emit('game:join', { gameId });
 
     socket.on('game:state', (data: any) => {
+      // Authoritative server snapshot overrides any unresolved optimistic state.
+      pendingMoveRef.current = null;
       fenRef.current = data.fen;
       setFen(data.fen);
       setMoveHistory(data.moveHistory || []);
@@ -190,23 +192,30 @@ export default function OnlineGame({
 
     socket.on('game:move', (data: any) => {
       if (pendingMoveRef.current !== null) {
-        // Echo of our own move — sync clocks, clear pending
-        pendingMoveRef.current = null;
-        setWhiteTime(data.whiteTimeLeft);
-        setBlackTime(data.blackTimeLeft);
-        // Restart clock for opponent's turn
-        const nextTurn = data.nextTurn || (playerColor === 'white' ? 'b' : 'w');
-        startClockInterpolation(nextTurn);
-        // Execute queued premove if any — use ref to avoid stale closure
-        if (premoveRef.current) {
-          const pm = premoveRef.current;
-          premoveRef.current = null;
-          setPremove(null);
-          setPremoveSquares({});
-          // Small delay to let state settle
-          setTimeout(() => attemptPremove(pm), 50);
+        const pending = pendingMoveRef.current;
+        const isEcho = pending.from === data.move?.from && pending.to === data.move?.to;
+        if (isEcho) {
+          // Echo of our own move — sync clocks, clear pending
+          pendingMoveRef.current = null;
+          setWhiteTime(data.whiteTimeLeft);
+          setBlackTime(data.blackTimeLeft);
+          // Restart clock for opponent's turn
+          const nextTurn = data.nextTurn || (playerColor === 'white' ? 'b' : 'w');
+          startClockInterpolation(nextTurn);
+          // Execute queued premove if any — use ref to avoid stale closure
+          if (premoveRef.current) {
+            const pm = premoveRef.current;
+            premoveRef.current = null;
+            setPremove(null);
+            setPremoveSquares({});
+            // Small delay to let state settle
+            setTimeout(() => attemptPremove(pm), 50);
+          }
+          return;
         }
-        return;
+        // Unresolved optimistic move diverged from server move; drop it and resync.
+        pendingMoveRef.current = null;
+        setMoveHistory(prev => prev.slice(0, -1));
       }
       // Opponent's move — apply fully
       fenRef.current = data.fen;
@@ -273,8 +282,8 @@ export default function OnlineGame({
     socket.on('move:invalid', (data: any) => {
       console.warn('[Move] Invalid:', data.reason);
       if (pendingMoveRef.current !== null) {
-        fenRef.current = pendingMoveRef.current;
-        setFen(pendingMoveRef.current);
+        fenRef.current = pendingMoveRef.current.prevFen;
+        setFen(pendingMoveRef.current.prevFen);
         setMoveHistory(prev => prev.slice(0, -1));
         pendingMoveRef.current = null;
       }
@@ -474,7 +483,7 @@ export default function OnlineGame({
     prevFen: string,
   ) {
     // ── OPTIMISTIC UPDATE ─────────────────────────────────────────────────
-    pendingMoveRef.current = prevFen;
+    pendingMoveRef.current = { prevFen, from, to };
     fenRef.current = newFen; // keep ref in sync immediately (before setState batching)
     setFen(newFen);
     setLastMove({ from, to });
