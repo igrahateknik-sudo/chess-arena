@@ -67,7 +67,7 @@ const HOW_IT_WORKS = [
   {
     step: '04',
     icon: Trophy,
-    art: '/illustrations/battle-card.svg',
+    art: '/illustrations/rank-card.svg',
     title: 'Naik Peringkat',
     desc: 'Kumpulkan poin ranking, naik leaderboard, dan raih badge kompetitif.',
     color: 'emerald',
@@ -407,9 +407,9 @@ export default function LandingPage() {
                       initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }}
                       viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                       className="relative glass rounded-2xl p-6 border border-white/8 hover:border-white/15 transition-all group overflow-hidden">
-                      <div className="relative h-24 rounded-xl border border-white/10 overflow-hidden mb-5 bg-white/[0.02]">
+                      <div className="relative h-28 rounded-xl border border-white/10 overflow-hidden mb-5 bg-white/[0.02] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                         <Image src={step.art} alt={step.title} fill className="object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#060c18]/70 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#060c18]/60 via-[#060c18]/20 to-transparent" />
                       </div>
                       <div className="text-5xl font-black text-white/4 absolute top-4 right-5 select-none">{step.step}</div>
                       <div className={`w-11 h-11 rounded-xl border flex items-center justify-center mb-4 ${cls}`}>
@@ -454,9 +454,9 @@ export default function LandingPage() {
                         <div className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${tier.badge}`}>{tier.label}</div>
                       </div>
                     </div>
-                    <div className="relative h-20 rounded-xl border border-white/10 overflow-hidden mb-5 bg-white/[0.03]">
+                    <div className="relative h-24 rounded-xl border border-white/10 overflow-hidden mb-5 bg-white/[0.03] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                       <Image src={tier.art} alt={`Ilustrasi ${tier.label}`} fill className="object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#060c18]/65 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#060c18]/55 via-[#060c18]/15 to-transparent" />
                     </div>
                     <div className="mb-5">
                       <div className="text-3xl font-black text-white mb-0.5">{tier.fee}</div>
