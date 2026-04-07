@@ -445,8 +445,8 @@ export default function DashboardPage() {
         <motion.div variants={FADE} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
             { title: 'Quick Bullet', sub: '1+0 · Tanpa taruhan', icon: '⚡', href: '/game', gradient: 'from-sky-500 to-blue-600', badge: 'Gratis' },
-            { title: 'Paid Match', sub: 'Min Rp 10.000', icon: '💰', href: '/game', gradient: 'from-emerald-500 to-teal-600', badge: 'Hot' },
-            { title: 'Turnamen', sub: 'Hadiah besar', icon: '🏆', href: '/tournament', gradient: 'from-yellow-500 to-orange-500', badge: 'Prize' },
+            { title: 'Ranked Match', sub: 'Naikkan ELO kamu', icon: '🎯', href: '/game', gradient: 'from-emerald-500 to-teal-600', badge: 'Ranked' },
+            { title: 'Turnamen', sub: 'Reward poin & badge', icon: '🏆', href: '/tournament', gradient: 'from-yellow-500 to-orange-500', badge: 'Esports' },
           ].map((item) => (
             <Link key={item.title} href={item.href}
               className={`relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br ${item.gradient} hover:opacity-90 transition-all group shadow-lg`}>

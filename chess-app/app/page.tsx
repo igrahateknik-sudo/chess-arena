@@ -22,8 +22,8 @@ const HOW_IT_WORKS = [
   {
     step: '02',
     icon: Ticket,
-    title: 'Beli Tiket',
-    desc: 'Pilih tier Bronze, Silver, atau Gold sesuai budget dan skill kamu.',
+    title: 'Pilih Divisi',
+    desc: 'Pilih divisi Bronze, Silver, atau Gold sesuai target performa kamu.',
     color: 'amber',
   },
   {
@@ -36,8 +36,8 @@ const HOW_IT_WORKS = [
   {
     step: '04',
     icon: Trophy,
-    title: 'Menang Hadiah',
-    desc: '80% prize pool ke juara 1, 10% ke juara 2. Langsung cair ke wallet.',
+    title: 'Naik Peringkat',
+    desc: 'Kumpulkan poin ranking, naik leaderboard, dan raih badge kompetitif.',
     color: 'emerald',
   },
 ];
@@ -47,10 +47,10 @@ const TIERS = [
     key: 'bronze',
     label: 'Bronze',
     icon: '🥉',
-    fee: 'Rp 10.000',
+    fee: 'Divisi Pemula',
     tc: '3+2',
     max: 32,
-    prize: '~Rp 256K',
+    prize: 'Reward: +120 PTS',
     color: 'from-amber-700/30 to-amber-900/20',
     border: 'border-amber-700/30',
     badge: 'bg-amber-700/20 text-amber-500',
@@ -59,10 +59,10 @@ const TIERS = [
     key: 'silver',
     label: 'Silver',
     icon: '🥈',
-    fee: 'Rp 25.000',
+    fee: 'Divisi Menengah',
     tc: '5+3',
     max: 32,
-    prize: '~Rp 640K',
+    prize: 'Reward: +240 PTS',
     color: 'from-slate-400/20 to-slate-600/10',
     border: 'border-slate-400/30',
     badge: 'bg-slate-400/20 text-slate-300',
@@ -72,10 +72,10 @@ const TIERS = [
     key: 'gold',
     label: 'Gold',
     icon: '🥇',
-    fee: 'Rp 50.000',
+    fee: 'Divisi Pro',
     tc: '10+5',
     max: 16,
-    prize: '~Rp 640K',
+    prize: 'Reward: +360 PTS',
     color: 'from-yellow-500/20 to-yellow-700/10',
     border: 'border-yellow-500/30',
     badge: 'bg-yellow-500/20 text-yellow-400',
@@ -85,8 +85,8 @@ const TIERS = [
 const STATS = [
   { value: '10K+', label: 'Pemain Aktif' },
   { value: '24/7', label: 'Tournament Jalan' },
-  { value: 'Rp 0', label: 'Biaya Daftar' },
-  { value: '< 1 jam', label: 'Cair ke Wallet' },
+  { value: '100%', label: 'Skill-Based' },
+  { value: '< 1 jam', label: 'Siklus Event' },
 ];
 
 export default function LandingPage() {
@@ -221,14 +221,14 @@ export default function LandingPage() {
                   className="text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.05] tracking-tight mb-5">
                   Kuasai Papan Catur.<br />
                   <span className="bg-gradient-to-r from-sky-400 via-blue-400 to-violet-400 bg-clip-text text-transparent">
-                    Raih Hadiah Nyata.
+                    Jadi Juara Esports.
                   </span>
                 </motion.h1>
 
                 <motion.p initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}
                   className="text-base text-slate-400 mb-8 max-w-lg leading-relaxed">
-                  Tournament catur berhadiah uang nyata setiap jam. Beli tiket, bertanding, menangkan prize pool.
-                  Sistem Swiss yang adil, anti-cheat ketat, hasil langsung ke dompet.
+                  Arena catur kompetitif berbasis skill dengan event setiap jam.
+                  Sistem Swiss yang adil, anti-cheat ketat, dan leaderboard real-time.
                 </motion.p>
 
                 <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.25 }}
@@ -275,8 +275,8 @@ export default function LandingPage() {
                       <Trophy className="w-4 h-4 text-yellow-400" />
                     </div>
                     <div>
-                      <div className="text-[10px] text-slate-500 uppercase tracking-wider">Prize Diklaim</div>
-                      <div className="text-base font-black text-yellow-400">Rp 640K</div>
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider">Poin Kompetitif</div>
+                      <div className="text-base font-black text-yellow-400">+240 PTS</div>
                     </div>
                   </motion.div>
                   <motion.div animate={{ y: [-4, 4, -4] }} transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
@@ -304,7 +304,7 @@ export default function LandingPage() {
                   <Target className="w-3.5 h-3.5" /> Cara Bermain
                 </div>
                 <h2 className="text-3xl font-black mb-3">Dari Daftar ke Menang dalam 4 Langkah</h2>
-                <p className="text-slate-400 max-w-md mx-auto">Tidak perlu deposit minimum. Mulai dari tiket Rp 10.000 dan langsung bertanding.</p>
+                <p className="text-slate-400 max-w-md mx-auto">Mulai gratis, pilih divisi, dan fokus ke performa permainanmu.</p>
               </motion.div>
 
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -343,8 +343,8 @@ export default function LandingPage() {
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-semibold uppercase tracking-wider mb-4">
                   <Trophy className="w-3.5 h-3.5" /> Tier Tournament
                 </div>
-                <h2 className="text-3xl font-black mb-3">Pilih Tier, Bertanding, Menangkan Hadiah</h2>
-                <p className="text-slate-400">Tournament otomatis setiap jam. 80% prize ke juara, 10% ke runner-up.</p>
+                <h2 className="text-3xl font-black mb-3">Pilih Tier, Bertanding, Naikkan Peringkat</h2>
+                <p className="text-slate-400">Event otomatis setiap jam dengan sistem poin dan leaderboard kompetitif.</p>
               </motion.div>
 
               <div className="grid md:grid-cols-3 gap-5">
@@ -366,7 +366,7 @@ export default function LandingPage() {
                     </div>
                     <div className="mb-5">
                       <div className="text-3xl font-black text-white mb-0.5">{tier.fee}</div>
-                      <div className="text-xs text-slate-500">per tournament</div>
+                      <div className="text-xs text-slate-500">level kompetisi</div>
                     </div>
                     <div className="space-y-2.5 mb-6">
                       <div className="flex items-center justify-between text-sm">
@@ -378,7 +378,7 @@ export default function LandingPage() {
                         <span className="font-bold text-white">{tier.max}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-400">Est. Prize Pool</span>
+                        <span className="text-slate-400">Reward</span>
                         <span className="font-bold text-yellow-400">{tier.prize}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
@@ -388,7 +388,7 @@ export default function LandingPage() {
                     </div>
                     <button onClick={() => setMode('register')}
                       className="w-full py-2.5 rounded-xl text-sm font-bold bg-white/8 border border-white/10 hover:bg-white/15 transition-all">
-                      Daftar & Join →
+                    Join Divisi →
                     </button>
                   </motion.div>
                 ))}
@@ -435,7 +435,7 @@ export default function LandingPage() {
                   <Crown className="w-12 h-12 text-yellow-400 mx-auto mb-5" />
                   <h2 className="text-3xl font-black mb-3">Siap Naik ke Level Berikutnya?</h2>
                   <p className="text-slate-400 mb-8 max-w-md mx-auto">
-                    Daftar gratis, deposit Rp 10.000, dan ikut tournament pertama kamu hari ini.
+                    Daftar gratis, mainkan match pertama, dan naikkan ranking kamu hari ini.
                   </p>
                   <div className="flex flex-wrap items-center justify-center gap-3">
                     <button onClick={() => setMode('register')}
@@ -621,11 +621,11 @@ export default function LandingPage() {
 const TICKER_ITEMS = [
   { icon: '🟢', text: '1,247 Pemain Online Sekarang' },
   { icon: '🏆', text: 'Tournament berlangsung setiap jam' },
-  { icon: '💰', text: 'Rp 12jt+ hadiah dibagikan bulan ini' },
+  { icon: '🏅', text: 'Leaderboard diperbarui real-time setiap match' },
   { icon: '⚡', text: 'Rata-rata 3 menit menunggu lawan' },
   { icon: '🛡️', text: '5 lapis anti-cheat aktif 24/7' },
   { icon: '🎯', text: 'Swiss system — pertandingan adil' },
-  { icon: '💳', text: 'Withdraw langsung ke rekening bank' },
+  { icon: '🎮', text: 'Kompetisi full skill-based tanpa unsur keberuntungan' },
   { icon: '🌏', text: 'Pemain dari seluruh Indonesia' },
 ];
 

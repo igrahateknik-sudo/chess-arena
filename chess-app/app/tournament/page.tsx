@@ -18,6 +18,10 @@ function formatIDR(n: number) {
   return `Rp ${n.toLocaleString('id-ID')}`;
 }
 
+function toPoints(n: number) {
+  return `${Math.max(100, Math.floor(n / 1000))} PTS`;
+}
+
 function getTimeUntil(date: string) {
   const now = new Date();
   const target = new Date(date);
@@ -237,7 +241,7 @@ export default function TournamentPage() {
               <Trophy className="w-6 h-6 text-yellow-400" />
               Tournaments
             </h1>
-            <p className="text-[var(--text-muted)] text-sm mt-0.5">Tournament otomatis setiap jam — bertanding &amp; menangkan hadiah nyata</p>
+            <p className="text-[var(--text-muted)] text-sm mt-0.5">Tournament otomatis setiap jam — bertanding &amp; naikkan peringkat esports</p>
           </div>
         </motion.div>
 
@@ -294,8 +298,8 @@ export default function TournamentPage() {
               {hourlyTiers.map((tier, i) => {
                 const meta = TIER_META[tier.tier];
                 const estPrize = tier.id
-                  ? formatIDR(Math.floor(tier.prize_pool * 0.8))
-                  : formatIDR(Math.floor(tier.entry_fee * tier.max_players * 0.8 * 0.8));
+                  ? toPoints(Math.floor(tier.prize_pool * 0.8))
+                  : toPoints(Math.floor(tier.entry_fee * tier.max_players * 0.8 * 0.8));
                 const isJoined = tier.id ? joined.includes(tier.id) : false;
                 const isTierFull = tier.max_players > 0 && tier.registrations_count >= tier.max_players;
                 const canJoin = tier.id && !isJoined && !isTierFull && tier.status !== 'finished';
@@ -333,8 +337,8 @@ export default function TournamentPage() {
                       {/* Stats */}
                       <div className="space-y-2 mb-4">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-[var(--text-muted)]">Tiket</span>
-                          <span className="font-black text-[var(--text-primary)]">{formatIDR(tier.entry_fee)}</span>
+                          <span className="text-[var(--text-muted)]">Akses</span>
+                          <span className="font-black text-[var(--text-primary)]">Gratis</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-[var(--text-muted)]">Time Control</span>
@@ -348,7 +352,7 @@ export default function TournamentPage() {
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-[var(--text-muted)]">Prize 1st</span>
+                          <span className="text-[var(--text-muted)]">Reward Utama</span>
                           <span className={`font-black ${meta.accent}`}>{estPrize}</span>
                         </div>
                       </div>
@@ -383,7 +387,7 @@ export default function TournamentPage() {
                             ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             : <Ticket className="w-4 h-4" />
                           }
-                          {!token ? 'Login untuk Daftar' : `Beli Tiket — ${formatIDR(tier.entry_fee)}`}
+                          {!token ? 'Login untuk Daftar' : 'Gabung Bracket'}
                         </button>
                       )}
                     </div>
@@ -399,10 +403,10 @@ export default function TournamentPage() {
           className="flex items-center gap-4 px-5 py-3 bg-[var(--bg-hover)] rounded-xl border border-[var(--border)] text-sm">
           <TrendingUp className="w-4 h-4 text-yellow-400 flex-shrink-0" />
           <span className="text-[var(--text-muted)]">
-            Prize pool = jumlah tiket terkumpul.&nbsp;
-            <span className="text-yellow-400 font-semibold">80%</span> ke juara 1 ·&nbsp;
-            <span className="text-slate-300 font-semibold">10%</span> ke juara 2 ·&nbsp;
-            <span className="text-[var(--text-muted)] font-medium">10%</span> platform fee
+            Sistem kompetitif skill-based: hasil pertandingan memengaruhi&nbsp;
+            <span className="text-yellow-400 font-semibold">ranking</span>,&nbsp;
+            <span className="text-slate-300 font-semibold">badge</span>, dan&nbsp;
+            <span className="text-[var(--text-muted)] font-medium">ELO</span> pemain.
           </span>
         </motion.div>
 
@@ -487,13 +491,13 @@ export default function TournamentPage() {
                     <div className="p-5">
                       <div className="grid grid-cols-2 gap-3 mb-4">
                         <div>
-                          <div className="text-xs text-[var(--text-muted)] mb-0.5">Prize Pool</div>
-                          <div className="text-xl font-black text-yellow-400">{formatIDR(tournament.prize_pool)}</div>
+                          <div className="text-xs text-[var(--text-muted)] mb-0.5">Reward Pool</div>
+                          <div className="text-xl font-black text-yellow-400">{toPoints(tournament.prize_pool)}</div>
                         </div>
                         <div>
-                          <div className="text-xs text-[var(--text-muted)] mb-0.5">Entry Fee</div>
+                          <div className="text-xs text-[var(--text-muted)] mb-0.5">Akses</div>
                           <div className="text-xl font-black text-[var(--text-primary)]">
-                            {tournament.entry_fee === 0 ? 'GRATIS' : formatIDR(tournament.entry_fee)}
+                            GRATIS
                           </div>
                         </div>
                         <div>
@@ -531,7 +535,7 @@ export default function TournamentPage() {
                       {/* Prize distribution */}
                       {tournament.prize_pool > 0 && (
                         <div className="mb-4 p-3 bg-[var(--bg-hover)] rounded-xl">
-                          <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Distribusi Hadiah</div>
+                          <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Distribusi Reward</div>
                           <div className="flex gap-3">
                             {[
                               { place: '1st', pct: tournament.prize_distribution?.['1'] ?? 0.80, color: 'text-yellow-400' },
@@ -540,7 +544,7 @@ export default function TournamentPage() {
                               <div key={p.place} className="flex-1 text-center">
                                 <div className={`text-xs font-bold ${p.color}`}>{p.place}</div>
                                 <div className="text-sm font-black text-[var(--text-primary)]">
-                                  {formatIDR(Math.floor(tournament.prize_pool * p.pct))}
+                                  {toPoints(Math.floor(tournament.prize_pool * p.pct))}
                                 </div>
                                 <div className="text-xs text-[var(--text-muted)]">{Math.round(p.pct * 100)}%</div>
                               </div>
@@ -577,7 +581,7 @@ export default function TournamentPage() {
                             disabled={joining === tournament.id || isFull(tournament)}
                             className="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20">
                             {joining === tournament.id ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Trophy className="w-4 h-4" />}
-                            Daftar {tournament.entry_fee > 0 ? `— ${formatIDR(tournament.entry_fee)}` : '— GRATIS'}
+                            Daftar — GRATIS
                           </button>
                         )
                       )}
