@@ -198,6 +198,55 @@ async function endGame(io, gameId, winner, endReason) {
     const blackUser = await users.findById(game.blackId);
     if (!whiteUser || !blackUser) return;
 
+    // Competitive fairness: games that are aborted before meaningful play
+    // should not affect ELO, W/L/D stats, or game economy.
+    const moveCount = game.moveHistory?.length || 0;
+    const isNoContest =
+      endReason === 'aborted' ||
+      (endReason === 'disconnect' && moveCount === 0);
+
+    if (isNoContest) {
+      if (game.stakes > 0) {
+        await Promise.all([
+          wallets.unlock(game.whiteId, game.stakes).catch(() => {}),
+          wallets.unlock(game.blackId, game.stakes).catch(() => {}),
+        ]);
+      }
+
+      await games.update(gameId, {
+        status: 'cancelled',
+        winner: null,
+        end_reason: endReason,
+        fen: game.fen,
+        move_history: game.moveHistory,
+        white_time_left: game.whiteTimeLeft,
+        black_time_left: game.blackTimeLeft,
+        ended_at: new Date(),
+      });
+
+      emitToGameAndSpectators(io, gameId, 'game:over', {
+        gameId,
+        winner: 'draw',
+        endReason,
+        cancelled: true,
+        eloChanges: {
+          [game.whiteId]: 0,
+          [game.blackId]: 0,
+        },
+        whiteElo: whiteUser.elo,
+        blackElo: blackUser.elo,
+        stakes: game.stakes,
+      });
+
+      setTimeout(() => {
+        gameCache.delete(gameId);
+        moveSequences.delete(gameId);
+      }, 300_000);
+
+      console.log(`[Game] ${gameId} ended as no-contest (${endReason})`);
+      return;
+    }
+
     const eloResult = winner === 'draw' ? 'draw' : winner === 'white' ? 'white' : 'black';
 
     // Determine time control type and per-TC ELO column
