@@ -1,0 +1,9 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+*.log
+*.local
+
+# Keep accidental local backup env files out of git
+.env.local.save

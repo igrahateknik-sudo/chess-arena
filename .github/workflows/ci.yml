@@ -70,7 +70,9 @@ jobs:
 
       - name: TypeScript check
         run: npx tsc --noEmit
-        continue-on-error: true
+
+      - name: Lint
+        run: npm run lint
 
       - name: Build
         run: npm run build

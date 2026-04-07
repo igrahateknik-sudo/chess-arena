@@ -173,40 +173,6 @@ export default function LandingPage() {
     }
   };
 
-  const handleGuest = async () => {
-    setLoading(true);
-    setAuthError('');
-    try {
-      const data = await api.auth.guest();
-      const u = data.user;
-      login({
-        id: u.id,
-        username: u.username,
-        email: u.email,
-        avatar: u.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${u.username}`,
-        elo: u.elo || 1200,
-        rank: 'Guest',
-        wins: 0, losses: 0, draws: 0, balance: 0,
-        verified: false,
-        createdAt: new Date().toISOString(),
-        country: 'ID',
-      }, data.token);
-      router.push('/dashboard');
-    } catch {
-      const guestId = Math.random().toString(36).slice(2, 10);
-      login({
-        id: guestId,
-        username: `Guest${Math.floor(Math.random() * 9999)}`,
-        email: '', avatar: '', elo: 1200, rank: 'Guest',
-        wins: 0, losses: 0, draws: 0, balance: 0,
-        verified: false, createdAt: new Date().toISOString(), country: 'ID',
-      }, '');
-      router.push('/dashboard');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#060c18] text-white overflow-x-hidden relative">
       {/* Background — absolute (not fixed) to avoid GPU compositor issues */}
@@ -270,11 +236,6 @@ export default function LandingPage() {
                   <button onClick={() => setMode('register')}
                     className="flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-2xl text-sm font-bold hover:opacity-90 transition-all shadow-2xl shadow-blue-500/30">
                     Mulai Bermain <ChevronRight className="w-4 h-4" />
-                  </button>
-                  <button onClick={handleGuest}
-                    className="flex items-center gap-2 px-7 py-3.5 bg-white/5 border border-white/10 rounded-2xl text-sm font-semibold hover:bg-white/10 transition-all">
-                    {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
-                    Coba Dulu (Guest)
                   </button>
                 </motion.div>
 
@@ -481,10 +442,6 @@ export default function LandingPage() {
                       className="px-8 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-2xl font-bold text-base hover:opacity-90 transition-opacity shadow-2xl shadow-blue-500/30">
                       Buat Akun Gratis
                     </button>
-                    <button onClick={handleGuest}
-                      className="px-8 py-3.5 bg-white/5 border border-white/10 rounded-2xl font-semibold text-base hover:bg-white/10 transition-all">
-                      Coba Sebagai Guest
-                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -640,12 +597,6 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              <div className="mt-4 text-center">
-                <button onClick={handleGuest}
-                  className="text-sm text-slate-400 hover:text-slate-300 transition-colors underline underline-offset-2">
-                  Lanjutkan sebagai Guest
-                </button>
-              </div>
             </div>
           </motion.div>
         )}

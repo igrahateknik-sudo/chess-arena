@@ -16,7 +16,6 @@ const NAV_ITEMS = [
   { href: '/game', icon: Swords, label: 'Play', badge: 'LIVE' },
   { href: '/tournament', icon: Trophy, label: 'Tournaments' },
   { href: '/leaderboard', icon: Users, label: 'Leaderboard' },
-  { href: '/wallet', icon: Wallet, label: 'Wallet' },
   { href: '/stats', icon: BarChart2, label: 'Statistics' },
 ];
 
@@ -59,7 +58,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-2 space-y-1 overflow-y-auto">
-        {NAV_ITEMS.map((item) => {
+        {[...NAV_ITEMS.slice(0, 4), { href: '/wallet', icon: Wallet, label: 'Wallet' }, ...NAV_ITEMS.slice(4)].map((item) => {
           const active = pathname.startsWith(item.href);
           return (
             <Link key={item.href} href={item.href}

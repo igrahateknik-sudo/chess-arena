@@ -7,8 +7,8 @@ import AppLayout from '@/components/ui/AppLayout';
 import ChessGame from '@/components/chess/ChessGame';
 import OnlineGame from '@/components/chess/OnlineGame';
 import { useAppStore } from '@/lib/store';
+import { useRouter } from 'next/navigation';
 import { TIME_CONTROLS } from '@/lib/mock-data';
-import { api } from '@/lib/api';
 import { getSocket, disconnectSocket } from '@/lib/socket';
 import type { GameMode, TimeControl, Player } from '@/types';
 
@@ -30,7 +30,8 @@ interface FoundGame {
 }
 
 export default function GamePage() {
-  const { user } = useAppStore();
+  const { user, token } = useAppStore();
+  const router = useRouter();
   const [step, setStep] = useState<Step>('lobby');
   const [gameMode, setGameMode] = useState<GameMode>('pvp-online');
   const [selectedTC, setSelectedTC] = useState(TIME_CONTROLS[3]);
@@ -41,28 +42,13 @@ export default function GamePage() {
   const [matchmakingTime, setMatchmakingTime] = useState(0);
   const matchTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [onlineUsers, setOnlineUsers] = useState(0);
-  const [token, setToken] = useState<string>('');
 
   // Active online game
   const [foundGame, setFoundGame] = useState<FoundGame | null>(null);
 
-  // Auth token (from localStorage or auto-login)
-  useEffect(() => {
-    const stored = localStorage.getItem('chess_token');
-    if (stored) { setToken(stored); return; }
-    // Auto guest login
-    api.auth.guest().then(({ token: t, user: u }) => {
-      localStorage.setItem('chess_token', t);
-      setToken(t);
-    }).catch(() => {
-      // Backend not available — use demo token
-      setToken('demo-offline');
-    });
-  }, []);
-
   // Connect socket when token is available, track online users
   useEffect(() => {
-    if (!token || token === 'demo-offline') return;
+    if (!token) return;
     try {
       const socket = getSocket(token);
       socket.on('lobby:online', ({ count }: { count: number }) => setOnlineUsers(count));
@@ -75,21 +61,8 @@ export default function GamePage() {
   }, [token]);
 
   const startMatchmaking = () => {
-    if (!token || token === 'demo-offline') {
-      // Fallback: simulate matchmaking → AI game
-      setStep('matchmaking');
-      setMatchmakingTime(0);
-      matchTimerRef.current = setInterval(() => {
-        setMatchmakingTime(t => {
-          if (t >= 5) {
-            clearInterval(matchTimerRef.current!);
-            setGameMode('ai-medium');
-            setStep('playing-ai');
-            return 0;
-          }
-          return t + 1;
-        });
-      }, 1000);
+    if (!token) {
+      router.push('/');
       return;
     }
 
@@ -128,7 +101,7 @@ export default function GamePage() {
 
   const cancelMatchmaking = () => {
     clearInterval(matchTimerRef.current!);
-    if (token && token !== 'demo-offline') {
+    if (token) {
       try {
         const socket = getSocket(token);
         socket.emit('queue:leave');
@@ -202,6 +175,23 @@ export default function GamePage() {
             token={token}
             onGameEnd={(result, eloChange) => console.log('Game ended:', result, eloChange)}
           />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!token) {
+    return (
+      <AppLayout>
+        <div className="max-w-3xl mx-auto py-16 text-center">
+          <h1 className="text-3xl font-black text-[var(--text-primary)] mb-3">Login Diperlukan</h1>
+          <p className="text-[var(--text-muted)] mb-6">Mode tamu sudah dinonaktifkan. Silakan masuk atau daftar untuk bermain.</p>
+          <button
+            onClick={() => router.push('/')}
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-semibold hover:opacity-90 transition-opacity"
+          >
+            Ke Halaman Login
+          </button>
         </div>
       </AppLayout>
     );

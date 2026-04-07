@@ -60,9 +60,9 @@ export default function DashboardPage() {
   const [loadingGames, setLoadingGames] = useState(true);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
 
-  // Block unverified registered users — guests (rank === 'Guest') are allowed through
+  // Block unverified users from entering dashboard
   useEffect(() => {
-    if (user && !user.verified && user.rank !== 'Guest') {
+    if (user && !user.verified) {
       router.replace(`/verify-email/pending?email=${encodeURIComponent(user.email)}`);
     }
   }, [user, router]);

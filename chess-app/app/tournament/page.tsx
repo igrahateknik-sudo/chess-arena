@@ -394,7 +394,7 @@ export default function TournamentPage() {
           )}
         </motion.div>
 
-        {/* ── Prize split info ──────────────────────────────────── */}
+        {/* ── Info strip ─────────────────────────────────────────── */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
           className="flex items-center gap-4 px-5 py-3 bg-[var(--bg-hover)] rounded-xl border border-[var(--border)] text-sm">
           <TrendingUp className="w-4 h-4 text-yellow-400 flex-shrink-0" />

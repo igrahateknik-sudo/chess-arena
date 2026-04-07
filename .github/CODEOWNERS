@@ -1,0 +1,13 @@
+# Default owners for all files
+* @igrahateknik-sudo
+
+# Backend
+/chess-backend/ @igrahateknik-sudo
+
+# Frontend
+/chess-app/ @igrahateknik-sudo
+
+# CI/CD and repo policies
+/.github/ @igrahateknik-sudo
+/SECURITY.md @igrahateknik-sudo
+/CONTRIBUTING.md @igrahateknik-sudo
