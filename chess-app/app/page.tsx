@@ -86,6 +86,7 @@ const TIERS = [
     color: 'from-amber-700/30 to-amber-900/20',
     border: 'border-amber-700/30',
     badge: 'bg-amber-700/20 text-amber-500',
+    art: '/illustrations/register-card.svg',
   },
   {
     key: 'silver',
@@ -98,6 +99,7 @@ const TIERS = [
     color: 'from-slate-400/20 to-slate-600/10',
     border: 'border-slate-400/30',
     badge: 'bg-slate-400/20 text-slate-300',
+    art: '/illustrations/ticket-card.svg',
     featured: true,
   },
   {
@@ -111,6 +113,7 @@ const TIERS = [
     color: 'from-yellow-500/20 to-yellow-700/10',
     border: 'border-yellow-500/30',
     badge: 'bg-yellow-500/20 text-yellow-400',
+    art: '/illustrations/battle-card.svg',
   },
 ];
 
@@ -403,9 +406,10 @@ export default function LandingPage() {
                     <motion.div key={step.step}
                       initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }}
                       viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                      className="relative glass rounded-2xl p-6 border border-white/8 hover:border-white/15 transition-all group">
-                      <div className="absolute inset-x-0 top-0 h-20 opacity-30">
-                        <Image src={step.art} alt={step.title} fill className="object-cover rounded-t-2xl" />
+                      className="relative glass rounded-2xl p-6 border border-white/8 hover:border-white/15 transition-all group overflow-hidden">
+                      <div className="relative h-24 rounded-xl border border-white/10 overflow-hidden mb-5 bg-white/[0.02]">
+                        <Image src={step.art} alt={step.title} fill className="object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#060c18]/70 to-transparent" />
                       </div>
                       <div className="text-5xl font-black text-white/4 absolute top-4 right-5 select-none">{step.step}</div>
                       <div className={`w-11 h-11 rounded-xl border flex items-center justify-center mb-4 ${cls}`}>
@@ -449,6 +453,10 @@ export default function LandingPage() {
                       <div>
                         <div className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${tier.badge}`}>{tier.label}</div>
                       </div>
+                    </div>
+                    <div className="relative h-20 rounded-xl border border-white/10 overflow-hidden mb-5 bg-white/[0.03]">
+                      <Image src={tier.art} alt={`Ilustrasi ${tier.label}`} fill className="object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#060c18]/65 to-transparent" />
                     </div>
                     <div className="mb-5">
                       <div className="text-3xl font-black text-white mb-0.5">{tier.fee}</div>
