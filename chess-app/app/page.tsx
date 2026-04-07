@@ -336,32 +336,18 @@ export default function LandingPage() {
                   <div className="w-[400px] h-[400px] rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(56,189,248,0.12)] border border-white/8">
                     <ChessBoardVisual />
                   </div>
-                  {/* Floating info cards */}
-                  <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
-                    className="absolute -left-16 top-10 glass rounded-2xl p-3.5 flex items-center gap-3 border border-white/10 backdrop-blur-sm shadow-xl min-w-[160px]">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                      <TrendingUp className="w-4 h-4 text-emerald-400" />
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-slate-500 uppercase tracking-wider">ELO Hari Ini</div>
-                      <div className="text-base font-black text-emerald-400">+42 pts</div>
-                    </div>
-                  </motion.div>
-                  <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut' }}
-                    className="absolute -right-16 bottom-16 glass rounded-2xl p-3.5 flex items-center gap-3 border border-white/10 backdrop-blur-sm shadow-xl min-w-[165px]">
-                    <div className="w-9 h-9 rounded-xl bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                      <Trophy className="w-4 h-4 text-yellow-400" />
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-slate-500 uppercase tracking-wider">Poin Kompetitif</div>
-                      <div className="text-base font-black text-yellow-400">+240 PTS</div>
-                    </div>
-                  </motion.div>
-                  <motion.div animate={{ y: [-4, 4, -4] }} transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
-                    className="absolute -left-12 bottom-10 glass rounded-2xl p-2.5 flex items-center gap-2 border border-white/10 backdrop-blur-sm shadow-xl">
-                    <Clock className="w-3.5 h-3.5 text-sky-400" />
-                    <span className="text-xs text-slate-300 font-medium">Turnamen tiap jam</span>
-                  </motion.div>
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'Mode', value: 'Ranked Live' },
+                      { label: 'Format', value: 'Blitz 3+2' },
+                      { label: 'Sistem', value: 'Swiss Fair' },
+                    ].map((item) => (
+                      <div key={item.label} className="glass rounded-xl border border-white/10 px-3 py-2 text-center">
+                        <div className="text-[10px] text-slate-500 uppercase tracking-wider">{item.label}</div>
+                        <div className="text-xs font-semibold text-slate-200 mt-0.5">{item.value}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             </section>
