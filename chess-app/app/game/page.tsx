@@ -146,6 +146,23 @@ export default function GamePage() {
     );
   }
 
+  if (!token) {
+    return (
+      <AppLayout>
+        <div className="max-w-3xl mx-auto py-16 text-center">
+          <h1 className="text-3xl font-black text-[var(--text-primary)] mb-3">Login Diperlukan</h1>
+          <p className="text-[var(--text-muted)] mb-6">Mode tamu sudah dinonaktifkan. Silakan masuk atau daftar untuk bermain.</p>
+          <button
+            onClick={() => router.push('/')}
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-semibold hover:opacity-90 transition-opacity"
+          >
+            Ke Halaman Login
+          </button>
+        </div>
+      </AppLayout>
+    );
+  }
+
   if (step === 'playing-online' && foundGame) {
     return (
       <AppLayout>
@@ -175,23 +192,6 @@ export default function GamePage() {
             token={token}
             onGameEnd={(result, eloChange) => console.log('Game ended:', result, eloChange)}
           />
-        </div>
-      </AppLayout>
-    );
-  }
-
-  if (!token) {
-    return (
-      <AppLayout>
-        <div className="max-w-3xl mx-auto py-16 text-center">
-          <h1 className="text-3xl font-black text-[var(--text-primary)] mb-3">Login Diperlukan</h1>
-          <p className="text-[var(--text-muted)] mb-6">Mode tamu sudah dinonaktifkan. Silakan masuk atau daftar untuk bermain.</p>
-          <button
-            onClick={() => router.push('/')}
-            className="px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-semibold hover:opacity-90 transition-opacity"
-          >
-            Ke Halaman Login
-          </button>
         </div>
       </AppLayout>
     );
