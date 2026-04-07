@@ -35,6 +35,7 @@ npm install
 SUPABASE_URL=https://<your-project>.supabase.co
 SUPABASE_SERVICE_KEY=<your-service-key>
 JWT_SECRET=<random-32-char-string>
+JWT_EXPIRES=12h
 MIDTRANS_SERVER_KEY=SB-Mid-server-xxxx
 MIDTRANS_CLIENT_KEY=SB-Mid-client-xxxx
 FRONTEND_URL=http://localhost:3000
@@ -49,6 +50,7 @@ SMTP_PORT=587
 SMTP_USER=your@gmail.com
 SMTP_PASS=app-password
 ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_STEPUP_SECRET=<long-random-secret-for-admin-mutations>
 ```
 
 **Frontend** — create `chess-app/.env.local`:
@@ -197,6 +199,7 @@ Required Vercel secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
 | `SUPABASE_URL` | ✅ | — | Supabase project URL |
 | `SUPABASE_SERVICE_KEY` | ✅ | — | Service-role key (bypasses RLS) |
 | `JWT_SECRET` | ✅ | dev-secret | JWT signing key |
+| `JWT_EXPIRES` | — | 12h | JWT access token lifetime |
 | `MIDTRANS_SERVER_KEY` | ✅ | — | Midtrans server key |
 | `MIDTRANS_CLIENT_KEY` | ✅ | — | Midtrans client key |
 | `FRONTEND_URL` | ✅ | localhost:3000 | Frontend URL for CORS + email links |
@@ -204,6 +207,7 @@ Required Vercel secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
 | `PORT` | — | 4000 | HTTP/WS port |
 | `NODE_ENV` | — | development | `production` enables stricter security |
 | `REDIS_URL` | — | disabled | Redis for Socket.IO horizontal scaling |
+| `ADMIN_STEPUP_SECRET` | — | disabled | If set, admin mutation routes require `x-admin-stepup` header |
 | `SMTP_HOST` | — | — | SMTP server for verification/reset emails |
 | `SMTP_PORT` | — | 587 | SMTP port |
 | `SMTP_USER` | — | — | SMTP username |
@@ -307,6 +311,7 @@ Test files in `chess-backend/tests/`:
 | `queue:join` | `{ timeControl, stakes, color }` | Join matchmaking queue |
 | `queue:leave` | `{ stakes }` | Leave queue (unlocks funds) |
 | `game:join` | `{ gameId }` | Join game room |
+| `game:leave` | `{ gameId }` | Leave game room explicitly (starts reconnect window logic) |
 | `game:move` | `{ gameId, from, to, promotion, moveToken }` | Make a move |
 | `game:resign` | `{ gameId }` | Resign |
 | `game:draw-offer` | `{ gameId }` | Offer draw |
