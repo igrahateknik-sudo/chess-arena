@@ -4,7 +4,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const { verifyToken } = require('./lib/auth');
+const { verifyToken, passwordHashVersion } = require('./lib/auth');
 const { users } = require('./lib/db');
 const { registerMatchmaking, queues } = require('./socket/matchmaking');
 const { registerGameRoom, gameCache } = require('./socket/gameRoom');
@@ -253,6 +253,9 @@ io.use(async (socket, next) => {
   try {
     const user = await users.findById(payload.userId);
     if (!user) return next(new Error('User not found'));
+    if (payload.phv && payload.phv !== passwordHashVersion(user.password_hash)) {
+      return next(new Error('Session expired'));
+    }
 
     socket.userId = payload.userId;
     socket.username = user.username;

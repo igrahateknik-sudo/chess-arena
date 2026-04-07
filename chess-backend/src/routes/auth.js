@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { users } = require('../lib/db');
-const { signToken, verifyToken } = require('../lib/auth');
+const { signToken, verifyToken, passwordHashVersion } = require('../lib/auth');
 const { requireAuth } = require('../middleware/auth');
 const { validate, schemas } = require('../middleware/validate');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../lib/mailer');
@@ -147,7 +147,7 @@ router.post('/login', loginRateLimit, validate(schemas.login), async (req, res) 
     // Reset lockout on successful login
     loginAttempts.delete(loginKey);
 
-    const token = signToken({ userId: user.id });
+    const token = signToken({ userId: user.id, phv: passwordHashVersion(user.password_hash) });
     res.json({ token, user: users.public(user) });
   } catch (err) {
     console.error('[auth/login]', err);
@@ -206,7 +206,7 @@ router.post('/google', async (req, res) => {
       user = await users.update(user.id, { verified: true, verify_token: null });
     }
 
-    const token = signToken({ userId: user.id });
+    const token = signToken({ userId: user.id, phv: passwordHashVersion(user.password_hash) });
     res.json({ token, user: users.public(user) });
   } catch (err) {
     console.error('[auth/google]', err);
@@ -227,7 +227,7 @@ router.post('/guest', async (req, res) => {
       passwordHash,
     });
 
-    const token = signToken({ userId: user.id });
+    const token = signToken({ userId: user.id, phv: passwordHashVersion(user.password_hash) });
     res.status(201).json({ token, user: users.public(user) });
   } catch (err) {
     console.error('[auth/guest]', err);

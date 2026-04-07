@@ -1,4 +1,4 @@
-const { verifyToken } = require('../lib/auth');
+const { verifyToken, passwordHashVersion } = require('../lib/auth');
 const { users } = require('../lib/db');
 
 /**
@@ -16,6 +16,9 @@ async function requireAuth(req, res, next) {
 
   const user = await users.findById(payload.userId);
   if (!user) return res.status(401).json({ error: 'User not found' });
+  if (payload.phv && payload.phv !== passwordHashVersion(user.password_hash)) {
+    return res.status(401).json({ error: 'Session expired. Please log in again.' });
+  }
 
   req.user = user;
   req.userId = user.id;
