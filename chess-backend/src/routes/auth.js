@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
+const { createClient } = require('redis');
 const { users } = require('../lib/db');
 const { signToken, verifyToken, passwordHashVersion } = require('../lib/auth');
 const { requireAuth } = require('../middleware/auth');
@@ -13,6 +14,71 @@ const { sendVerificationEmail, sendPasswordResetEmail } = require('../lib/mailer
 const loginAttempts = new Map(); // key: email/username, value: { count, lastAttempt }
 const MAX_LOGIN_ATTEMPTS = 10;
 const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 menit
+let redisClient = null;
+let redisReadyPromise = null;
+
+async function getRedisClient() {
+  if (!process.env.REDIS_URL) return null;
+  if (redisClient && redisClient.isOpen) return redisClient;
+  if (redisReadyPromise) return redisReadyPromise;
+  redisReadyPromise = (async () => {
+    try {
+      redisClient = createClient({ url: process.env.REDIS_URL });
+      redisClient.on('error', () => {});
+      await redisClient.connect();
+      return redisClient;
+    } catch {
+      redisClient = null;
+      return null;
+    } finally {
+      redisReadyPromise = null;
+    }
+  })();
+  return redisReadyPromise;
+}
+
+async function getLoginAttempts(loginKey) {
+  const client = await getRedisClient();
+  if (client) {
+    const key = `auth:attempts:${loginKey}`;
+    const countRaw = await client.get(`${key}:count`);
+    const lastRaw = await client.get(`${key}:last`);
+    return {
+      count: Number(countRaw || 0),
+      lastAttempt: Number(lastRaw || 0),
+      store: 'redis',
+    };
+  }
+  const local = loginAttempts.get(loginKey) || { count: 0, lastAttempt: 0 };
+  return { ...local, store: 'memory' };
+}
+
+async function incrementLoginAttempts(loginKey) {
+  const client = await getRedisClient();
+  if (client) {
+    const key = `auth:attempts:${loginKey}`;
+    const now = Date.now().toString();
+    const ttlSec = Math.ceil(LOCKOUT_DURATION / 1000);
+    await client.multi()
+      .incr(`${key}:count`)
+      .set(`${key}:last`, now, { EX: ttlSec })
+      .expire(`${key}:count`, ttlSec)
+      .exec();
+    return;
+  }
+  const cur = loginAttempts.get(loginKey) || { count: 0, lastAttempt: 0 };
+  loginAttempts.set(loginKey, { count: cur.count + 1, lastAttempt: Date.now() });
+}
+
+async function clearLoginAttempts(loginKey) {
+  const client = await getRedisClient();
+  if (client) {
+    const key = `auth:attempts:${loginKey}`;
+    await client.del([`${key}:count`, `${key}:last`]).catch(() => {});
+    return;
+  }
+  loginAttempts.delete(loginKey);
+}
 
 // Cleanup expired lockout entries every 30 menit
 setInterval(() => {
@@ -118,21 +184,19 @@ router.post('/login', loginRateLimit, validate(schemas.login), async (req, res) 
     const loginKey = (email || username || '').toLowerCase();
 
     // Check account lockout
-    const attempts = loginAttempts.get(loginKey);
+    const attempts = await getLoginAttempts(loginKey);
     if (attempts && attempts.count >= MAX_LOGIN_ATTEMPTS && Date.now() - attempts.lastAttempt < LOCKOUT_DURATION) {
       return res.status(429).json({ error: 'Akun terkunci sementara karena terlalu banyak percobaan login. Coba lagi dalam 15 menit.' });
     }
 
     if (!user) {
-      const cur = loginAttempts.get(loginKey) || { count: 0, lastAttempt: 0 };
-      loginAttempts.set(loginKey, { count: cur.count + 1, lastAttempt: Date.now() });
+      await incrementLoginAttempts(loginKey);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) {
-      const cur = loginAttempts.get(loginKey) || { count: 0, lastAttempt: 0 };
-      loginAttempts.set(loginKey, { count: cur.count + 1, lastAttempt: Date.now() });
+      await incrementLoginAttempts(loginKey);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -145,7 +209,7 @@ router.post('/login', loginRateLimit, validate(schemas.login), async (req, res) 
     }
 
     // Reset lockout on successful login
-    loginAttempts.delete(loginKey);
+    await clearLoginAttempts(loginKey);
 
     const token = signToken({ userId: user.id, phv: passwordHashVersion(user.password_hash) });
     res.json({ token, user: users.public(user) });

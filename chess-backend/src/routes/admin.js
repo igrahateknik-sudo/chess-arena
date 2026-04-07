@@ -18,7 +18,7 @@
 
 const express  = require('express');
 const router   = express.Router();
-const { requireAdmin } = require('../middleware/adminAuth');
+const { requireAdmin, requireAdminStepUp } = require('../middleware/adminAuth');
 const { supabase, wallets, transactions, manualDeposits, manualWithdrawals } = require('../lib/db');
 const { logAnticheatAction } = require('../lib/auditLog');
 const { checkQueueHealth }   = require('../lib/monitor');
@@ -26,6 +26,7 @@ const { sendDepositApprovedEmail, sendDepositRejectedEmail } = require('../lib/m
 
 // Semua route require admin
 router.use(requireAdmin);
+router.use(requireAdminStepUp);
 
 // ── GET /api/admin/stats ───────────────────────────────────────────────────
 router.get('/stats', async (req, res) => {

@@ -40,4 +40,18 @@ async function requireAdmin(req, res, next) {
   next();
 }
 
-module.exports = { requireAdmin };
+function requireAdminStepUp(req, res, next) {
+  const sensitiveMethod = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+  const requiredSecret = process.env.ADMIN_STEPUP_SECRET;
+
+  // No-op if step-up secret is not configured yet.
+  if (!sensitiveMethod || !requiredSecret) return next();
+
+  const provided = req.headers['x-admin-stepup'];
+  if (!provided || provided !== requiredSecret) {
+    return res.status(403).json({ error: 'Admin step-up required' });
+  }
+  next();
+}
+
+module.exports = { requireAdmin, requireAdminStepUp };
