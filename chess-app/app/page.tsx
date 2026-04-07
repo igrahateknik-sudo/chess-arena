@@ -91,7 +91,6 @@ const STATS = [
 
 export default function LandingPage() {
   const router = useRouter();
-  const { login } = useAppStore();
   const [mode, setMode] = useState<'landing' | 'login' | 'register' | 'forgot'>('landing');
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ username: '', email: '', password: '' });
