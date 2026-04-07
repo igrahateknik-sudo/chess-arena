@@ -208,7 +208,14 @@ export default function GamePage() {
                 {foundGame.white.username} vs {foundGame.black.username} • {foundGame.timeControl.label}
               </p>
             </div>
-            <button onClick={() => { setStep('lobby'); setFoundGame(null); }}
+            <button onClick={() => {
+              try {
+                const socket = getSocket(token);
+                socket.emit('game:leave', { gameId: foundGame.gameId });
+              } catch {}
+              setStep('lobby');
+              setFoundGame(null);
+            }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--bg-hover)] text-[var(--text-secondary)] text-sm font-medium hover:bg-[var(--border)] transition-colors">
               <X className="w-4 h-4" /> Exit
             </button>

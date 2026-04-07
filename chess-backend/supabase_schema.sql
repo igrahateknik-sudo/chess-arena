@@ -164,6 +164,9 @@ CREATE INDEX IF NOT EXISTS idx_users_elo ON users(elo DESC);
 CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_games_users ON games(white_id, black_id);
 CREATE INDEX IF NOT EXISTS idx_games_status ON games(status);
+CREATE INDEX IF NOT EXISTS idx_games_active_white ON games(white_id) WHERE status = 'active';
+CREATE INDEX IF NOT EXISTS idx_games_active_black ON games(black_id) WHERE status = 'active';
+CREATE INDEX IF NOT EXISTS idx_games_status_ended_at ON games(status, ended_at DESC);
 CREATE INDEX IF NOT EXISTS idx_elo_history_user ON elo_history(user_id, created_at DESC);
 
 -- ── Enable Row Level Security ────────────────────────────────

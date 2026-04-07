@@ -184,6 +184,45 @@ function stopTimer(gameId) {
   }
 }
 
+function scheduleDisconnectForfeit(io, gameId, game, userId, socket) {
+  socket.to(gameId).emit('opponent:disconnected', { userId, reconnectWindow: 60 });
+
+  // [SECURITY-DISCONNECT] Record disconnect event for abuse tracking
+  disconnectHistory.push({ userId, gameId, timestamp: Date.now() });
+  const cutoff = Date.now() - 86_400_000;
+  while (disconnectHistory.length > 0 && disconnectHistory[0].timestamp < cutoff) {
+    disconnectHistory.shift();
+  }
+
+  const abuseResult = detectDisconnectAbuse(userId, disconnectHistory);
+  if (abuseResult.abusive) {
+    logSecurityEvent('DISCONNECT_ABUSE_DETECTED', { userId, gameId, count: abuseResult.count });
+    enforceAnticheat(userId, gameId, { flags: abuseResult.flags, score: 10 * abuseResult.count }, io)
+      .catch(e => console.error('[DisconnectAbuse:enforce]', e.message));
+  }
+
+  const dcKey = `${gameId}:${userId}`;
+  if (disconnectTimers.get(dcKey)) return;
+
+  const dcTimer = setTimeout(() => {
+    disconnectTimers.delete(dcKey);
+    const currentGame = gameCache.get(gameId);
+    if (!currentGame || currentGame.status !== 'active') return;
+
+    const room = io.sockets.adapter.rooms.get(gameId);
+    if (!room || room.size === 0) {
+      stopTimer(gameId);
+      endGame(io, gameId, 'draw', 'aborted');
+    } else {
+      stopTimer(gameId);
+      const winner = game.whiteId === userId ? 'black' : 'white';
+      endGame(io, gameId, winner, 'disconnect');
+    }
+  }, 60_000);
+
+  disconnectTimers.set(dcKey, dcTimer);
+}
+
 // ── End Game ───────────────────────────────────────────────────────────────
 
 async function endGame(io, gameId, winner, endReason) {
@@ -897,6 +936,25 @@ function registerGameRoom(io, socket, userId) {
     socket.to(gameId).emit('game:draw-declined');
   });
 
+  // ── Leave game room explicitly (without disconnecting whole socket) ─────
+  socket.on('game:leave', ({ gameId }) => {
+    const game = gameCache.get(gameId);
+    if (!game || game.status !== 'active') return;
+    if (game.whiteId !== userId && game.blackId !== userId) return;
+
+    const sessionKey = `${gameId}:${userId}`;
+    if (activeGameSockets.get(sessionKey) === socket.id) {
+      activeGameSockets.delete(sessionKey);
+    }
+    moveTokens.delete(sessionKey);
+
+    socket.leave(gameId);
+    const rooms = socketGameRooms.get(socket.id) || [];
+    socketGameRooms.set(socket.id, rooms.filter(r => r.gameId !== gameId));
+
+    scheduleDisconnectForfeit(io, gameId, game, userId, socket);
+  });
+
   // ── In-game chat ────────────────────────────────────────────────────────
   socket.on('game:chat', ({ gameId, message }) => {
     const game = gameCache.get(gameId);
@@ -934,42 +992,7 @@ function registerGameRoom(io, socket, userId) {
       if (game.status !== 'active') continue;
       if (game.whiteId !== userId && game.blackId !== userId) continue;
 
-      socket.to(gameId).emit('opponent:disconnected', { userId, reconnectWindow: 60 });
-
-      // [SECURITY-DISCONNECT] Record disconnect event for abuse tracking
-      disconnectHistory.push({ userId, gameId, timestamp: Date.now() });
-      // Prune entries older than 24h to prevent memory growth
-      const cutoff = Date.now() - 86_400_000;
-      while (disconnectHistory.length > 0 && disconnectHistory[0].timestamp < cutoff) {
-        disconnectHistory.shift();
-      }
-
-      // [SECURITY-DISCONNECT] Check for disconnect abuse (≥3 disconnects in 24h)
-      const abuseResult = detectDisconnectAbuse(userId, disconnectHistory);
-      if (abuseResult.abusive) {
-        logSecurityEvent('DISCONNECT_ABUSE_DETECTED', { userId, gameId, count: abuseResult.count });
-        enforceAnticheat(userId, gameId, { flags: abuseResult.flags, score: 10 * abuseResult.count }, io)
-          .catch(e => console.error('[DisconnectAbuse:enforce]', e.message));
-      }
-
-      const dcKey = `${gameId}:${userId}`;
-      const dcTimer = setTimeout(() => {
-        disconnectTimers.delete(dcKey);
-        const currentGame = gameCache.get(gameId);
-        if (!currentGame || currentGame.status !== 'active') return;
-
-        const room = io.sockets.adapter.rooms.get(gameId);
-        if (!room || room.size === 0) {
-          stopTimer(gameId);
-          endGame(io, gameId, 'draw', 'aborted');
-        } else {
-          stopTimer(gameId);
-          const winner = game.whiteId === userId ? 'black' : 'white';
-          endGame(io, gameId, winner, 'disconnect');
-        }
-      }, 60_000);
-
-      disconnectTimers.set(dcKey, dcTimer);
+      scheduleDisconnectForfeit(io, gameId, game, userId, socket);
       break;
     }
   });
