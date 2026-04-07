@@ -25,8 +25,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
-        <title>Chess Arena — Competitive Chess Esports Platform</title>
-        <meta name="description" content="Platform kompetitif catur berbasis skill dengan ranked match, tournament esports, anti-cheat, dan progression ELO real-time." />
+        <title>Chess Arena — Platform Esports Catur Kompetitif</title>
+        <meta name="description" content="Platform esports catur berbasis skill dengan match ranked, turnamen tiap jam, anti-cheat ketat, dan progres ELO real-time." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♔</text></svg>" />
       </head>

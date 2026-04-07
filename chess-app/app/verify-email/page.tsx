@@ -50,7 +50,7 @@ function VerifyEmailForm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050a14] text-white flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex items-center justify-center px-4">
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[100px] animate-pulse" />
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
@@ -68,11 +68,11 @@ function VerifyEmailForm() {
           <h1 className="text-2xl font-bold">Verifikasi Email</h1>
         </div>
 
-        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
+        <div className="bg-[var(--bg-card)]/80 backdrop-blur-xl rounded-2xl p-8 border border-[var(--border)]">
           {status === 'loading' && (
             <div className="flex flex-col items-center gap-4 py-6 text-center">
               <Loader2 className="w-12 h-12 text-sky-400 animate-spin" />
-              <p className="text-slate-300">Sedang memverifikasi email kamu...</p>
+              <p className="text-[var(--text-secondary)]">Sedang memverifikasi email kamu...</p>
             </div>
           )}
 
@@ -82,10 +82,10 @@ function VerifyEmailForm() {
                 <CheckCircle className="w-8 h-8 text-emerald-400" />
               </div>
               <p className="text-emerald-400 font-semibold text-lg">Email berhasil diverifikasi!</p>
-              <p className="text-slate-400 text-sm">Akunmu sudah aktif. Kamu akan diarahkan ke halaman login dalam 4 detik...</p>
+              <p className="text-[var(--text-muted)] text-sm">Akunmu sudah aktif. Kamu akan diarahkan ke halaman masuk dalam 4 detik...</p>
               <button onClick={() => router.push('/')}
                 className="px-6 py-2.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-blue-500/25">
-                Login Sekarang
+                Masuk Sekarang
               </button>
             </div>
           )}
@@ -100,7 +100,7 @@ function VerifyEmailForm() {
 
               {/* Resend form */}
               <div className="w-full mt-4 pt-4 border-t border-white/10">
-                <p className="text-slate-400 text-sm mb-3">Kirim ulang email verifikasi:</p>
+                <p className="text-[var(--text-muted)] text-sm mb-3">Kirim ulang email verifikasi:</p>
                 {resendSuccess ? (
                   <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm">
                     <CheckCircle className="w-4 h-4 flex-shrink-0" /> {resendSuccess}
@@ -124,8 +124,8 @@ function VerifyEmailForm() {
                 )}
               </div>
 
-              <button onClick={() => router.push('/')} className="text-sm text-slate-400 hover:text-slate-300 transition-colors">
-                Kembali ke Login
+                <button onClick={() => router.push('/')} className="text-sm text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
+                Kembali ke Masuk
               </button>
             </div>
           )}
@@ -139,7 +139,7 @@ function VerifyEmailForm() {
               <p className="text-slate-400 text-sm">Link verifikasi tidak valid. Pastikan kamu mengklik link yang ada di email, bukan menyalin sebagian URL.</p>
               <button onClick={() => router.push('/')}
                 className="text-sm text-sky-400 hover:text-sky-300 transition-colors">
-                Kembali ke Login
+                Kembali ke Masuk
               </button>
             </div>
           )}
@@ -151,7 +151,7 @@ function VerifyEmailForm() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#050a14] flex items-center justify-center text-white">Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-primary)]">Memuat...</div>}>
       <VerifyEmailForm />
     </Suspense>
   );

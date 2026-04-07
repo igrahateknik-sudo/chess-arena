@@ -35,6 +35,7 @@ export default function AppealPage() {
   const [reason, setReason]     = useState('');
   const [evidence, setEvidence] = useState('');
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [loadError, setLoadError] = useState('');
 
   const showMessage = (text: string, ok = true) => {
     setMsg({ text, ok });
@@ -50,7 +51,7 @@ export default function AppealPage() {
         setAppeals(data.appeals || []);
         setAccount(data.account);
       } catch {
-        // ignore
+        setLoadError('Data banding tidak dapat dimuat saat ini.');
       } finally {
         setLoading(false);
       }
@@ -64,13 +65,13 @@ export default function AppealPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!token || !reason.trim() || reason.trim().length < 20) {
-      showMessage('Please write at least 20 characters explaining your case.', false);
+      showMessage('Tulis minimal 20 karakter untuk menjelaskan kasusmu.', false);
       return;
     }
     setSubmitting(true);
     try {
       await api.appeal.submit(token, { reason: reason.trim(), evidence: evidence.trim() || undefined });
-      showMessage('✅ Appeal submitted! Our team will review within 48 hours.');
+      showMessage('Banding berhasil dikirim. Tim kami akan meninjau dalam 48 jam.');
       setReason('');
       setEvidence('');
       setShowForm(false);
@@ -79,7 +80,7 @@ export default function AppealPage() {
       setAppeals(data.appeals || []);
       setAccount(data.account);
     } catch (err: unknown) {
-      showMessage(`❌ ${err instanceof Error ? err.message : 'Failed to submit'}`, false);
+      showMessage(`${err instanceof Error ? err.message : 'Gagal mengirim banding'}`, false);
     } finally {
       setSubmitting(false);
     }
@@ -89,7 +90,7 @@ export default function AppealPage() {
     return (
       <AppLayout>
         <div className="flex items-center justify-center min-h-[60vh] text-[var(--text-muted)]">
-          Loading…
+          Memuat…
         </div>
       </AppLayout>
     );
@@ -105,10 +106,13 @@ export default function AppealPage() {
             <Shield size={20} className="text-yellow-400" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[var(--text-primary)]">Account Appeal</h1>
-            <p className="text-sm text-[var(--text-muted)]">Contest a flag or suspension on your account</p>
+            <h1 className="text-xl font-bold text-[var(--text-primary)]">Banding Akun</h1>
+            <p className="text-sm text-[var(--text-muted)]">Ajukan peninjauan untuk flag atau suspensi akun</p>
           </div>
         </div>
+        {loadError && (
+          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">{loadError}</div>
+        )}
 
         {/* Toast */}
         {msg && (
@@ -131,7 +135,7 @@ export default function AppealPage() {
               }
               <div>
                 <div className={`font-semibold ${account.flagged ? 'text-red-300' : 'text-green-300'}`}>
-                  {account.flagged ? 'Account Flagged / Suspended' : 'Account in Good Standing'}
+                  {account.flagged ? 'Akun Ditandai / Ditangguhkan' : 'Akun Dalam Kondisi Baik'}
                 </div>
                 {account.flagged && account.flaggedReason && (
                   <div className="text-sm text-red-400 mt-0.5">{account.flaggedReason}</div>
@@ -153,7 +157,7 @@ export default function AppealPage() {
             className="w-full flex items-center justify-between px-5 py-4 bg-[var(--bg-secondary)] border border-yellow-500/30 rounded-xl text-[var(--text-primary)] hover:border-yellow-500/60 transition-colors mb-6">
             <div className="flex items-center gap-2">
               <Send size={16} className="text-yellow-400" />
-              <span className="font-medium">Submit an Appeal</span>
+              <span className="font-medium">Ajukan Banding</span>
             </div>
             <ChevronRight size={16} className="text-[var(--text-muted)]" />
           </button>
@@ -162,10 +166,10 @@ export default function AppealPage() {
         {!account?.flagged && appeals.length === 0 && (
           <div className="text-center py-10 text-[var(--text-muted)]">
             <CheckCircle size={40} className="mx-auto mb-3 text-green-500/50" />
-            <div className="font-medium">Your account is in good standing</div>
-            <div className="text-sm mt-1">No appeal is needed at this time.</div>
+            <div className="font-medium">Akun kamu dalam kondisi baik</div>
+            <div className="text-sm mt-1">Tidak perlu mengajukan banding saat ini.</div>
             <Link href="/dashboard" className="inline-flex items-center gap-1 mt-4 text-sm text-blue-400 hover:underline">
-              Back to Dashboard <ChevronRight size={14} />
+              Kembali ke Dashboard <ChevronRight size={14} />
             </Link>
           </div>
         )}
@@ -173,29 +177,29 @@ export default function AppealPage() {
         {hasPending && (
           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6 text-sm text-yellow-300">
             <Clock size={15} className="inline mr-1" />
-            You have a pending appeal. Our team will review it within 48 hours. No new appeal can be submitted until this one is resolved.
+            Kamu punya banding yang masih diproses. Tim kami akan meninjau dalam 48 jam. Banding baru bisa diajukan setelah ini selesai.
           </div>
         )}
 
         {appeals.length >= 3 && !hasPending && (
           <div className="bg-zinc-500/10 border border-zinc-500/30 rounded-xl p-4 mb-6 text-sm text-zinc-400">
-            You have reached the maximum of 3 appeals. Please contact support directly if you need further assistance.
+            Kamu sudah mencapai batas maksimal 3 kali banding. Hubungi support jika butuh bantuan lanjutan.
           </div>
         )}
 
         {/* Appeal Form */}
         {showForm && canSubmit && (
           <form onSubmit={handleSubmit} className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-5 mb-6">
-            <h2 className="font-semibold text-[var(--text-primary)] mb-4">Submit Appeal</h2>
+            <h2 className="font-semibold text-[var(--text-primary)] mb-4">Ajukan Banding</h2>
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-[var(--text-muted)] mb-1.5">
-                Explain your case <span className="text-red-400">*</span>
+                Jelaskan kasus kamu <span className="text-red-400">*</span>
               </label>
               <textarea
                 value={reason}
                 onChange={e => setReason(e.target.value)}
-                placeholder="Describe why you believe this flag/suspension is incorrect. Be specific and honest — our review team reads every appeal carefully."
+                placeholder="Jelaskan kenapa flag/suspensi ini menurutmu tidak tepat. Tulis spesifik dan jujur."
                 rows={5}
                 required
                 minLength={20}
@@ -207,12 +211,12 @@ export default function AppealPage() {
 
             <div className="mb-5">
               <label className="block text-sm font-medium text-[var(--text-muted)] mb-1.5">
-                Additional evidence <span className="text-[var(--text-muted)]">(optional)</span>
+                Bukti tambahan <span className="text-[var(--text-muted)]">(opsional)</span>
               </label>
               <textarea
                 value={evidence}
                 onChange={e => setEvidence(e.target.value)}
-                placeholder="Any links, game IDs, or other context that supports your case."
+                placeholder="Tambahkan link, ID game, atau konteks lain yang mendukung banding."
                 rows={3}
                 maxLength={1000}
                 className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-primary)] resize-none focus:outline-none focus:border-blue-500/50"
@@ -220,19 +224,19 @@ export default function AppealPage() {
             </div>
 
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-xs text-blue-300 mb-4">
-              <strong>Note:</strong> Appeals are reviewed by a human admin within 48 hours.
-              False information may result in a permanent ban. You can submit up to 3 appeals total.
+              <strong>Catatan:</strong> Banding ditinjau admin manusia dalam 48 jam.
+              Informasi palsu dapat berujung ban permanen. Maksimal 3 banding per akun.
             </div>
 
             <div className="flex gap-3">
               <button type="submit" disabled={submitting || reason.trim().length < 20}
                 className="flex items-center gap-2 px-5 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black font-semibold rounded-lg text-sm transition-colors disabled:opacity-50">
                 <Send size={15} />
-                {submitting ? 'Submitting…' : 'Submit Appeal'}
+                {submitting ? 'Mengirim…' : 'Kirim Banding'}
               </button>
               <button type="button" onClick={() => setShowForm(false)}
                 className="px-4 py-2.5 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
-                Cancel
+                Batal
               </button>
             </div>
           </form>
@@ -241,7 +245,7 @@ export default function AppealPage() {
         {/* Past Appeals */}
         {appeals.length > 0 && (
           <div>
-            <h2 className="font-semibold text-[var(--text-primary)] mb-3">Your Appeals</h2>
+            <h2 className="font-semibold text-[var(--text-primary)] mb-3">Riwayat Banding</h2>
             <div className="space-y-3">
               {appeals.map(a => (
                 <div key={a.id} className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4">
@@ -253,12 +257,12 @@ export default function AppealPage() {
                   <p className="text-sm text-[var(--text-muted)] line-clamp-3">{a.reason}</p>
                   {a.admin_note && (
                     <div className="mt-3 p-3 bg-[var(--bg-primary)] rounded-lg border border-[var(--border)]">
-                      <div className="text-xs font-semibold text-[var(--text-muted)] mb-1">Admin Response:</div>
+                      <div className="text-xs font-semibold text-[var(--text-muted)] mb-1">Respons Admin:</div>
                       <p className="text-sm text-[var(--text-primary)]">{a.admin_note}</p>
                     </div>
                   )}
                   {a.reviewed_at && (
-                    <div className="text-xs text-[var(--text-muted)] mt-2">Reviewed: {fmtDate(a.reviewed_at)}</div>
+                    <div className="text-xs text-[var(--text-muted)] mt-2">Ditinjau: {fmtDate(a.reviewed_at)}</div>
                   )}
                 </div>
               ))}

@@ -59,6 +59,9 @@ export default function DashboardPage() {
   const [loadingChart, setLoadingChart] = useState(true);
   const [loadingGames, setLoadingGames] = useState(true);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
+  const [chartError, setChartError] = useState('');
+  const [gamesError, setGamesError] = useState('');
+  const [leaderboardError, setLeaderboardError] = useState('');
 
   // Block unverified users from entering dashboard
   useEffect(() => {
@@ -73,7 +76,7 @@ export default function DashboardPage() {
     // Riwayat game
     api.game.history(token, 10)
       .then((data) => setRecentGames(data.history || []))
-      .catch(() => {})
+      .catch(() => setGamesError('Riwayat pertandingan gagal dimuat.'))
       .finally(() => setLoadingGames(false));
 
     // Riwayat ELO + hitung perubahan hari ini
@@ -101,7 +104,7 @@ export default function DashboardPage() {
         setEloChart(points);
         setTodayEloChange(todayChange);
       })
-      .catch(() => {})
+      .catch(() => setChartError('Data performa ELO belum bisa dimuat.'))
       .finally(() => setLoadingChart(false));
 
     // Leaderboard top 5 + posisi user
@@ -112,7 +115,7 @@ export default function DashboardPage() {
         const pos = lb.findIndex((e) => e.id === user.id);
         if (pos !== -1) setMyRank(pos + 1);
       })
-      .catch(() => {})
+      .catch(() => setLeaderboardError('Papan peringkat gagal dimuat.'))
       .finally(() => setLoadingLeaderboard(false));
   }, [token, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -183,7 +186,7 @@ export default function DashboardPage() {
             <Link href="/game"
               className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl font-semibold text-sm text-white shadow-lg shadow-blue-500/25 hover:opacity-90 transition-opacity">
               <Zap className="w-4 h-4" />
-              Quick Play
+              Main Cepat
             </Link>
             <Link href="/tournament"
               className="flex items-center gap-2 px-5 py-2.5 bg-[var(--bg-hover)] rounded-xl font-semibold text-sm text-[var(--text-primary)] hover:bg-[var(--border)] transition-colors border border-[var(--border)]">
@@ -223,7 +226,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="font-bold text-[var(--text-primary)]">Performa ELO</h3>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">Riwayat rating Anda</p>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">Riwayat rating kamu</p>
               </div>
               {todayEloChange !== null && (
                 <div className={`flex items-center gap-2 text-sm font-semibold ${todayEloChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -261,6 +264,7 @@ export default function DashboardPage() {
                 </AreaChart>
               </ResponsiveContainer>
             )}
+            {chartError && <p className="mt-3 text-xs text-red-300">{chartError}</p>}
           </motion.div>
 
           {/* Win/Loss Ratio */}
@@ -366,6 +370,7 @@ export default function DashboardPage() {
                 );
               })}
             </div>
+            {gamesError && <p className="px-5 py-3 text-xs text-red-300 border-t border-[var(--border)]">{gamesError}</p>}
           </motion.div>
 
           {/* Top players */}
@@ -413,6 +418,7 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
+            {leaderboardError && <p className="px-5 py-3 text-xs text-red-300 border-t border-[var(--border)]">{leaderboardError}</p>}
           </motion.div>
         </div>
 
@@ -444,7 +450,7 @@ export default function DashboardPage() {
         {/* Quick start banners */}
         <motion.div variants={FADE} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { title: 'Quick Bullet', sub: '1+0 · Tanpa taruhan', icon: '⚡', href: '/game', gradient: 'from-sky-500 to-blue-600', badge: 'Gratis' },
+            { title: 'Main Bullet', sub: '1+0 · Tanpa taruhan', icon: '⚡', href: '/game', gradient: 'from-sky-500 to-blue-600', badge: 'Gratis' },
             { title: 'Ranked Match', sub: 'Naikkan ELO kamu', icon: '🎯', href: '/game', gradient: 'from-emerald-500 to-teal-600', badge: 'Ranked' },
             { title: 'Turnamen', sub: 'Reward poin & badge', icon: '🏆', href: '/tournament', gradient: 'from-yellow-500 to-orange-500', badge: 'Esports' },
           ].map((item) => (

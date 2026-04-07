@@ -29,8 +29,8 @@ const HOW_IT_WORKS = [
   {
     step: '03',
     icon: Swords,
-    title: 'Join Tournament',
-    desc: 'Tournament otomatis setiap jam. Daftar, tunggu start, dan bertarung.',
+    title: 'Gabung Turnamen',
+    desc: 'Turnamen otomatis setiap jam. Daftar, tunggu mulai, lalu bertanding.',
     color: 'purple',
   },
   {
@@ -84,8 +84,8 @@ const TIERS = [
 
 const STATS = [
   { value: '10K+', label: 'Pemain Aktif' },
-  { value: '24/7', label: 'Tournament Jalan' },
-  { value: '100%', label: 'Skill-Based' },
+  { value: '24/7', label: 'Turnamen Berjalan' },
+  { value: '100%', label: 'Berbasis Skill' },
   { value: '< 1 jam', label: 'Siklus Event' },
 ];
 
@@ -282,7 +282,7 @@ export default function LandingPage() {
                   <motion.div animate={{ y: [-4, 4, -4] }} transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
                     className="absolute -left-12 bottom-10 glass rounded-2xl p-2.5 flex items-center gap-2 border border-white/10 backdrop-blur-sm shadow-xl">
                     <Clock className="w-3.5 h-3.5 text-sky-400" />
-                    <span className="text-xs text-slate-300 font-medium">Tournament tiap jam</span>
+                    <span className="text-xs text-slate-300 font-medium">Turnamen tiap jam</span>
                   </motion.div>
                 </div>
               </motion.div>
@@ -341,7 +341,7 @@ export default function LandingPage() {
               <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }}
                 className="text-center mb-14">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-semibold uppercase tracking-wider mb-4">
-                  <Trophy className="w-3.5 h-3.5" /> Tier Tournament
+                  <Trophy className="w-3.5 h-3.5" /> Tier Turnamen
                 </div>
                 <h2 className="text-3xl font-black mb-3">Pilih Tier, Bertanding, Naikkan Peringkat</h2>
                 <p className="text-slate-400">Event otomatis setiap jam dengan sistem poin dan leaderboard kompetitif.</p>
@@ -370,7 +370,7 @@ export default function LandingPage() {
                     </div>
                     <div className="space-y-2.5 mb-6">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-400">Time Control</span>
+                        <span className="text-slate-400">Kontrol Waktu</span>
                         <span className="font-bold text-white font-mono">{tier.tc}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
@@ -388,7 +388,7 @@ export default function LandingPage() {
                     </div>
                     <button onClick={() => setMode('register')}
                       className="w-full py-2.5 rounded-xl text-sm font-bold bg-white/8 border border-white/10 hover:bg-white/15 transition-all">
-                    Join Divisi →
+                    Gabung Divisi →
                     </button>
                   </motion.div>
                 ))}
@@ -402,7 +402,7 @@ export default function LandingPage() {
                   { icon: Zap, label: 'Bullet & Blitz', desc: '1+0, 3+2, 5+3', color: 'sky' },
                   { icon: Shield, label: 'Anti-Cheat', desc: '5 lapis keamanan', color: 'emerald' },
                   { icon: Award, label: 'ELO Rating', desc: 'Standard FIDE', color: 'violet' },
-                  { icon: Clock, label: 'Tournament Tiap Jam', desc: '24 jam sehari', color: 'amber' },
+                  { icon: Clock, label: 'Turnamen Tiap Jam', desc: '24 jam sehari', color: 'amber' },
                 ].map((f, i) => (
                   <motion.div key={f.label}
                     initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }}
@@ -424,6 +424,18 @@ export default function LandingPage() {
                   </motion.div>
                 ))}
               </div>
+              <div className="mt-6 grid md:grid-cols-3 gap-4">
+                {[
+                  { title: 'Kebijakan Fair Play', desc: 'Deteksi anti-cheat berlapis dan audit pertandingan otomatis.' },
+                  { title: 'Ranking Transparan', desc: 'Perubahan ELO dan leaderboard diperbarui real-time.' },
+                  { title: 'Aturan Kompetisi Jelas', desc: 'Syarat turnamen, status akun, dan proses banding terbuka.' },
+                ].map((item) => (
+                  <div key={item.title} className="glass rounded-2xl p-4 border border-white/8">
+                    <p className="text-sm font-semibold text-white">{item.title}</p>
+                    <p className="text-xs text-slate-400 mt-1.5">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
             </section>
 
             {/* ── CTA ───────────────────────────────────────────── */}
@@ -439,8 +451,8 @@ export default function LandingPage() {
                   </p>
                   <div className="flex flex-wrap items-center justify-center gap-3">
                     <button onClick={() => setMode('register')}
-                      className="px-8 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-2xl font-bold text-base hover:opacity-90 transition-opacity shadow-2xl shadow-blue-500/30">
-                      Buat Akun Gratis
+                    className="px-8 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-2xl font-bold text-base hover:opacity-90 transition-opacity shadow-2xl shadow-blue-500/30">
+                      Daftar Gratis
                     </button>
                   </div>
                 </div>
@@ -474,7 +486,7 @@ export default function LandingPage() {
                   <div className="flex flex-col items-center gap-4 py-4">
                     <div className="w-14 h-14 rounded-full bg-emerald-500/20 flex items-center justify-center text-3xl">✉️</div>
                     <p className="text-emerald-400 text-sm text-center">{forgotSuccess}</p>
-                    <button onClick={() => setMode('login')} className="text-sm text-sky-400 hover:text-sky-300 transition-colors">Kembali ke Login</button>
+                    <button onClick={() => setMode('login')} className="text-sm text-sky-400 hover:text-sky-300 transition-colors">Kembali ke Masuk</button>
                   </div>
                 ) : (
                   <form onSubmit={handleForgotPassword} className="space-y-4">
@@ -490,7 +502,7 @@ export default function LandingPage() {
                       {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Kirim Link Reset'}
                     </button>
                     <button type="button" onClick={() => setMode('login')} className="w-full text-sm text-slate-400 hover:text-slate-300 transition-colors mt-2">
-                      Kembali ke Login
+                      Kembali ke Masuk
                     </button>
                   </form>
                 )}
@@ -620,7 +632,7 @@ export default function LandingPage() {
 // ── Live Stats Ticker ─────────────────────────────────────────────────────────
 const TICKER_ITEMS = [
   { icon: '🟢', text: '1,247 Pemain Online Sekarang' },
-  { icon: '🏆', text: 'Tournament berlangsung setiap jam' },
+  { icon: '🏆', text: 'Turnamen berlangsung setiap jam' },
   { icon: '🏅', text: 'Leaderboard diperbarui real-time setiap match' },
   { icon: '⚡', text: 'Rata-rata 3 menit menunggu lawan' },
   { icon: '🛡️', text: '5 lapis anti-cheat aktif 24/7' },

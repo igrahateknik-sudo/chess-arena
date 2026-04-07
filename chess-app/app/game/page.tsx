@@ -42,6 +42,7 @@ export default function GamePage() {
   const [matchmakingTime, setMatchmakingTime] = useState(0);
   const matchTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [onlineUsers, setOnlineUsers] = useState(0);
+  const [matchmakingError, setMatchmakingError] = useState('');
 
   // Active online game
   const [foundGame, setFoundGame] = useState<FoundGame | null>(null);
@@ -68,6 +69,7 @@ export default function GamePage() {
 
     setStep('matchmaking');
     setMatchmakingTime(0);
+    setMatchmakingError('');
 
     // Start matchmaking timer display
     matchTimerRef.current = setInterval(() => setMatchmakingTime(t => t + 1), 1000);
@@ -97,6 +99,9 @@ export default function GamePage() {
     });
 
     socket.on('queue:joined', (data: any) => console.log('[Queue]', data));
+    socket.once('queue:error', () => {
+      setMatchmakingError('Gagal masuk antrean. Coba lagi dalam beberapa detik.');
+    });
   };
 
   const cancelMatchmaking = () => {
@@ -110,6 +115,13 @@ export default function GamePage() {
     }
     setStep('mode');
   };
+
+  useEffect(() => {
+    if (step !== 'matchmaking') return;
+    if (matchmakingTime >= 45) {
+      setMatchmakingError('Belum ada lawan yang cocok. Kamu bisa lanjut menunggu atau ubah kontrol waktu.');
+    }
+  }, [matchmakingTime, step]);
 
   // Compute once per playerColor selection — NOT on every render.
   // Without useMemo, re-renders from socket events would re-randomize mid-game.
@@ -156,7 +168,7 @@ export default function GamePage() {
             onClick={() => router.push('/')}
             className="px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-semibold hover:opacity-90 transition-opacity"
           >
-            Ke Halaman Login
+            Ke Halaman Masuk
           </button>
         </div>
       </AppLayout>
@@ -206,9 +218,9 @@ export default function GamePage() {
           {step === 'lobby' && (
             <motion.div key="lobby" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <div className="mb-7">
-                <h1 className="text-3xl font-black text-[var(--text-primary)]">Play Chess</h1>
+              <h1 className="text-3xl font-black text-[var(--text-primary)]">Main Catur</h1>
                 <div className="flex items-center gap-2 mt-1">
-                  <p className="text-[var(--text-muted)]">Choose your mode</p>
+                  <p className="text-[var(--text-muted)]">Pilih mode bermain</p>
                   {onlineUsers > 0 && (
                     <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 font-medium">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -237,7 +249,7 @@ export default function GamePage() {
                       <span className="text-xs px-2 py-1 rounded-lg bg-purple-500/10 text-purple-400 font-medium">ELO Rated</span>
                     </div>
                     <div className="flex items-center gap-1.5 mt-4 text-sky-400 font-semibold text-sm">
-                      Find Match <ChevronRight className="w-4 h-4" />
+                      Cari Lawan <ChevronRight className="w-4 h-4" />
                     </div>
                   </div>
                 </motion.button>
@@ -249,7 +261,7 @@ export default function GamePage() {
                   <div className="absolute -right-4 -top-4 w-28 h-28 rounded-full bg-purple-500/10 group-hover:bg-purple-500/15 transition-colors" />
                   <div className="relative">
                     <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-2xl mb-4">🤖</div>
-                    <h3 className="text-xl font-black text-[var(--text-primary)] mb-2">Play vs AI</h3>
+                    <h3 className="text-xl font-black text-[var(--text-primary)] mb-2">Main vs AI</h3>
                     <p className="text-sm text-[var(--text-muted)] mb-4">Practice against our chess engine. 3 difficulty levels, instant start.</p>
                     <div className="flex flex-wrap gap-2">
                       {['Easy', 'Medium', 'Hard'].map((l, i) => (
@@ -257,7 +269,7 @@ export default function GamePage() {
                       ))}
                     </div>
                     <div className="flex items-center gap-1.5 mt-4 text-purple-400 font-semibold text-sm">
-                      Play AI <ChevronRight className="w-4 h-4" />
+                      Main AI <ChevronRight className="w-4 h-4" />
                     </div>
                   </div>
                 </motion.button>
@@ -284,26 +296,26 @@ export default function GamePage() {
           {step === 'mode' && (
             <motion.div key="mode" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <button onClick={() => setStep('lobby')} className="flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] mb-6 transition-colors">
-                <ChevronRight className="w-4 h-4 rotate-180" /> Back
+                <ChevronRight className="w-4 h-4 rotate-180" /> Kembali
               </button>
 
               {gameMode === 'pvp-online' ? (
                 <>
-                  <h2 className="text-2xl font-black text-[var(--text-primary)] mb-6">Online Match Settings</h2>
+                  <h2 className="text-2xl font-black text-[var(--text-primary)] mb-6">Pengaturan Match Online</h2>
                   <div className="mb-5 flex items-center gap-2 p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-sm text-emerald-400">
                     <Shield className="w-4 h-4 flex-shrink-0" />
-                    Quick Play selalu gratis — untuk kompetisi berhadiah, buka halaman <a href="/tournament" className="underline font-semibold">Tournament</a>.
+                    Main Cepat selalu gratis — untuk kompetisi berhadiah, buka halaman <a href="/tournament" className="underline font-semibold">Turnamen</a>.
                   </div>
                   <TimeControlSelector selected={selectedTC} onSelect={setSelectedTC} />
                   <ColorSelector color={playerColor} onSelect={setPlayerColor} />
                   <button onClick={startMatchmaking}
                     className="w-full mt-6 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl font-bold text-white shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
-                    <Search className="w-5 h-5" /> Find Opponent
+                    <Search className="w-5 h-5" /> Cari Lawan
                   </button>
                 </>
               ) : (
                 <>
-                  <h2 className="text-2xl font-black text-[var(--text-primary)] mb-6">Choose AI Difficulty</h2>
+                  <h2 className="text-2xl font-black text-[var(--text-primary)] mb-6">Pilih Tingkat AI</h2>
                   <div className="grid gap-3 mb-6">
                     {AI_LEVELS.map(level => (
                       <motion.button key={level.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
@@ -327,7 +339,7 @@ export default function GamePage() {
                   <ColorSelector color={playerColor} onSelect={setPlayerColor} />
                   <button onClick={() => setStep('playing-ai')}
                     className="w-full mt-6 py-3.5 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl font-bold text-white shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
-                    <Brain className="w-5 h-5" /> Start vs AI
+                    <Brain className="w-5 h-5" /> Mulai vs AI
                   </button>
                 </>
               )}
@@ -346,8 +358,8 @@ export default function GamePage() {
                 </div>
               </div>
 
-              <h2 className="text-2xl font-black text-[var(--text-primary)] mb-2">Finding Opponent...</h2>
-              <p className="text-[var(--text-muted)] mb-1">Searching for a <strong>{selectedTC.label}</strong> match</p>
+              <h2 className="text-2xl font-black text-[var(--text-primary)] mb-2">Mencari Lawan...</h2>
+              <p className="text-[var(--text-muted)] mb-1">Mencari match <strong>{selectedTC.label}</strong></p>
 
               <p className="text-sm text-[var(--text-muted)] mt-4">
                 <span className="font-mono text-sky-400 text-lg">
@@ -365,13 +377,18 @@ export default function GamePage() {
                   </span>
                 )}
                 <span className="text-xs px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400">
-                  <Wifi className="w-3 h-3 inline mr-1" />Connected
+                  <Wifi className="w-3 h-3 inline mr-1" />Terhubung
                 </span>
               </div>
+              {matchmakingError && (
+                <div className="mb-5 rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-4 py-2.5 text-sm text-yellow-300">
+                  {matchmakingError}
+                </div>
+              )}
 
               <button onClick={cancelMatchmaking}
                 className="px-6 py-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 font-medium hover:bg-red-500/20 transition-colors">
-                Cancel
+                Batal
               </button>
             </motion.div>
           )}
@@ -414,7 +431,7 @@ function TimeControlSelector({ selected, onSelect }: { selected: typeof TIME_CON
 function ColorSelector({ color, onSelect }: { color: string; onSelect: (c: 'white' | 'black' | 'random') => void }) {
   return (
     <div>
-      <h3 className="font-semibold text-[var(--text-primary)] mb-3">Play as</h3>
+      <h3 className="font-semibold text-[var(--text-primary)] mb-3">Main sebagai</h3>
       <div className="flex gap-3">
         {[{ value: 'white', label: 'White', icon: '⬜' }, { value: 'black', label: 'Black', icon: '⬛' }, { value: 'random', label: 'Random', icon: '🎲' }].map(opt => (
           <button key={opt.value} onClick={() => onSelect(opt.value as any)}

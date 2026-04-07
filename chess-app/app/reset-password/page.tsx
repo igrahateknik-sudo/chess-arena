@@ -40,7 +40,7 @@ function ResetPasswordForm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050a14] text-white flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex items-center justify-center px-4">
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[100px] animate-pulse" />
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
@@ -54,16 +54,16 @@ function ResetPasswordForm() {
             <span className="text-2xl font-bold">Chess<span className="text-sky-400">Arena</span></span>
           </button>
           <h1 className="text-2xl font-bold">Buat Password Baru</h1>
-          <p className="text-slate-400 mt-2 text-sm">Masukkan password baru kamu di bawah.</p>
+          <p className="text-[var(--text-muted)] mt-2 text-sm">Masukkan password baru kamu di bawah.</p>
         </div>
 
-        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
+        <div className="bg-[var(--bg-card)]/80 backdrop-blur-xl rounded-2xl p-8 border border-[var(--border)]">
           {success ? (
             <div className="flex flex-col items-center gap-4 py-4 text-center">
               <div className="w-14 h-14 rounded-full bg-emerald-500/20 flex items-center justify-center text-3xl">✅</div>
               <p className="text-emerald-400 font-medium">Password berhasil diubah!</p>
-              <p className="text-slate-400 text-sm">Kamu akan diarahkan ke halaman login dalam 3 detik...</p>
-              <button onClick={() => router.push('/')} className="text-sm text-sky-400 hover:text-sky-300 transition-colors">Login Sekarang</button>
+              <p className="text-[var(--text-muted)] text-sm">Kamu akan diarahkan ke halaman masuk dalam 3 detik...</p>
+              <button onClick={() => router.push('/')} className="text-sm text-sky-400 hover:text-sky-300 transition-colors">Masuk Sekarang</button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -97,8 +97,8 @@ function ResetPasswordForm() {
                 {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Simpan Password Baru'}
               </button>
               <button type="button" onClick={() => router.push('/')}
-                className="w-full text-sm text-slate-400 hover:text-slate-300 transition-colors mt-2">
-                Kembali ke Login
+                className="w-full text-sm text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors mt-2">
+                Kembali ke Masuk
               </button>
             </form>
           )}
@@ -110,7 +110,7 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#050a14] flex items-center justify-center text-white">Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-primary)]">Memuat...</div>}>
       <ResetPasswordForm />
     </Suspense>
   );

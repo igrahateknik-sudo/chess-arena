@@ -52,7 +52,7 @@ function ReplayContent() {
   const [pgnCopied, setPgnCopied] = useState(false);
 
   useEffect(() => {
-    if (!gameId) { setError('No game ID provided'); setLoading(false); return; }
+    if (!gameId) { setError('ID game tidak ditemukan'); setLoading(false); return; }
     const endpoint = token
       ? api.game.get(gameId, token)
       : fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000'}/api/game/${gameId}/replay`).then(r => r.json());
@@ -63,11 +63,11 @@ function ReplayContent() {
         const replayRes = await fetch(
           `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000'}/api/game/${gameId}/replay`
         );
-        if (!replayRes.ok) throw new Error('Game not found');
+        if (!replayRes.ok) throw new Error('Game tidak ditemukan');
         const replayData = await replayRes.json();
         setData(replayData);
       })
-      .catch(err => setError(err.message || 'Failed to load game'))
+      .catch(err => setError(err.message || 'Gagal memuat game'))
       .finally(() => setLoading(false));
   }, [gameId, token]);
 
@@ -127,14 +127,14 @@ function ReplayContent() {
     <AppLayout>
       <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
         <AlertCircle className="w-12 h-12 text-red-400" />
-        <p className="text-[var(--text-muted)]">{error || 'Game not found'}</p>
+        <p className="text-[var(--text-muted)]">{error || 'Game tidak ditemukan'}</p>
       </div>
     </AppLayout>
   );
 
   const totalMoves = data.moves.length;
   const currentMove = moveIndex >= 0 ? data.moves[moveIndex] : null;
-  const resultLabel = data.result === 'white' ? 'White wins' : data.result === 'black' ? 'Black wins' : 'Draw';
+  const resultLabel = data.result === 'white' ? 'Putih menang' : data.result === 'black' ? 'Hitam menang' : 'Seri';
 
   return (
     <AppLayout>
@@ -142,7 +142,7 @@ function ReplayContent() {
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-black text-[var(--text-primary)]">Game Replay</h1>
+            <h1 className="text-xl font-black text-[var(--text-primary)]">Replay Pertandingan</h1>
             <p className="text-sm text-[var(--text-muted)] mt-0.5">
               {resultLabel} · {data.endReason} · {data.timeControl?.initial ? `${Math.floor(data.timeControl.initial / 60)}+${data.timeControl.increment || 0}` : '—'}
             </p>
@@ -151,7 +151,7 @@ function ReplayContent() {
             <button onClick={copyPGN}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--bg-hover)] text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border border-[var(--border)]">
               <Copy className="w-4 h-4" />
-              {pgnCopied ? 'Copied!' : 'Copy PGN'}
+              {pgnCopied ? 'Tersalin!' : 'Salin PGN'}
             </button>
             <button onClick={downloadPGN}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-sky-500/10 text-sm font-medium text-sky-400 hover:bg-sky-500/20 transition-colors border border-sky-500/20">
@@ -228,7 +228,7 @@ function ReplayContent() {
                 />
               </div>
               <div className="text-center text-xs text-[var(--text-muted)]">
-                Move {moveIndex + 1} of {totalMoves}
+                Langkah {moveIndex + 1} dari {totalMoves}
               </div>
             </div>
           </motion.div>
@@ -237,7 +237,7 @@ function ReplayContent() {
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>
             <div className="card rounded-2xl overflow-hidden">
               <div className="px-4 py-3 border-b border-[var(--border)]">
-                <h3 className="font-bold text-[var(--text-primary)] text-sm">Move List</h3>
+                <h3 className="font-bold text-[var(--text-primary)] text-sm">Daftar Langkah</h3>
               </div>
               <div className="overflow-y-auto max-h-[480px]">
                 <div className="p-2 space-y-0.5">

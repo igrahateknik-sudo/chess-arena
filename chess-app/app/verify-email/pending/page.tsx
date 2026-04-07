@@ -29,7 +29,7 @@ function PendingContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050a14] text-white flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex items-center justify-center px-4">
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[100px] animate-pulse" />
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
@@ -46,7 +46,7 @@ function PendingContent() {
           </button>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm text-center">
+        <div className="bg-[var(--bg-card)]/80 border border-[var(--border)] rounded-2xl p-8 backdrop-blur-sm text-center">
           {/* Icon */}
           <div className="w-20 h-20 rounded-full bg-sky-500/20 border border-sky-500/30 flex items-center justify-center mx-auto mb-6">
             <Mail className="w-10 h-10 text-sky-400" />

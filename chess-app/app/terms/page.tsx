@@ -32,16 +32,16 @@ function Sub({ title, children }: { title: string; children: React.ReactNode }) 
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-300">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-secondary)]">
 
       {/* Header */}
-      <div className="bg-zinc-900 border-b border-white/10">
+      <div className="bg-[var(--bg-card)] border-b border-[var(--border)]">
         <div className="max-w-4xl mx-auto px-6 py-5 flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 text-sky-400 font-bold text-lg">
             ♔ Chess<span className="text-white">Arena</span>
           </Link>
-          <ChevronRight size={16} className="text-zinc-600" />
-          <span className="text-zinc-400 text-sm">Terms of Service</span>
+          <ChevronRight size={16} className="text-[var(--text-muted)]" />
+          <span className="text-[var(--text-muted)] text-sm">Syarat Layanan</span>
         </div>
       </div>
 
@@ -53,7 +53,7 @@ export default function TermsPage() {
             <div className="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center">
               <Shield size={20} className="text-sky-400" />
             </div>
-            <h1 className="text-3xl font-bold text-white">Terms of Service</h1>
+            <h1 className="text-3xl font-bold text-[var(--text-primary)]">Syarat Layanan</h1>
           </div>
           <p className="text-zinc-400 text-sm">
             Berlaku sejak: <strong className="text-zinc-200">{EFFECTIVE_DATE}</strong>
@@ -63,20 +63,20 @@ export default function TermsPage() {
             <strong>⚡ Kompetisi Berbasis Skill — Bukan Perjudian</strong>
             <p className="mt-2 text-emerald-200/80">
               Chess Arena adalah platform <strong>turnamen catur kompetitif</strong> yang beroperasi seperti
-              Chess.com Tournaments, FIDE events, dan kompetisi esports. Tournament entry fee adalah
+              Chess.com Tournaments, FIDE events, dan kompetisi esports. Biaya entri turnamen adalah
               <strong> biaya partisipasi kompetisi</strong> — bukan taruhan. Hadiah diberikan kepada pemain terbaik
-              berdasarkan skill bermain catur, bukan keberuntungan. Permainan Quick Play (halaman Play) sepenuhnya gratis.
+              berdasarkan skill bermain catur, bukan keberuntungan. Fitur Main Cepat (halaman Main) sepenuhnya gratis.
             </p>
           </div>
-          <div className="mt-3 p-4 bg-zinc-800/60 border border-white/10 rounded-xl text-sm text-zinc-300">
+          <div className="mt-3 p-4 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-secondary)]">
             <strong>Penting:</strong> Dengan menggunakan platform {COMPANY}, kamu menyetujui seluruh syarat
             dalam dokumen ini. Baca dengan seksama sebelum mendaftar.
           </div>
         </div>
 
         {/* Table of Contents */}
-        <div className="mb-10 p-5 bg-zinc-900 border border-white/10 rounded-xl">
-          <h2 className="font-semibold text-white mb-3 text-sm uppercase tracking-wide">Daftar Isi</h2>
+        <div className="mb-10 p-5 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl">
+          <h2 className="font-semibold text-[var(--text-primary)] mb-3 text-sm uppercase tracking-wide">Daftar Isi</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-sm">
             {[
               ['#acceptance', '1. Penerimaan Syarat'],
@@ -152,8 +152,8 @@ export default function TermsPage() {
 
         <Section id="real-money" title="4. Sistem Kompetisi & Hadiah">
           <p className="mb-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-300 text-xs">
-            <strong>Quick Play (halaman Play) sepenuhnya GRATIS</strong> — tidak ada biaya apapun.
-            Biaya entry hanya berlaku untuk Tournament, mirip seperti biaya pendaftaran turnamen catur resmi.
+            <strong>Main Cepat (halaman Main) sepenuhnya GRATIS</strong> — tidak ada biaya apapun.
+            Biaya entri hanya berlaku untuk turnamen, mirip seperti biaya pendaftaran turnamen catur resmi.
           </p>
           <Sub title="4.1 Setoran (Deposit)">
             <p>
@@ -169,7 +169,7 @@ export default function TermsPage() {
               penarikan untuk keperluan investigasi anti-kecurangan.
             </p>
           </Sub>
-          <Sub title="4.3 Entry Fee Tournament">
+          <Sub title="4.3 Biaya Entri Turnamen">
             <p>
               Entry fee tournament adalah <strong>biaya partisipasi kompetisi</strong>, bukan taruhan.
               Konsepnya identik dengan pendaftaran turnamen catur FIDE, liga esports, atau kompetisi
@@ -357,10 +357,10 @@ export default function TermsPage() {
 
         {/* Footer */}
         <div className="mt-12 pt-6 border-t border-white/10 flex flex-wrap gap-4 text-sm text-zinc-500">
-          <Link href="/privacy" className="text-sky-400 hover:underline">Privacy Policy</Link>
-          <Link href="/appeal" className="text-sky-400 hover:underline">Appeal</Link>
+          <Link href="/privacy" className="text-sky-400 hover:underline">Kebijakan Privasi</Link>
+          <Link href="/appeal" className="text-sky-400 hover:underline">Banding</Link>
           <Link href="/dashboard" className="text-sky-400 hover:underline">Dashboard</Link>
-          <span className="ml-auto">© 2026 {COMPANY}. All rights reserved.</span>
+          <span className="ml-auto">© 2026 {COMPANY}. Seluruh hak dilindungi.</span>
         </div>
 
       </div>

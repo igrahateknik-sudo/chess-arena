@@ -89,21 +89,21 @@ function useHourlyPhase() {
         next.setMinutes(5, 0, 0);
         targetMs = next.getTime() - now.getTime();
         newPhase = 'registering';
-        label = 'Registrasi Dibuka — Tournament Mulai Dalam';
+        label = 'Registrasi Dibuka — Turnamen Mulai Dalam';
       } else if (totalSec < 55 * 60) {
         // :05 – :55 → tournament active
         const next = new Date(now);
         next.setHours(next.getHours() + 1, 0, 0, 0);
         targetMs = next.getTime() - now.getTime();
         newPhase = 'active';
-        label = 'Tournament Berlangsung — Berakhir Dalam';
+        label = 'Turnamen Berlangsung — Berakhir Dalam';
       } else {
         // :55 – :60 → registration for next hour
         const next = new Date(now);
         next.setHours(next.getHours() + 1, 5, 0, 0);
         targetMs = next.getTime() - now.getTime();
         newPhase = 'registering';
-        label = 'Registrasi Dibuka — Tournament Mulai Dalam';
+        label = 'Registrasi Dibuka — Turnamen Mulai Dalam';
       }
 
       const totalMs = Math.max(0, targetMs);
@@ -170,25 +170,29 @@ export default function TournamentPage() {
   const [joining, setJoining] = useState<string | null>(null);
   const [joined, setJoined] = useState<string[]>([]);
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
+  const [tiersError, setTiersError] = useState<string | null>(null);
 
   const { phase, countdown, phaseLabel } = useHourlyPhase();
 
   // Fetch tournament list
   useEffect(() => {
     setLoading(true);
+    setListError(null);
     const statusParam = activeTab === 'live' ? 'active' : activeTab;
     api.tournament.list(statusParam)
       .then(data => setTournaments(data.tournaments || []))
-      .catch(() => {})
+      .catch(() => setListError('Daftar turnamen gagal dimuat.'))
       .finally(() => setLoading(false));
   }, [activeTab]);
 
   // Fetch hourly tiers
   const fetchHourlyTiers = useCallback(() => {
     setTiersLoading(true);
+    setTiersError(null);
     api.tournament.upcomingHourly()
       .then((data: { tiers: HourlyTier[] }) => setHourlyTiers(data.tiers || []))
-      .catch(() => {})
+      .catch(() => setTiersError('Tier turnamen jam ini gagal dimuat.'))
       .finally(() => setTiersLoading(false));
   }, []);
 
@@ -233,9 +237,9 @@ export default function TournamentPage() {
           <div>
             <h1 className="text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
               <Trophy className="w-6 h-6 text-yellow-400" />
-              Tournaments
+              Turnamen
             </h1>
-            <p className="text-[var(--text-muted)] text-sm mt-0.5">Tournament otomatis setiap jam — bertanding &amp; naikkan peringkat esports</p>
+            <p className="text-[var(--text-muted)] text-sm mt-0.5">Turnamen otomatis setiap jam — bertanding &amp; naikkan peringkat esports</p>
           </div>
         </motion.div>
 
@@ -277,7 +281,7 @@ export default function TournamentPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <div className="flex items-center gap-2 mb-3">
             <Crown className="w-4 h-4 text-yellow-400" />
-            <h2 className="font-bold text-[var(--text-primary)] text-sm">Tournament Jam Ini</h2>
+            <h2 className="font-bold text-[var(--text-primary)] text-sm">Turnamen Jam Ini</h2>
             <span className="text-xs text-[var(--text-muted)]">— pilih tier &amp; daftar sekarang</span>
           </div>
 
@@ -335,7 +339,7 @@ export default function TournamentPage() {
                           <span className="font-black text-[var(--text-primary)]">Gratis</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-[var(--text-muted)]">Time Control</span>
+                          <span className="text-[var(--text-muted)]">Kontrol Waktu</span>
                           <span className="font-bold text-[var(--text-primary)] font-mono">{tier.time_control?.label || '–'}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
@@ -381,7 +385,7 @@ export default function TournamentPage() {
                             ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             : <Ticket className="w-4 h-4" />
                           }
-                          {!token ? 'Login untuk Daftar' : 'Gabung Bracket'}
+                          {!token ? 'Masuk untuk Daftar' : 'Gabung Bracket'}
                         </button>
                       )}
                     </div>
@@ -390,6 +394,7 @@ export default function TournamentPage() {
               })}
             </div>
           )}
+          {tiersError && <p className="mt-3 text-xs text-red-300">{tiersError}</p>}
         </motion.div>
 
         {/* ── Info strip ─────────────────────────────────────────── */}
@@ -417,7 +422,7 @@ export default function TournamentPage() {
         {/* ── Tabs ─────────────────────────────────────────────── */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-[var(--text-primary)]">Semua Tournament</h2>
+            <h2 className="font-bold text-[var(--text-primary)]">Semua Turnamen</h2>
             <div className="flex p-1 bg-[var(--bg-hover)] rounded-xl gap-1">
               {(['live', 'upcoming', 'finished'] as const).map(t => (
                 <button key={t} onClick={() => setActiveTab(t)}
@@ -427,7 +432,7 @@ export default function TournamentPage() {
                       : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                     }`}>
                   {t === 'live' && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
-                  {t === 'live' ? 'Live' : t === 'upcoming' ? 'Upcoming' : 'Selesai'}
+                  {t === 'live' ? 'Live' : t === 'upcoming' ? 'Mendatang' : 'Selesai'}
                 </button>
               ))}
             </div>
@@ -441,7 +446,7 @@ export default function TournamentPage() {
           ) : tournaments.length === 0 ? (
             <div className="card rounded-2xl p-12 text-center text-[var(--text-muted)]">
               <Trophy className="w-10 h-10 mx-auto mb-3 opacity-20" />
-              <p className="font-medium text-sm">Tidak ada tournament {activeTab === 'live' ? 'live' : activeTab === 'upcoming' ? 'upcoming' : 'yang selesai'}</p>
+              <p className="font-medium text-sm">Tidak ada turnamen {activeTab === 'live' ? 'live' : activeTab === 'upcoming' ? 'mendatang' : 'yang selesai'}</p>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 gap-4">
@@ -562,7 +567,7 @@ export default function TournamentPage() {
                             disabled={joining === tournament.id}
                             className="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white text-sm font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 disabled:opacity-60">
                             {joining === tournament.id ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Zap className="w-4 h-4" />}
-                            Gabung Tournament Live
+                            Gabung Turnamen Live
                           </button>
                         )
                       ) : (
@@ -585,6 +590,7 @@ export default function TournamentPage() {
               </AnimatePresence>
             </div>
           )}
+          {listError && <p className="mt-3 text-xs text-red-300">{listError}</p>}
         </div>
       </div>
     </AppLayout>

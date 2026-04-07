@@ -101,7 +101,7 @@ export default function Topbar({ onMenuClick, title }: TopbarProps) {
         className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:opacity-90 transition-opacity"
         onClick={() => window.location.href = '/game'}>
         <Zap className="w-4 h-4" />
-        Quick Play
+        Main Cepat
       </motion.button>
 
       {/* Balance (real-time via socket wallet:update atau refresh 30s) */}
@@ -207,16 +207,16 @@ export default function Topbar({ onMenuClick, title }: TopbarProps) {
                       {user.verified && (
                         <div className="flex items-center gap-1 mt-1">
                           <Shield className="w-3 h-3 text-sky-400" />
-                          <span className="text-xs text-sky-400">Verified</span>
+                          <span className="text-xs text-sky-400">Terverifikasi</span>
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
                 {[
-                  { label: 'Profil', href: '/profile' },
-                  { label: 'Game Saya', href: '/games' },
-                  { label: 'Pengaturan', href: '/settings' },
+                  { label: 'Dashboard', href: '/dashboard' },
+                  { label: 'Statistik', href: '/stats' },
+                  { label: 'Turnamen', href: '/tournament' },
                 ].map((item) => (
                   <a key={item.label} href={item.href}
                     className="block px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors">

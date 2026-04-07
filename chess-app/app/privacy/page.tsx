@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Lock } from 'lucide-react';
 
 export const metadata = {
-  title: 'Privacy Policy — Chess Arena',
+  title: 'Kebijakan Privasi — Chess Arena',
   description: 'Kebijakan Privasi Chess Arena — platform kompetisi catur skill-based Indonesia.',
   robots: 'index, follow',
 };
@@ -58,16 +58,16 @@ function DataTable({ rows }: { rows: [string, string, string, string][] }) {
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-300">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-secondary)]">
 
       {/* Header */}
-      <div className="bg-zinc-900 border-b border-white/10">
+      <div className="bg-[var(--bg-card)] border-b border-[var(--border)]">
         <div className="max-w-4xl mx-auto px-6 py-5 flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 text-sky-400 font-bold text-lg">
             ♔ Chess<span className="text-white">Arena</span>
           </Link>
-          <span className="text-zinc-600">›</span>
-          <span className="text-zinc-400 text-sm">Privacy Policy</span>
+          <span className="text-[var(--text-muted)]">›</span>
+          <span className="text-[var(--text-muted)] text-sm">Kebijakan Privasi</span>
         </div>
       </div>
 
@@ -79,14 +79,14 @@ export default function PrivacyPage() {
             <div className="w-10 h-10 rounded-xl bg-green-500/20 border border-green-500/30 flex items-center justify-center">
               <Lock size={20} className="text-green-400" />
             </div>
-            <h1 className="text-3xl font-bold text-white">Privacy Policy</h1>
+            <h1 className="text-3xl font-bold text-[var(--text-primary)]">Kebijakan Privasi</h1>
           </div>
           <p className="text-zinc-400 text-sm">
             Berlaku sejak: <strong className="text-zinc-200">{EFFECTIVE_DATE}</strong>
           </p>
           <div className="mt-4 p-3 bg-sky-500/10 border border-sky-500/20 rounded-xl text-xs text-sky-300">
             <strong>Chess Arena</strong> adalah platform <strong>kompetisi catur berbasis skill</strong> — bukan platform perjudian.
-            Tournament entry fee adalah biaya partisipasi kompetisi, dan hadiah diberikan berdasarkan performa bermain catur.
+            Biaya entri turnamen adalah biaya partisipasi kompetisi, dan hadiah diberikan berdasarkan performa bermain catur.
           </div>
           <p className="mt-3 text-sm">
             {COMPANY} berkomitmen melindungi privasi pengguna. Dokumen ini menjelaskan data apa yang
@@ -95,8 +95,8 @@ export default function PrivacyPage() {
         </div>
 
         {/* TOC */}
-        <div className="mb-10 p-5 bg-zinc-900 border border-white/10 rounded-xl">
-          <h2 className="font-semibold text-white mb-3 text-sm uppercase tracking-wide">Daftar Isi</h2>
+        <div className="mb-10 p-5 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl">
+          <h2 className="font-semibold text-[var(--text-primary)] mb-3 text-sm uppercase tracking-wide">Daftar Isi</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-sm">
             {[
               ['#controller', '1. Pengelola Data'],
@@ -315,10 +315,10 @@ export default function PrivacyPage() {
 
         {/* Footer */}
         <div className="mt-12 pt-6 border-t border-white/10 flex flex-wrap gap-4 text-sm text-zinc-500">
-          <Link href="/terms" className="text-sky-400 hover:underline">Terms of Service</Link>
-          <Link href="/appeal" className="text-sky-400 hover:underline">Appeal</Link>
+          <Link href="/terms" className="text-sky-400 hover:underline">Syarat Layanan</Link>
+          <Link href="/appeal" className="text-sky-400 hover:underline">Banding</Link>
           <Link href="/dashboard" className="text-sky-400 hover:underline">Dashboard</Link>
-          <span className="ml-auto">© 2026 {COMPANY}. All rights reserved.</span>
+          <span className="ml-auto">© 2026 {COMPANY}. Seluruh hak dilindungi.</span>
         </div>
 
       </div>

@@ -5,18 +5,17 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Swords, Wallet, Trophy, Users,
-  BarChart2, Settings, Crown, ChevronLeft, Bell,
-  LogOut, X, AlertTriangle, Shield
+  BarChart2, ChevronLeft, X, AlertTriangle, Shield
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import Image from 'next/image';
 
 const NAV_ITEMS = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/game', icon: Swords, label: 'Play', badge: 'LIVE' },
-  { href: '/tournament', icon: Trophy, label: 'Tournaments' },
+  { href: '/game', icon: Swords, label: 'Main', badge: 'LIVE' },
+  { href: '/tournament', icon: Trophy, label: 'Turnamen' },
   { href: '/leaderboard', icon: Users, label: 'Leaderboard' },
-  { href: '/stats', icon: BarChart2, label: 'Statistics' },
+  { href: '/stats', icon: BarChart2, label: 'Statistik' },
 ];
 
 function formatIDR(amount: number): string {
@@ -113,10 +112,10 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
             {sidebarOpen && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm font-medium">Admin</motion.span>}
           </Link>
         )}
-        <Link href="/settings" onClick={onMobileClose}
+        <Link href="/privacy" onClick={onMobileClose}
           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-all ${!sidebarOpen ? 'justify-center' : ''}`}>
-          <Settings className="w-5 h-5 flex-shrink-0" />
-          {sidebarOpen && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm font-medium">Settings</motion.span>}
+          <Shield className="w-5 h-5 flex-shrink-0" />
+          {sidebarOpen && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm font-medium">Keamanan</motion.span>}
         </Link>
       </div>
 

@@ -81,6 +81,7 @@ export default function WalletPage() {
   const [success, setSuccess] = useState('');
   const [copied, setCopied] = useState(false);
   const [bankInfo, setBankInfo] = useState<{ name: string; account_number: string; account_holder: string } | null>(null);
+  const [loadError, setLoadError] = useState('');
 
   const fetchBalance = useCallback(async () => {
     if (!token) return;
@@ -88,12 +89,15 @@ export default function WalletPage() {
       const data = await api.wallet.balance(token);
       setBalance(data);
       updateUser({ balance: data.balance });
-    } catch { /* ignore */ }
+    } catch {
+      setLoadError('Gagal memuat saldo wallet.');
+    }
   }, [token, updateUser]);
 
   const fetchTransactions = useCallback(async () => {
     if (!token) return;
     setLoadingTx(true);
+    setLoadError('');
     try {
       const [txData, depData, wdData] = await Promise.all([
         api.wallet.transactions(token, 50),
@@ -103,14 +107,18 @@ export default function WalletPage() {
       setTransactions(txData.transactions || []);
       setMyDeposits(depData.deposits || []);
       setMyWithdrawals(wdData.withdrawals || []);
-    } catch { /* ignore */ }
+    } catch {
+      setLoadError('Gagal memuat riwayat transaksi.');
+    }
     finally { setLoadingTx(false); }
   }, [token]);
 
   useEffect(() => {
     fetchBalance();
     fetchTransactions();
-    api.wallet.bankInfo().then((d: { bank: typeof bankInfo }) => setBankInfo(d.bank)).catch(() => {});
+    api.wallet.bankInfo()
+      .then((d: { bank: typeof bankInfo }) => setBankInfo(d.bank))
+      .catch(() => setLoadError('Informasi rekening deposit tidak tersedia.'));
   }, [fetchBalance, fetchTransactions]);
 
   function openDeposit() {
@@ -226,6 +234,13 @@ export default function WalletPage() {
 
         {/* Banners */}
         <AnimatePresence>
+          {loadError && (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
+              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+              <p className="text-sm text-red-400">{loadError}</p>
+            </motion.div>
+          )}
           {success && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
@@ -699,6 +714,11 @@ export default function WalletPage() {
                   className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold disabled:opacity-40 hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
                   {withdrawing ? <><Loader2 className="w-4 h-4 animate-spin" />Memproses...</> : `Ajukan Penarikan ${withdrawAmount ? `— Rp ${parseInt(withdrawAmount).toLocaleString('id-ID')}` : ''}`}
                 </button>
+                {(!withdrawAmount || !withdrawBank || !withdrawAccount || !withdrawName) && (
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Lengkapi nominal, bank, nomor rekening, dan nama pemilik untuk mengaktifkan tombol.
+                  </p>
+                )}
               </div>
             </div>
           </ModalOverlay>

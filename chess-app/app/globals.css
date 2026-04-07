@@ -5,14 +5,14 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --bg-card: #ffffff;
-  --bg-hover: #f1f5f9;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
+  --bg-primary: #050b18;
+  --bg-secondary: #0b1223;
+  --bg-card: #0e172b;
+  --bg-hover: #16233b;
+  --text-primary: #e2e8f0;
+  --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
-  --border: #e2e8f0;
+  --border: #223252;
   --accent: #0ea5e9;
   --accent-hover: #0284c7;
   --success: #22c55e;
@@ -52,6 +52,19 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+a,
+button,
+input,
+textarea,
+select {
+  transition: all 0.2s ease;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.8);
+  outline-offset: 2px;
 }
 
 /* Scrollbar */
@@ -126,6 +139,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 16px;
   transition: all 0.2s ease;
+  box-shadow: 0 8px 32px rgba(2, 6, 23, 0.25);
 }
 
 .card-hover:hover {

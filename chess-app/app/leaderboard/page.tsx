@@ -34,12 +34,14 @@ export default function LeaderboardPage() {
   const [search, setSearch] = useState('');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     setLoading(true);
+    setLoadError('');
     api.leaderboard.get(100, tc)
       .then(data => setEntries(data.leaderboard || []))
-      .catch(() => {})
+      .catch(() => setLoadError('Gagal memuat leaderboard. Coba muat ulang.'))
       .finally(() => setLoading(false));
   }, [tc]);
 
@@ -65,11 +67,16 @@ export default function LeaderboardPage() {
           <div>
             <h1 className="text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
               <Trophy className="w-7 h-7 text-yellow-400" />
-              Leaderboard
+              Papan Peringkat
             </h1>
-            <p className="text-[var(--text-muted)] mt-1">Updated every 15 minutes</p>
+            <p className="text-[var(--text-muted)] mt-1">Diperbarui tiap 15 menit</p>
           </div>
         </motion.div>
+        {loadError && (
+          <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {loadError}
+          </div>
+        )}
 
         {/* Time control tabs */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.02 }}
@@ -134,7 +141,7 @@ export default function LeaderboardPage() {
           </div>
           <div className="flex items-center gap-2 bg-[var(--bg-hover)] rounded-xl px-3 py-2">
             <Search className="w-4 h-4 text-[var(--text-muted)]" />
-            <input placeholder="Search player..." value={search} onChange={e => setSearch(e.target.value)}
+            <input placeholder="Cari pemain..." value={search} onChange={e => setSearch(e.target.value)}
               className="bg-transparent text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none w-32" />
           </div>
         </motion.div>
@@ -158,7 +165,7 @@ export default function LeaderboardPage() {
             ) : filtered.length === 0 ? (
               <div className="text-center py-10 text-[var(--text-muted)]">
                 <Trophy className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">No players found</p>
+                <p className="text-sm">Pemain tidak ditemukan</p>
               </div>
             ) : filtered.map((entry, i) => (
               <motion.div key={entry.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.02 }}
@@ -176,7 +183,7 @@ export default function LeaderboardPage() {
                     <div className="flex items-center gap-1.5">
                       {entry.title && <span className="text-xs font-bold text-yellow-400 bg-yellow-400/10 px-1.5 rounded hidden sm:block">{entry.title}</span>}
                       <span className={`font-semibold text-sm truncate ${entry.id === user?.id ? 'text-sky-400' : 'text-[var(--text-primary)]'}`}>
-                        {entry.username}{entry.id === user?.id && ' (You)'}
+                        {entry.username}{entry.id === user?.id && ' (Kamu)'}
                       </span>
                     </div>
                     <span className="text-xs text-[var(--text-muted)]">{entry.country}</span>
@@ -210,7 +217,7 @@ export default function LeaderboardPage() {
                   <img src={user?.avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${user?.username}`} alt="" className="w-full h-full object-cover" />
                 </div>
                 <div>
-                  <div className="font-semibold text-[var(--text-primary)] text-sm">Your Position</div>
+                  <div className="font-semibold text-[var(--text-primary)] text-sm">Posisi Kamu</div>
                   <div className="text-xs text-[var(--text-muted)]">
                     {tc === 'global' ? `ELO ${user?.elo}` : `${tc.charAt(0).toUpperCase() + tc.slice(1)} ELO ${getDisplayElo(myEntry)}`}
                     {' • '}{myEntry.winRate}% WR

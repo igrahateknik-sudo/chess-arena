@@ -231,8 +231,8 @@ function TrustBadge({ score }: { score: number }) {
 function StatusBadge({ status }: { status: string }) {
   const cfg: Record<string, { label: string; cls: string }> = {
     pending:  { label: 'Pending',  cls: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' },
-    approved: { label: 'Approved', cls: 'bg-green-500/20 text-green-300 border-green-500/40' },
-    rejected: { label: 'Rejected', cls: 'bg-red-500/20 text-red-300 border-red-500/40' },
+    approved: { label: 'Disetujui', cls: 'bg-green-500/20 text-green-300 border-green-500/40' },
+    rejected: { label: 'Ditolak', cls: 'bg-red-500/20 text-red-300 border-red-500/40' },
   };
   const c = cfg[status] || { label: status, cls: 'bg-zinc-500/20 text-zinc-300 border-zinc-500/40' };
   return (
@@ -262,6 +262,7 @@ export default function AdminPage() {
   const [reviewNote, setReviewNote] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [loadError, setLoadError] = useState('');
 
   const showMsg = (text: string, ok = true) => {
     setMsg({ text, ok });
@@ -295,6 +296,7 @@ export default function AdminPage() {
         setWithdrawals(wdData.withdrawals || []);
       }
     } catch (e: unknown) {
+      setLoadError('Data admin gagal dimuat.');
       if (e instanceof Error && e.message.includes('Admin access')) {
         router.replace('/dashboard');
       }
@@ -308,7 +310,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!mounted) return;
-    if (!user || !token) { router.replace('/login'); return; }
+    if (!user || !token) { router.replace('/'); return; }
     if (!user.is_admin) { router.replace('/dashboard'); return; }
     loadStats();
     loadTab('overview');
@@ -450,13 +452,13 @@ export default function AdminPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────
   const TABS: { key: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { key: 'overview',     label: 'Overview',       icon: <Shield size={15} /> },
-    { key: 'payments',     label: 'Payments',       icon: <Wallet size={15} />,       badge: deposits.filter(d => d.status === 'pending').length + withdrawals.filter(w => w.status === 'pending').length || undefined },
-    { key: 'flagged',      label: 'Flagged Users',  icon: <Users size={15} />,        badge: stats?.totalFlagged },
-    { key: 'collusion',    label: 'Collusion',      icon: <GitBranch size={15} />,    badge: stats?.unreviewedCollusion },
-    { key: 'multiAccount', label: 'Multi-Account',  icon: <Lock size={15} />,         badge: stats?.unreviewedMultiAccount },
-    { key: 'appeals',      label: 'Appeals',        icon: <AlertTriangle size={15} />, badge: stats?.pendingAppeals },
-    { key: 'events',       label: 'Security Log',   icon: <Activity size={15} /> },
+    { key: 'overview',     label: 'Ringkasan',      icon: <Shield size={15} /> },
+    { key: 'payments',     label: 'Pembayaran',     icon: <Wallet size={15} />,       badge: deposits.filter(d => d.status === 'pending').length + withdrawals.filter(w => w.status === 'pending').length || undefined },
+    { key: 'flagged',      label: 'Akun Ditandai',  icon: <Users size={15} />,        badge: stats?.totalFlagged },
+    { key: 'collusion',    label: 'Kolusi',         icon: <GitBranch size={15} />,    badge: stats?.unreviewedCollusion },
+    { key: 'multiAccount', label: 'Multi-Akun',     icon: <Lock size={15} />,         badge: stats?.unreviewedMultiAccount },
+    { key: 'appeals',      label: 'Banding',        icon: <AlertTriangle size={15} />, badge: stats?.pendingAppeals },
+    { key: 'events',       label: 'Log Keamanan',   icon: <Activity size={15} /> },
   ];
 
   // Show nothing until Zustand has hydrated — prevents flash redirect
@@ -472,8 +474,8 @@ export default function AdminPage() {
             <Shield size={20} className="text-red-400" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[var(--text-primary)]">Anti-Cheat Admin Dashboard</h1>
-            <p className="text-sm text-[var(--text-muted)]">Review flagged players, appeals, and security events</p>
+            <h1 className="text-xl font-bold text-[var(--text-primary)]">Dashboard Admin Anti-Cheat</h1>
+            <p className="text-sm text-[var(--text-muted)]">Tinjau akun ditandai, banding, dan event keamanan</p>
           </div>
           <button onClick={() => loadTab(tab)}
             className="ml-auto p-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors">
@@ -487,6 +489,7 @@ export default function AdminPage() {
             msg.ok ? 'bg-green-500/10 border-green-500/30 text-green-300' : 'bg-red-500/10 border-red-500/30 text-red-300'
           }`}>{msg.text}</div>
         )}
+        {loadError && <div className="mb-4 px-4 py-3 rounded-lg text-sm border bg-red-500/10 border-red-500/30 text-red-300">{loadError}</div>}
 
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-[var(--bg-secondary)] rounded-xl p-1 flex-wrap">
@@ -509,7 +512,7 @@ export default function AdminPage() {
 
         {loading && tab !== 'overview' ? (
           <div className="flex items-center justify-center py-20 text-[var(--text-muted)]">
-            <RefreshCw size={20} className="animate-spin mr-2" /> Loading…
+            <RefreshCw size={20} className="animate-spin mr-2" /> Memuat…
           </div>
         ) : (
 
@@ -539,7 +542,7 @@ export default function AdminPage() {
             {tab === 'flagged' && (
               <div className="space-y-3">
                 {flagged.length === 0 && (
-                  <div className="text-center py-12 text-[var(--text-muted)]">No flagged users</div>
+                  <div className="text-center py-12 text-[var(--text-muted)]">Tidak ada akun ditandai</div>
                 )}
                 {flagged.map(u => (
                   <div key={u.id} className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl overflow-hidden">
@@ -621,7 +624,7 @@ export default function AdminPage() {
             {tab === 'collusion' && (
               <div className="space-y-3">
                 {collusion.length === 0 && (
-                  <div className="text-center py-12 text-[var(--text-muted)]">No unreviewed collusion flags</div>
+                  <div className="text-center py-12 text-[var(--text-muted)]">Tidak ada flag kolusi yang belum ditinjau</div>
                 )}
                 {collusion.map(f => {
                   const pf = (() => { try { return JSON.parse(f.pair_flags || '[]'); } catch { return []; } })();
@@ -645,7 +648,7 @@ export default function AdminPage() {
                           </div>
                           {ps.gameCount && (
                             <div className="text-xs text-[var(--text-muted)]">
-                              {ps.gameCount} games together — A wins: {ps.aWins}, B wins: {ps.bWins}, Draws: {ps.draws}
+                              {ps.gameCount} game bersama — A menang: {ps.aWins}, B menang: {ps.bWins}, Seri: {ps.draws}
                             </div>
                           )}
                           <div className="text-xs text-[var(--text-muted)] mt-1">Pair score: {f.pair_score}</div>
@@ -680,7 +683,7 @@ export default function AdminPage() {
             {tab === 'multiAccount' && (
               <div className="space-y-3">
                 {multiAcc.length === 0 && (
-                  <div className="text-center py-12 text-[var(--text-muted)]">No unreviewed multi-account flags</div>
+                  <div className="text-center py-12 text-[var(--text-muted)]">Tidak ada flag multi-akun yang belum ditinjau</div>
                 )}
                 {multiAcc.map(f => (
                   <div key={f.id} className="bg-[var(--bg-secondary)] border border-purple-500/20 rounded-xl p-4">
@@ -726,7 +729,7 @@ export default function AdminPage() {
             {tab === 'appeals' && (
               <div className="space-y-3">
                 {appeals.length === 0 && (
-                  <div className="text-center py-12 text-[var(--text-muted)]">No appeals</div>
+                  <div className="text-center py-12 text-[var(--text-muted)]">Tidak ada banding</div>
                 )}
                 {appeals.map(a => (
                   <div key={a.id} className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4">
@@ -759,24 +762,24 @@ export default function AdminPage() {
                               <button onClick={() => handleAppealReview(a.id, 'approved', 75)}
                                 disabled={actionLoading === a.id}
                                 className="flex items-center gap-1 px-3 py-1.5 bg-green-500/20 text-green-300 border border-green-500/30 rounded-lg text-xs font-medium hover:bg-green-500/30">
-                                <CheckCircle size={13} /> Approve (Trust 75)
+                                <CheckCircle size={13} /> Setujui (Trust 75)
                               </button>
                               <button onClick={() => handleAppealReview(a.id, 'approved', 60)}
                                 disabled={actionLoading === a.id}
                                 className="flex items-center gap-1 px-3 py-1.5 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg text-xs font-medium hover:bg-blue-500/30">
-                                <CheckCircle size={13} /> Approve (Trust 60)
+                                <CheckCircle size={13} /> Setujui (Trust 60)
                               </button>
                               <button onClick={() => handleAppealReview(a.id, 'rejected')}
                                 disabled={actionLoading === a.id}
                                 className="flex items-center gap-1 px-3 py-1.5 bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg text-xs font-medium hover:bg-red-500/30">
-                                <XCircle size={13} /> Reject Appeal
+                                <XCircle size={13} /> Tolak Banding
                               </button>
                             </div>
                           </>
                         )}
                         {a.reviewed_at && (
                           <div className="text-xs text-[var(--text-muted)] mt-2">
-                            Reviewed: {fmtDate(a.reviewed_at)}
+                            Ditinjau: {fmtDate(a.reviewed_at)}
                           </div>
                         )}
                       </div>
@@ -858,7 +861,7 @@ export default function AdminPage() {
             {tab === 'events' && (
               <div className="space-y-2">
                 {events.length === 0 && (
-                  <div className="text-center py-12 text-[var(--text-muted)]">No security events</div>
+                  <div className="text-center py-12 text-[var(--text-muted)]">Tidak ada event keamanan</div>
                 )}
                 {events.map(e => {
                   const det = (() => { try { return JSON.parse(e.details || '{}'); } catch { return {}; } })();
