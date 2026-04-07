@@ -43,7 +43,7 @@ const HOW_IT_WORKS = [
   {
     step: '01',
     icon: Users,
-    art: '/illustrations/register-card.svg',
+    art: '/illustrations/photo/register-real.jpg',
     title: 'Daftar Gratis',
     desc: 'Buat akun dalam 30 detik. Verifikasi email dan mulai bermain langsung.',
     color: 'sky',
@@ -51,7 +51,7 @@ const HOW_IT_WORKS = [
   {
     step: '02',
     icon: Ticket,
-    art: '/illustrations/ticket-card.svg',
+    art: '/illustrations/photo/division-real.jpg',
     title: 'Pilih Divisi',
     desc: 'Pilih divisi Bronze, Silver, atau Gold sesuai target performa kamu.',
     color: 'amber',
@@ -59,7 +59,7 @@ const HOW_IT_WORKS = [
   {
     step: '03',
     icon: Swords,
-    art: '/illustrations/battle-card.svg',
+    art: '/illustrations/photo/battle-real.jpg',
     title: 'Gabung Turnamen',
     desc: 'Turnamen otomatis setiap jam. Daftar, tunggu mulai, lalu bertanding.',
     color: 'purple',
@@ -67,7 +67,7 @@ const HOW_IT_WORKS = [
   {
     step: '04',
     icon: Trophy,
-    art: '/illustrations/rank-card.svg',
+    art: '/illustrations/photo/rank-real.jpg',
     title: 'Naik Peringkat',
     desc: 'Kumpulkan poin ranking, naik leaderboard, dan raih badge kompetitif.',
     color: 'emerald',
@@ -86,7 +86,7 @@ const TIERS = [
     color: 'from-amber-700/30 to-amber-900/20',
     border: 'border-amber-700/30',
     badge: 'bg-amber-700/20 text-amber-500',
-    art: '/illustrations/register-card.svg',
+    art: '/illustrations/photo/register-real.jpg',
   },
   {
     key: 'silver',
@@ -99,7 +99,7 @@ const TIERS = [
     color: 'from-slate-400/20 to-slate-600/10',
     border: 'border-slate-400/30',
     badge: 'bg-slate-400/20 text-slate-300',
-    art: '/illustrations/ticket-card.svg',
+    art: '/illustrations/photo/division-real.jpg',
     featured: true,
   },
   {
@@ -113,7 +113,7 @@ const TIERS = [
     color: 'from-yellow-500/20 to-yellow-700/10',
     border: 'border-yellow-500/30',
     badge: 'bg-yellow-500/20 text-yellow-400',
-    art: '/illustrations/battle-card.svg',
+    art: '/illustrations/photo/battle-real.jpg',
   },
 ];
 
