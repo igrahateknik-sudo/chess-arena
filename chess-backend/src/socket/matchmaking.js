@@ -78,13 +78,19 @@ function registerMatchmaking(io, socket, userId) {
       // relevant rating rather than a single global ELO
       const tcType  = getTcType(timeControl.initial);
       const tcElo   = user[`elo_${tcType}`] ?? user.elo;
-      queue.push({ userId, socketId: socket.id, elo: tcElo, joinedAt: Date.now() });
+      queue.push({
+        userId,
+        socketId: socket.id,
+        elo: tcElo,
+        joinedAt: Date.now(),
+        preferredColor: color === 'white' || color === 'black' ? color : 'random',
+      });
 
       socket.emit('queue:joined', { queueKey: key, position: queue.length });
       console.log(`[Queue] ${user.username} (${user.elo}) joined: ${key}`);
 
       // Try pairing
-      await tryPairPlayers(io, key, timeControl, stakes, color);
+      await tryPairPlayers(io, key, timeControl, stakes);
     } catch (err) {
       console.error('[queue:join]', err);
       socket.emit('queue:error', { message: 'Failed to join queue' });
@@ -110,7 +116,7 @@ function registerMatchmaking(io, socket, userId) {
   });
 }
 
-async function tryPairPlayers(io, key, timeControl, stakes, preferredColor) {
+async function tryPairPlayers(io, key, timeControl, stakes) {
   const queue = queues.get(key);
   if (!queue || queue.length < 2) return;
 
@@ -146,8 +152,15 @@ async function tryPairPlayers(io, key, timeControl, stakes, preferredColor) {
   const q = queues.get(key);
   queues.set(key, q.filter(e => e.userId !== p1.userId && e.userId !== p2.userId));
 
-  // Assign colors
-  const whiteIsP1 = preferredColor === 'white' || Math.random() > 0.5;
+  // Assign colors fairly based on both players' preferences.
+  let whiteIsP1;
+  const p1Pref = p1.preferredColor || 'random';
+  const p2Pref = p2.preferredColor || 'random';
+  if (p1Pref === 'white' && p2Pref !== 'white') whiteIsP1 = true;
+  else if (p2Pref === 'white' && p1Pref !== 'white') whiteIsP1 = false;
+  else if (p1Pref === 'black' && p2Pref !== 'black') whiteIsP1 = false;
+  else if (p2Pref === 'black' && p1Pref !== 'black') whiteIsP1 = true;
+  else whiteIsP1 = Math.random() > 0.5;
   const whiteEntry = whiteIsP1 ? p1 : p2;
   const blackEntry = whiteIsP1 ? p2 : p1;
 
