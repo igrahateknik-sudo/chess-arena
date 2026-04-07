@@ -120,6 +120,29 @@ describe('Layer 1 — Timing Analysis', () => {
       expect(result.stats).toHaveProperty('samples');
     }
   });
+
+  it('uses online-game whiteTimeLeft deltas (not wall-clock gaps)', () => {
+    const whiteMoves = [];
+    let ts = 0;
+    let whiteTimeLeft = 180;
+    for (let i = 0; i < 12; i++) {
+      whiteMoves.push({
+        san: 'e4',
+        from: 'e2',
+        to: 'e4',
+        timestamp: ts,
+        whiteTimeLeft,
+      });
+      // Simulate long wall-clock gaps (includes opponent turn), but only 1s
+      // own-think-time per white move from clock deltas.
+      ts += 11000;
+      whiteTimeLeft -= 1;
+    }
+
+    const result = analyzeMoveTimings(whiteMoves);
+    expect(result.stats?.avg).toBe('1.00');
+    expect(result.flags).toContain('CONSISTENT_TIMING');
+  });
 });
 
 // ── Layer 2: Game Integrity ───────────────────────────────────────────────────

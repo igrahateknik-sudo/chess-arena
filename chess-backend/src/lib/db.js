@@ -169,6 +169,18 @@ const transactions = {
     return data;
   },
 
+  async updateIfStatus(id, expectedStatus, updates) {
+    const { data, error } = await supabase
+      .from('transactions')
+      .update({ ...updates, updated_at: new Date() })
+      .eq('id', id)
+      .eq('status', expectedStatus)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return data || null;
+  },
+
   async findByOrderId(orderId) {
     const { data } = await supabase.from('transactions').select('*').eq('midtrans_order_id', orderId).single();
     return data;
@@ -241,9 +253,9 @@ const games = {
     const { count } = await supabase
       .from('games')
       .select('id', { count: 'exact', head: true })
-      .or(`white_id.eq.${userId},black_id.eq.${userId}`)
       .eq('status', 'cancelled')
-      .in('end_reason', ['aborted', 'disconnect'])
+      .eq('fairness_outcome', 'no_contest')
+      .eq('responsible_user_id', userId)
       .gte('ended_at', sinceIso);
     return count || 0;
   },

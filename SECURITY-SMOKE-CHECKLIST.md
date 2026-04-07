@@ -42,10 +42,14 @@ Gunakan checklist ini sebelum rilis production untuk validasi cepat keamanan + f
 - [ ] **Matchmaking race safety**
   - Dua akun join queue hampir bersamaan beberapa kali.
   - Pastikan tidak ada double `game:found` untuk akun yang sama.
+  - Saat Redis aktif dan queue padat, cek log contention (`QUEUE_LOCK_CONTENTION`) dan pastikan tidak ada duplicate pair claim.
 
 - [ ] **No-contest fairness**
   - Start game lalu disconnect sebelum ada move.
   - Pastikan game `cancelled`, ELO change `0`, W/L/D tidak berubah, stake kembali.
+  - Verifikasi `responsible_user_id` dan `fairness_outcome`:
+    - single-disconnect => `responsible_user_id` = pelaku;
+    - dual-disconnect berdekatan => `responsible_user_id` = `null` (shared fault).
 
 - [ ] **Spectator isolation**
   - Satu player + satu spectator masuk.

@@ -8,6 +8,7 @@ const { users, wallets, games } = require('../lib/db');
 const { unlockForUser, recordLock } = require('../lib/walletCleanup');
 const { createClient } = require('redis');
 const crypto = require('crypto');
+const { logSecurityEvent } = require('../lib/auditLog');
 
 // ── Time-control type helper (mirrors gameRoom.js) ─────────────────────────
 function getTcType(initial) {
@@ -22,6 +23,8 @@ const queues = new Map();
 const pairingLocks = new Map();
 let redisLockClient = null;
 let redisLockClientReady = null;
+let redisQueueClient = null;
+let redisQueueClientReady = null;
 const ABORT_RULE = {
   windowMinutes: 15,
   maxNoContest: 3,
@@ -31,6 +34,28 @@ const REDIS_LOCK_TTL_MS = 4000;
 
 function queueKey(timeControl, stakes) {
   return `${timeControl.initial}-${timeControl.increment}-${stakes || 0}`;
+}
+
+function parseStakeFromQueueKey(key) {
+  if (!key) return 0;
+  const parts = String(key).split('-');
+  const parsed = Number(parts[parts.length - 1] || 0);
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
+async function getQueuedStakeForUser(userId) {
+  const client = await getRedisQueueClient();
+  if (client) {
+    const qKey = await client.get(queueUserIndexKey(userId));
+    return parseStakeFromQueueKey(qKey);
+  }
+
+  for (const [key, queue] of queues.entries()) {
+    if (queue.some((e) => e.userId === userId)) {
+      return parseStakeFromQueueKey(key);
+    }
+  }
+  return 0;
 }
 
 async function withQueueLock(key, fn) {
@@ -67,6 +92,94 @@ async function getRedisLockClient() {
   })();
 
   return redisLockClientReady;
+}
+
+async function getRedisQueueClient() {
+  if (!process.env.REDIS_URL) return null;
+  if (redisQueueClient && redisQueueClient.isOpen) return redisQueueClient;
+  if (redisQueueClientReady) return redisQueueClientReady;
+  redisQueueClientReady = (async () => {
+    try {
+      redisQueueClient = createClient({ url: process.env.REDIS_URL });
+      redisQueueClient.on('error', () => {});
+      await redisQueueClient.connect();
+      return redisQueueClient;
+    } catch {
+      redisQueueClient = null;
+      return null;
+    } finally {
+      redisQueueClientReady = null;
+    }
+  })();
+  return redisQueueClientReady;
+}
+
+function queueRedisKey(key) {
+  return `mm:queue:${key}`;
+}
+function queueEntryRedisKey(userId) {
+  return `mm:queue:entry:${userId}`;
+}
+function queueUserIndexKey(userId) {
+  return `mm:queue:user:${userId}`;
+}
+
+async function enqueuePlayer(key, entry) {
+  const client = await getRedisQueueClient();
+  if (!client) {
+    if (!queues.has(key)) queues.set(key, []);
+    const queue = queues.get(key);
+    const existingIdx = queue.findIndex(e => e.userId === entry.userId);
+    if (existingIdx !== -1) queue.splice(existingIdx, 1);
+    queue.push(entry);
+    return queue.length;
+  }
+  const oldQueueKey = await client.get(queueUserIndexKey(entry.userId));
+  if (oldQueueKey) {
+    await client.zRem(queueRedisKey(oldQueueKey), entry.userId);
+  }
+  await client.zAdd(queueRedisKey(key), [{ score: entry.joinedAt, value: entry.userId }]);
+  await client.hSet(queueEntryRedisKey(entry.userId), {
+    socketId: entry.socketId,
+    elo: String(entry.elo),
+    joinedAt: String(entry.joinedAt),
+    preferredColor: entry.preferredColor || 'random',
+    queueKey: key,
+  });
+  await client.set(queueUserIndexKey(entry.userId), key);
+  return await client.zCard(queueRedisKey(key));
+}
+
+async function dequeuePlayerFromAll(userId) {
+  const client = await getRedisQueueClient();
+  if (!client) {
+    removeFromAllQueues(userId);
+    return;
+  }
+  const oldQueueKey = await client.get(queueUserIndexKey(userId));
+  if (oldQueueKey) {
+    await client.zRem(queueRedisKey(oldQueueKey), userId);
+  }
+  await client.del(queueEntryRedisKey(userId));
+  await client.del(queueUserIndexKey(userId));
+}
+
+async function claimPairFromRedis(client, key, userIdA, userIdB) {
+  const lua = `
+    local queueKey = KEYS[1]
+    local a = ARGV[1]
+    local b = ARGV[2]
+    local rankA = redis.call('zrank', queueKey, a)
+    local rankB = redis.call('zrank', queueKey, b)
+    if (not rankA) or (not rankB) then
+      return 0
+    end
+    redis.call('zrem', queueKey, a)
+    redis.call('zrem', queueKey, b)
+    return 1
+  `;
+  const claimed = await client.eval(lua, { keys: [queueRedisKey(key)], arguments: [userIdA, userIdB] });
+  return Number(claimed) === 1;
 }
 
 async function acquireDistributedPairingLock(key) {
@@ -131,18 +244,11 @@ function registerMatchmaking(io, socket, userId) {
       }
 
       const key = queueKey(timeControl, stakes);
-      if (!queues.has(key)) queues.set(key, []);
-      const queue = queues.get(key);
-
-      // Remove any existing entry for this user
-      const existingIdx = queue.findIndex(e => e.userId === userId);
-      if (existingIdx !== -1) queue.splice(existingIdx, 1);
-
       // Use per-TC ELO for pairing so bullet/blitz/rapid players match by their
       // relevant rating rather than a single global ELO
       const tcType  = getTcType(timeControl.initial);
       const tcElo   = user[`elo_${tcType}`] ?? user.elo;
-      queue.push({
+      const position = await enqueuePlayer(key, {
         userId,
         socketId: socket.id,
         elo: tcElo,
@@ -150,13 +256,16 @@ function registerMatchmaking(io, socket, userId) {
         preferredColor: color === 'white' || color === 'black' ? color : 'random',
       });
 
-      socket.emit('queue:joined', { queueKey: key, position: queue.length });
+      socket.emit('queue:joined', { queueKey: key, position });
       console.log(`[Queue] ${user.username} (${user.elo}) joined: ${key}`);
 
       // Try pairing
       await withQueueLock(key, async () => {
         const lock = await acquireDistributedPairingLock(key);
-        if (!lock.acquired) return;
+        if (!lock.acquired) {
+          logSecurityEvent('QUEUE_LOCK_CONTENTION', { queueKey: key, userId });
+          return;
+        }
         try {
           await tryPairPlayers(io, key, timeControl, stakes);
         } finally {
@@ -171,11 +280,12 @@ function registerMatchmaking(io, socket, userId) {
   });
 
   // ── Leave queue ─────────────────────────────────────────────────────────
-  socket.on('queue:leave', async ({ stakes = 0 } = {}) => {
-    removeFromAllQueues(userId);
-    // Unlock any locked stake for this user
-    if (stakes > 0) {
-      await unlockForUser(userId, stakes).catch(() => {});
+  socket.on('queue:leave', async () => {
+    const lockedStake = await getQueuedStakeForUser(userId);
+    await dequeuePlayerFromAll(userId);
+    // Unlock queue lock based on server-known queue state (never trust client payload).
+    if (lockedStake > 0) {
+      await unlockForUser(userId, lockedStake).catch(() => {});
     }
     socket.emit('queue:left');
   });
@@ -183,13 +293,40 @@ function registerMatchmaking(io, socket, userId) {
   // ── Clean up on disconnect ──────────────────────────────────────────────
   socket.on('disconnect', () => {
     // Note: stake unlock on disconnect is handled by walletCleanup's timeout job.
-    // We do a best-effort immediate unlock here if we know the stake amount.
-    removeFromAllQueues(userId);
+    // We still do a best-effort immediate unlock for better UX.
+    getQueuedStakeForUser(userId)
+      .then(async (lockedStake) => {
+        await dequeuePlayerFromAll(userId).catch(() => {});
+        if (lockedStake > 0) {
+          await unlockForUser(userId, lockedStake).catch(() => {});
+        }
+      })
+      .catch(() => {
+        dequeuePlayerFromAll(userId).catch(() => {});
+      });
   });
 }
 
 async function tryPairPlayers(io, key, timeControl, stakes) {
-  const queue = queues.get(key);
+  const redis = await getRedisQueueClient();
+  let queue = null;
+  if (redis) {
+    const userIds = await redis.zRange(queueRedisKey(key), 0, -1);
+    const entries = await Promise.all(userIds.map(async (uid) => {
+      const meta = await redis.hGetAll(queueEntryRedisKey(uid));
+      if (!meta || !meta.socketId) return null;
+      return {
+        userId: uid,
+        socketId: meta.socketId,
+        elo: Number(meta.elo || 1200),
+        joinedAt: Number(meta.joinedAt || Date.now()),
+        preferredColor: meta.preferredColor || 'random',
+      };
+    }));
+    queue = entries.filter(Boolean);
+  } else {
+    queue = queues.get(key);
+  }
   if (!queue || queue.length < 2) return;
 
   // ELO-based pairing: find closest ELO match
@@ -221,8 +358,17 @@ async function tryPairPlayers(io, key, timeControl, stakes) {
   const [p1, p2] = bestPair;
 
   // Remove both from queue
-  const q = queues.get(key);
-  queues.set(key, q.filter(e => e.userId !== p1.userId && e.userId !== p2.userId));
+  if (redis) {
+    const claimed = await claimPairFromRedis(redis, key, p1.userId, p2.userId);
+    if (!claimed) return;
+    await Promise.all([
+      redis.del(queueUserIndexKey(p1.userId)),
+      redis.del(queueUserIndexKey(p2.userId)),
+    ]);
+  } else {
+    const q = queues.get(key);
+    queues.set(key, q.filter(e => e.userId !== p1.userId && e.userId !== p2.userId));
+  }
 
   // Assign colors fairly based on both players' preferences.
   let whiteIsP1;
@@ -283,27 +429,38 @@ async function tryPairPlayers(io, key, timeControl, stakes) {
     if (!whiteSocket || !blackSocket) {
       // At least one player disconnected between match and pairing; cancel game
       await games.update(game.id, { status: 'cancelled', end_reason: 'player-disconnected-before-start' });
-      // Unlock stakes for both players
+      // Unlock only the player who disconnected before game start.
+      // Keep stake locked for the connected player if they are re-queued.
       if (stakes > 0) {
-        await wallets.unlock(whiteEntry.userId, stakes).catch(() => {});
-        await wallets.unlock(blackEntry.userId, stakes).catch(() => {});
+        if (!whiteSocket) await wallets.unlock(whiteEntry.userId, stakes).catch(() => {});
+        if (!blackSocket) await wallets.unlock(blackEntry.userId, stakes).catch(() => {});
       }
       // Re-enqueue the still-connected player
       if (whiteSocket) {
         const tcType = getTcType(timeControl.initial);
         const whiteUser = await users.findById(whiteEntry.userId);
         const tcElo = whiteUser?.[`elo_${tcType}`] ?? whiteUser?.elo ?? 1200;
-        if (!queues.has(key)) queues.set(key, []);
-        queues.get(key).push({ userId: whiteEntry.userId, socketId: whiteEntry.socketId, elo: tcElo, joinedAt: Date.now() });
-        whiteSocket.emit('queue:joined', { queueKey: key, position: queues.get(key).length, reason: 'opponent-disconnected' });
+        const position = await enqueuePlayer(key, {
+          userId: whiteEntry.userId,
+          socketId: whiteEntry.socketId,
+          elo: tcElo,
+          joinedAt: Date.now(),
+          preferredColor: whiteEntry.preferredColor || 'random',
+        });
+        whiteSocket.emit('queue:joined', { queueKey: key, position, reason: 'opponent-disconnected' });
       }
       if (blackSocket) {
         const tcType = getTcType(timeControl.initial);
         const blackUser = await users.findById(blackEntry.userId);
         const tcElo = blackUser?.[`elo_${tcType}`] ?? blackUser?.elo ?? 1200;
-        if (!queues.has(key)) queues.set(key, []);
-        queues.get(key).push({ userId: blackEntry.userId, socketId: blackEntry.socketId, elo: tcElo, joinedAt: Date.now() });
-        blackSocket.emit('queue:joined', { queueKey: key, position: queues.get(key).length, reason: 'opponent-disconnected' });
+        const position = await enqueuePlayer(key, {
+          userId: blackEntry.userId,
+          socketId: blackEntry.socketId,
+          elo: tcElo,
+          joinedAt: Date.now(),
+          preferredColor: blackEntry.preferredColor || 'random',
+        });
+        blackSocket.emit('queue:joined', { queueKey: key, position, reason: 'opponent-disconnected' });
       }
       return;
     }

@@ -41,7 +41,7 @@ async function detectRepeatPair(userAId, userBId) {
   try {
     const { data, error } = await supabase
       .from('games')
-      .select('id, winner, ended_at, move_history')
+      .select('id, winner, ended_at, move_history, white_id, black_id')
       .or(
         `and(white_id.eq.${userAId},black_id.eq.${userBId}),` +
         `and(white_id.eq.${userBId},black_id.eq.${userAId})`
@@ -195,7 +195,7 @@ async function runCollusionDetection(gameId, whiteId, blackId, moveHistory, winn
           ...giftResult.flags.filter(f => f.includes('WHITE')),
           ...(currentGameShort ? ['FAST_RESIGN:current_game'] : []),
         ],
-        score: pairResult.score + giftResult.flags.filter(f => f.includes('WHITE')).length * 20,
+        score: pairResult.score + giftResult.score + (currentGameShort ? 15 : 0),
       },
       black: {
         flags: [
@@ -203,7 +203,7 @@ async function runCollusionDetection(gameId, whiteId, blackId, moveHistory, winn
           ...giftResult.flags.filter(f => f.includes('BLACK')),
           ...(currentGameShort ? ['FAST_RESIGN:current_game'] : []),
         ],
-        score: pairResult.score + giftResult.flags.filter(f => f.includes('BLACK')).length * 20,
+        score: pairResult.score + giftResult.score + (currentGameShort ? 15 : 0),
       },
     };
 

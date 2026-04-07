@@ -16,6 +16,8 @@
  */
 
 const crypto = require('crypto');
+const os = require('os');
+const { createClient } = require('redis');
 const { Chess } = require('chess.js');
 const { games, users, wallets, transactions, notifications, eloHistory } = require('../lib/db');
 const { calculateBothElo } = require('../lib/elo');
@@ -27,6 +29,42 @@ const { netWinnings } = require('../lib/midtrans');
 const { logMove, logSecurityEvent } = require('../lib/auditLog');
 const { recordAndDetect, scoreFingerprintResult } = require('../lib/fingerprint');
 const { runCollusionDetection } = require('../lib/collusion');
+const INSTANCE_ID = `${os.hostname()}:${process.pid}`;
+const GAME_LEASE_TTL_MS = 5000;
+let redisLeaseClient = null;
+let redisLeaseClientReady = null;
+
+async function getRedisLeaseClient() {
+  if (!process.env.REDIS_URL) return null;
+  if (redisLeaseClient && redisLeaseClient.isOpen) return redisLeaseClient;
+  if (redisLeaseClientReady) return redisLeaseClientReady;
+  redisLeaseClientReady = (async () => {
+    try {
+      redisLeaseClient = createClient({ url: process.env.REDIS_URL });
+      redisLeaseClient.on('error', () => {});
+      await redisLeaseClient.connect();
+      return redisLeaseClient;
+    } catch {
+      redisLeaseClient = null;
+      return null;
+    } finally {
+      redisLeaseClientReady = null;
+    }
+  })();
+  return redisLeaseClientReady;
+}
+
+async function acquireGameLease(gameId) {
+  const client = await getRedisLeaseClient();
+  if (!client) return true;
+  const key = `game:lease:${gameId}`;
+  const ok = await client.set(key, INSTANCE_ID, { NX: true, PX: GAME_LEASE_TTL_MS });
+  if (ok === 'OK') return true;
+  const current = await client.get(key);
+  if (current !== INSTANCE_ID) return false;
+  await client.pExpire(key, GAME_LEASE_TTL_MS).catch(() => {});
+  return true;
+}
 
 // ── Utility: async task with timeout ──────────────────────────────────────
 function withTimeout(promise, ms, label) {
@@ -78,6 +116,24 @@ function generateMoveToken() {
 function emitToGameAndSpectators(io, gameId, event, payload) {
   io.to(gameId).emit(event, payload);
   io.to(`spectate:${gameId}`).emit(event, payload);
+}
+
+function deriveDisconnectResponsibility(triggerUserId, opponentHasPendingDc) {
+  return opponentHasPendingDc ? null : triggerUserId;
+}
+
+function computeFairnessOutcome(reasonBase, moveCount, responsibleUserId) {
+  const isNoContest =
+    (reasonBase === 'aborted' && moveCount < 2) ||
+    (reasonBase === 'disconnect' && moveCount === 0);
+  const finalEndReason = responsibleUserId
+    ? `${reasonBase}|resp:${responsibleUserId}`
+    : reasonBase;
+  return {
+    isNoContest,
+    finalEndReason,
+    fairnessOutcome: isNoContest ? 'no_contest' : 'normal',
+  };
 }
 
 /**
@@ -143,6 +199,8 @@ function startTimer(io, gameId) {
   if (timers.has(gameId)) return;
 
   const interval = setInterval(async () => {
+    const hasLease = await acquireGameLease(gameId);
+    if (!hasLease) return;
     const game = gameCache.get(gameId);
     if (!game || game.status !== 'active') {
       clearInterval(interval);
@@ -205,6 +263,8 @@ function scheduleDisconnectForfeit(io, gameId, game, userId, socket) {
   if (disconnectTimers.get(dcKey)) return;
 
   const dcTimer = setTimeout(() => {
+    acquireGameLease(gameId).then((hasLease) => {
+      if (!hasLease) return;
     disconnectTimers.delete(dcKey);
     const currentGame = gameCache.get(gameId);
     if (!currentGame || currentGame.status !== 'active') return;
@@ -212,12 +272,31 @@ function scheduleDisconnectForfeit(io, gameId, game, userId, socket) {
     const room = io.sockets.adapter.rooms.get(gameId);
     if (!room || room.size === 0) {
       stopTimer(gameId);
-      endGame(io, gameId, 'draw', 'aborted');
+      const opponentId = game.whiteId === userId ? game.blackId : game.whiteId;
+      const opponentHasPendingDc = disconnectTimers.has(`${gameId}:${opponentId}`);
+      const responsibleUserId = deriveDisconnectResponsibility(userId, opponentHasPendingDc);
+      endGame(io, gameId, 'draw', 'aborted', {
+        responsibleUserId,
+        finalizationSource: 'disconnect-timeout',
+        disconnectSnapshot: {
+          triggerUserId: userId,
+          opponentUserId: opponentId,
+          opponentHasPendingDc,
+        },
+      });
     } else {
       stopTimer(gameId);
       const winner = game.whiteId === userId ? 'black' : 'white';
-      endGame(io, gameId, winner, 'disconnect');
+      endGame(io, gameId, winner, 'disconnect', {
+        responsibleUserId: userId,
+        finalizationSource: 'disconnect-timeout',
+        disconnectSnapshot: {
+          triggerUserId: userId,
+          roomSize: room.size,
+        },
+      });
     }
+    }).catch(() => {});
   }, 60_000);
 
   disconnectTimers.set(dcKey, dcTimer);
@@ -225,20 +304,29 @@ function scheduleDisconnectForfeit(io, gameId, game, userId, socket) {
 
 // ── End Game ───────────────────────────────────────────────────────────────
 
-async function endGame(io, gameId, winner, endReason) {
+async function endGame(io, gameId, winner, endReason, context = {}) {
   const game = gameCache.get(gameId);
   if (!game || game.status !== 'active') return;
+  const reasonBase = String(endReason || '').split('|')[0];
+  const responsibleUserId = context?.responsibleUserId || null;
+  const finalizationSource = context?.finalizationSource || 'normal';
+  const disconnectSnapshot = context?.disconnectSnapshot || null;
 
   // Cross-instance guard: claim finalization only if DB still active.
   const claimed = await games.updateIfStatus(gameId, 'active', {
     status: 'finishing',
-    end_reason: endReason,
+    end_reason: reasonBase,
+    responsible_user_id: responsibleUserId,
+    fairness_outcome: reasonBase === 'aborted' || reasonBase === 'disconnect' ? 'no_contest_candidate' : 'normal',
     updated_at: new Date(),
   }).catch((e) => {
     console.error('[endGame:claim]', e);
     return null;
   });
-  if (!claimed) return;
+  if (!claimed) {
+    logSecurityEvent('DUPLICATE_FINALIZE_ATTEMPT', { gameId, winner, endReason: reasonBase });
+    return;
+  }
 
   // Mark in-memory as non-active to prevent re-entry in this process.
   updateGameState(gameId, { status: 'finishing' });
@@ -251,11 +339,14 @@ async function endGame(io, gameId, winner, endReason) {
     // Competitive fairness: games that are aborted before meaningful play
     // should not affect ELO, W/L/D stats, or game economy.
     const moveCount = game.moveHistory?.length || 0;
-    const isNoContest =
-      endReason === 'aborted' ||
-      (endReason === 'disconnect' && moveCount === 0);
+    const {
+      isNoContest,
+      finalEndReason,
+      fairnessOutcome,
+    } = computeFairnessOutcome(reasonBase, moveCount, responsibleUserId);
 
     if (isNoContest) {
+      logSecurityEvent('NO_CONTEST_RECORDED', { gameId, reason: reasonBase, responsibleUserId });
       if (game.stakes > 0) {
         await Promise.all([
           wallets.unlock(game.whiteId, game.stakes).catch(() => {}),
@@ -266,7 +357,13 @@ async function endGame(io, gameId, winner, endReason) {
       await games.update(gameId, {
         status: 'cancelled',
         winner: null,
-        end_reason: endReason,
+        end_reason: finalEndReason,
+        responsible_user_id: responsibleUserId,
+        fairness_outcome: fairnessOutcome,
+        fairness_context: {
+          finalizationSource,
+          disconnectSnapshot,
+        },
         fen: game.fen,
         move_history: game.moveHistory,
         white_time_left: game.whiteTimeLeft,
@@ -277,7 +374,7 @@ async function endGame(io, gameId, winner, endReason) {
       emitToGameAndSpectators(io, gameId, 'game:over', {
         gameId,
         winner: 'draw',
-        endReason,
+        endReason: reasonBase,
         cancelled: true,
         eloChanges: {
           [game.whiteId]: 0,
@@ -288,12 +385,15 @@ async function endGame(io, gameId, winner, endReason) {
         stakes: game.stakes,
       });
 
-      setTimeout(() => {
+      const cleanupNoContestTimer = setTimeout(() => {
         gameCache.delete(gameId);
         moveSequences.delete(gameId);
       }, 300_000);
+      if (typeof cleanupNoContestTimer.unref === 'function') cleanupNoContestTimer.unref();
 
-      console.log(`[Game] ${gameId} ended as no-contest (${endReason})`);
+      if (process.env.NODE_ENV !== 'test') {
+        console.log(`[Game] ${gameId} ended as no-contest (${finalEndReason})`);
+      }
       return;
     }
 
@@ -465,7 +565,13 @@ async function endGame(io, gameId, winner, endReason) {
     await games.update(gameId, {
       status: 'finished',
       winner,
-      end_reason: endReason,
+      end_reason: finalEndReason,
+      responsible_user_id: responsibleUserId,
+      fairness_outcome: 'normal',
+      fairness_context: {
+        finalizationSource,
+        disconnectSnapshot,
+      },
       fen: game.fen,
       move_history: game.moveHistory,
       white_elo_after: newWhiteElo,
@@ -496,7 +602,7 @@ async function endGame(io, gameId, winner, endReason) {
 
     // Emit game over
     emitToGameAndSpectators(io, gameId, 'game:over', {
-      gameId, winner, endReason,
+      gameId, winner, endReason: reasonBase,
       eloChanges: {
         [game.whiteId]: whiteChange,
         [game.blackId]: blackChange,
@@ -545,12 +651,15 @@ async function endGame(io, gameId, winner, endReason) {
     });
 
     // Cleanup setelah 5 menit (beri waktu untuk reconnect & view result)
-    setTimeout(() => {
+    const cleanupFinishedGameTimer = setTimeout(() => {
       gameCache.delete(gameId);
       moveSequences.delete(gameId);
     }, 300_000);
+    if (typeof cleanupFinishedGameTimer.unref === 'function') cleanupFinishedGameTimer.unref();
 
-    console.log(`[Game] ${gameId} ended — winner: ${winner} (${endReason})`);
+    if (process.env.NODE_ENV !== 'test') {
+      console.log(`[Game] ${gameId} ended — winner: ${winner} (${endReason})`);
+    }
   } catch (err) {
     console.error('[endGame]', err);
   }
@@ -826,17 +935,24 @@ function registerGameRoom(io, socket, userId) {
     if (newMoveHistory.length > 0 && newMoveHistory.length % anticheatInterval === 0) {
       try {
         const realtimeResult = analyzeRealtime(newMoveHistory);
-        const playerColor = isWhite ? 'white' : 'black';
-        const playerResult = realtimeResult[playerColor];
-
-        if (playerResult && playerResult.suspicious) {
-          console.warn(`[ANTICHEAT:REALTIME] Suspicious pattern for ${userId} at move ${currentSeq}:`, playerResult.flags);
-          // Kirim peringatan diam-diam ke admin (via log) — jangan alert player agar tidak tip off
-          logSecurityEvent('REALTIME_SUSPICIOUS', {
-            userId, gameId, moveSeq: currentSeq,
-            flags: playerResult.flags, score: playerResult.score,
-            stats: playerResult.stats,
-          });
+        const checks = [
+          { color: 'white', user: game.whiteId, result: realtimeResult.white },
+          { color: 'black', user: game.blackId, result: realtimeResult.black },
+        ];
+        for (const check of checks) {
+          if (check.result && check.result.suspicious) {
+            console.warn(`[ANTICHEAT:REALTIME] Suspicious pattern for ${check.user} (${check.color}) at move ${currentSeq}:`, check.result.flags);
+            // Kirim peringatan diam-diam ke admin (via log) — jangan alert player agar tidak tip off
+            logSecurityEvent('REALTIME_SUSPICIOUS', {
+              userId: check.user,
+              gameId,
+              moveSeq: currentSeq,
+              color: check.color,
+              flags: check.result.flags,
+              score: check.result.score,
+              stats: check.result.stats,
+            });
+          }
         }
       } catch (e) {
         console.error('[anticheat:realtime]', e);
@@ -998,4 +1114,11 @@ function registerGameRoom(io, socket, userId) {
   });
 }
 
-module.exports = { registerGameRoom, gameCache };
+module.exports = {
+  registerGameRoom,
+  gameCache,
+  __testOnly: {
+    deriveDisconnectResponsibility,
+    computeFairnessOutcome,
+  },
+};

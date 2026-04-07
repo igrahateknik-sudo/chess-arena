@@ -9,7 +9,7 @@
  * belum sempat set is_admin di DB.
  */
 
-const { verifyToken } = require('../lib/auth');
+const { verifyToken, passwordHashVersion } = require('../lib/auth');
 const { users } = require('../lib/db');
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
@@ -29,6 +29,9 @@ async function requireAdmin(req, res, next) {
 
   const user = await users.findById(payload.userId).catch(() => null);
   if (!user) return res.status(401).json({ error: 'User not found' });
+  if (payload.phv && payload.phv !== passwordHashVersion(user.password_hash)) {
+    return res.status(401).json({ error: 'Session expired. Please log in again.' });
+  }
 
   const isAdmin = user.is_admin === true || ADMIN_EMAILS.includes((user.email || '').toLowerCase());
   if (!isAdmin) {

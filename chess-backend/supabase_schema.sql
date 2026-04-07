@@ -92,8 +92,15 @@ CREATE TABLE IF NOT EXISTS games (
   black_time_left  INTEGER,
   started_at      TIMESTAMPTZ DEFAULT NOW(),
   ended_at        TIMESTAMPTZ,
-  anticheat_flags JSONB DEFAULT '[]'
+  anticheat_flags JSONB DEFAULT '[]',
+  responsible_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  fairness_outcome VARCHAR(30) DEFAULT 'normal',
+  fairness_context JSONB
 );
+
+ALTER TABLE games ADD COLUMN IF NOT EXISTS responsible_user_id UUID REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE games ADD COLUMN IF NOT EXISTS fairness_outcome VARCHAR(30) DEFAULT 'normal';
+ALTER TABLE games ADD COLUMN IF NOT EXISTS fairness_context JSONB;
 
 -- ── Tournaments ──────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS tournaments (
@@ -225,9 +232,21 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION unlock_wallet_funds(p_user_id UUID, p_amount BIGINT)
 RETURNS void AS $$
+DECLARE
+  unlock_amt BIGINT;
 BEGIN
+  SELECT LEAST(COALESCE(locked, 0), GREATEST(p_amount, 0))
+    INTO unlock_amt
+  FROM wallets
+  WHERE user_id = p_user_id
+  FOR UPDATE;
+
+  IF unlock_amt IS NULL OR unlock_amt <= 0 THEN
+    RETURN;
+  END IF;
+
   UPDATE wallets
-  SET balance = balance + p_amount, locked = GREATEST(0, locked - p_amount), updated_at = NOW()
+  SET balance = balance + unlock_amt, locked = locked - unlock_amt, updated_at = NOW()
   WHERE user_id = p_user_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -256,10 +275,22 @@ CREATE OR REPLACE FUNCTION settle_game_payout(
   p_fee       BIGINT
 ) RETURNS void AS $$
 BEGIN
+  IF p_stakes <= 0 THEN
+    RETURN;
+  END IF;
+
   -- Step 1: Unlock both players' locked stakes
-  UPDATE wallets SET balance = balance + p_stakes, locked = GREATEST(0, locked - p_stakes), updated_at = NOW()
+  UPDATE wallets
+  SET
+    balance = balance + LEAST(locked, p_stakes),
+    locked = GREATEST(0, locked - p_stakes),
+    updated_at = NOW()
     WHERE user_id = p_white_id;
-  UPDATE wallets SET balance = balance + p_stakes, locked = GREATEST(0, locked - p_stakes), updated_at = NOW()
+  UPDATE wallets
+  SET
+    balance = balance + LEAST(locked, p_stakes),
+    locked = GREATEST(0, locked - p_stakes),
+    updated_at = NOW()
     WHERE user_id = p_black_id;
 
   -- Step 2: If not a draw, transfer stakes from loser to winner minus fee

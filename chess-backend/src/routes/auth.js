@@ -81,12 +81,15 @@ async function clearLoginAttempts(loginKey) {
 }
 
 // Cleanup expired lockout entries every 30 menit
-setInterval(() => {
+const lockoutCleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [key, val] of loginAttempts.entries()) {
     if (now - val.lastAttempt >= LOCKOUT_DURATION) loginAttempts.delete(key);
   }
 }, 30 * 60 * 1000);
+if (typeof lockoutCleanupInterval.unref === 'function') {
+  lockoutCleanupInterval.unref();
+}
 
 // ── Rate limiters ─────────────────────────────────────────────────────────────
 const loginRateLimit = rateLimit({

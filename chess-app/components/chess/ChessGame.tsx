@@ -69,21 +69,70 @@ export default function ChessGame({
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const moveHistoryRef = useRef<HTMLDivElement>(null);
+  const aiWorkerRef = useRef<Worker | null>(null);
+  const aiRequestSeqRef = useRef(0);
+  const aiPendingRef = useRef<Map<number, (move: string | null) => void>>(new Map());
 
   // Refs so the single persistent timer always reads the latest values
   // without needing to be re-created on every move (which caused multiple
   // overlapping intervals draining the clock too fast).
   const fenRef = useRef(fen);
   const gameStatusRef = useRef(gameStatus);
+  const isAIThinkingRef = useRef(false);
+  const aiThinkingMetaRef = useRef<{ color: 'w' | 'b'; startedAt: number } | null>(null);
   const handleTimeoutRef = useRef<(loser: 'white' | 'black') => void>(() => {});
 
   // Keep refs in sync on every render so timer callback always sees latest state
   fenRef.current = fen;
   gameStatusRef.current = gameStatus;
+  isAIThinkingRef.current = isAIThinking;
 
   const theme = BOARD_THEMES[boardTheme as keyof typeof BOARD_THEMES] || BOARD_THEMES.classic;
   const isAI = mode.startsWith('ai-');
   const aiLevel = mode === 'ai-easy' ? 'easy' : mode === 'ai-medium' ? 'medium' : 'hard';
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const worker = new Worker(new URL('../../lib/chess-ai.worker.ts', import.meta.url));
+    aiWorkerRef.current = worker;
+    worker.onmessage = (event: MessageEvent<{ id: number; move: string | null }>) => {
+      const resolver = aiPendingRef.current.get(event.data.id);
+      if (resolver) {
+        aiPendingRef.current.delete(event.data.id);
+        resolver(event.data.move);
+      }
+    };
+    return () => {
+      for (const [, resolver] of aiPendingRef.current) resolver(null);
+      aiPendingRef.current.clear();
+      worker.terminate();
+      aiWorkerRef.current = null;
+    };
+  }, []);
+
+  const requestAIMove = useCallback((currentFen: string, difficulty: 'easy' | 'medium' | 'hard') => {
+    const worker = aiWorkerRef.current;
+    if (!worker) {
+      const fallbackChess = new Chess(currentFen);
+      const legal = fallbackChess.moves({ verbose: true });
+      const capture = legal.find(m => !!m.captured);
+      return Promise.resolve(capture?.san || legal[0]?.san || null);
+    }
+    const id = ++aiRequestSeqRef.current;
+    return new Promise<string | null>((resolve) => {
+      aiPendingRef.current.set(id, resolve);
+      worker.postMessage({ id, fen: currentFen, difficulty });
+      setTimeout(() => {
+        const pending = aiPendingRef.current.get(id);
+        if (pending) {
+          aiPendingRef.current.delete(id);
+          // Never run heavy AI fallback on the main thread.
+          // If worker stalls, return null and use cheap legal-move fallback in caller.
+          pending(null);
+        }
+      }, 450);
+    });
+  }, []);
 
   // The FEN displayed on the board — historical if reviewing, live otherwise
   const displayFen = reviewFen ?? fen;
@@ -109,6 +158,9 @@ export default function ChessGame({
       if (gameStatusRef.current !== 'active') return;
       // Parse active turn from the latest FEN (ref is always current)
       const fenTurn = fenRef.current.split(' ')[1] as 'w' | 'b';
+      // During AI thinking we account elapsed time precisely on AI move completion.
+      const aiMeta = aiThinkingMetaRef.current;
+      if (isAIThinkingRef.current && aiMeta && fenTurn === aiMeta.color) return;
       if (fenTurn === 'w') {
         setWhiteTime(prev => {
           if (prev <= 0) return 0; // already stopped
@@ -143,16 +195,17 @@ export default function ChessGame({
     if (game.turn() !== aiColor) return;
 
     setIsAIThinking(true);
-    const baseDelay = aiLevel === 'easy' ? 400 : aiLevel === 'medium' ? 800 : 1200;
+    aiThinkingMetaRef.current = { color: aiColor, startedAt: Date.now() };
+    const baseDelay = aiLevel === 'easy' ? 280 : aiLevel === 'medium' ? 520 : 520;
     // Add ±100ms jitter so AI feels more natural
     const jitter = Math.floor(Math.random() * 201) - 100;
-    const delay = Math.max(200, baseDelay + jitter);
+    const delay = Math.max(120, baseDelay + jitter);
 
     // Capture current FEN at effect-setup time (same as `game.fen()` since they're always synced)
     const currentFen = fen;
 
-    const timer = setTimeout(() => {
-      let move = getBestMove(currentFen, aiLevel);
+    const timer = setTimeout(async () => {
+      let move = await requestAIMove(currentFen, aiLevel);
 
       // Fallback: if AI returns null (e.g. edge case in minimax), pick first legal move
       if (!move) {
@@ -167,10 +220,19 @@ export default function ChessGame({
         const gameCopy = new Chess(currentFen);
         const result = gameCopy.move(move);
         if (result) {
+          const meta = aiThinkingMetaRef.current;
+          if (meta) {
+            const elapsedSec = Math.max(1, Math.floor((Date.now() - meta.startedAt) / 1000));
+            if (meta.color === 'w') {
+              setWhiteTime(t => Math.max(0, t - elapsedSec));
+            } else {
+              setBlackTime(t => Math.max(0, t - elapsedSec));
+            }
+          }
           const moveRecord: MoveRecord = {
             san: result.san, from: result.from, to: result.to, piece: result.piece,
             captured: result.captured, promotion: result.promotion, timestamp: Date.now(),
-            timeLeft: blackTime,
+            timeLeft: result.color === 'w' ? whiteTime : blackTime,
           };
           setMoveHistory(h => [...h, moveRecord]);
           setHistoryIndex(prev => prev + 1);
@@ -186,10 +248,14 @@ export default function ChessGame({
           checkGameEnd(gameCopy);
         }
       }
+      aiThinkingMetaRef.current = null;
       setIsAIThinking(false);
     }, delay);
-    return () => clearTimeout(timer);
-  }, [fen, isAI, gameStatus, isReviewing]); // isReviewing must be a dep so AI stops when reviewing
+    return () => {
+      clearTimeout(timer);
+      aiThinkingMetaRef.current = null;
+    };
+  }, [fen, isAI, gameStatus, isReviewing, requestAIMove]); // isReviewing must be a dep so AI stops when reviewing
 
   // Auto-scroll move history
   useEffect(() => {

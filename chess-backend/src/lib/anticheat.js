@@ -92,13 +92,31 @@ function analyzeMoveTimings(moveHistory) {
   }
 
   const moveTimes = [];
+  const inferColor = (moves) => {
+    const first = moves[0] || {};
+    if (typeof first.whiteTimeLeft === 'number') return 'white';
+    if (typeof first.blackTimeLeft === 'number') return 'black';
+    if (typeof first.color === 'string') return first.color === 'w' ? 'white' : 'black';
+    return null;
+  };
+  const inferredColor = inferColor(moveHistory);
   for (let i = 1; i < moveHistory.length; i++) {
     const prev = moveHistory[i - 1];
     const curr = moveHistory[i];
 
-    // Prefer timeLeft delta (accurate per-player think time)
-    if (prev?.timeLeft !== undefined && curr?.timeLeft !== undefined && prev.timeLeft > 0) {
-      const dt = prev.timeLeft - curr.timeLeft; // seconds spent on this move
+    // Prefer per-player clock delta when available.
+    // Online game records store whiteTimeLeft/blackTimeLeft, while some older
+    // records/tests may store generic timeLeft.
+    const getClock = (m) => {
+      if (m?.timeLeft !== undefined) return m.timeLeft;
+      if (inferredColor === 'white' && m?.whiteTimeLeft !== undefined) return m.whiteTimeLeft;
+      if (inferredColor === 'black' && m?.blackTimeLeft !== undefined) return m.blackTimeLeft;
+      return undefined;
+    };
+    const prevClock = getClock(prev);
+    const currClock = getClock(curr);
+    if (prevClock !== undefined && currClock !== undefined && prevClock > 0) {
+      const dt = prevClock - currClock; // seconds spent on this move
       if (dt > 0 && dt < 300) moveTimes.push(dt);
     } else if (prev?.timestamp && curr?.timestamp) {
       // Fallback: wall-clock — inaccurate for per-color analysis but better than nothing

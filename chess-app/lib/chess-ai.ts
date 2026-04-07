@@ -57,7 +57,19 @@ function evaluateBoard(chess: Chess): number {
   return score;
 }
 
-function minimax(chess: Chess, depth: number, alpha: number, beta: number, maximizing: boolean): number {
+function minimax(
+  chess: Chess,
+  depth: number,
+  alpha: number,
+  beta: number,
+  maximizing: boolean,
+  deadlineMs: number
+): number {
+  // Hard guard to keep UI responsive on slower devices.
+  if (Date.now() >= deadlineMs) {
+    return evaluateBoard(chess);
+  }
+
   if (depth === 0 || chess.isGameOver()) {
     if (chess.isCheckmate()) return maximizing ? -100000 : 100000;
     if (chess.isDraw()) return 0;
@@ -76,8 +88,9 @@ function minimax(chess: Chess, depth: number, alpha: number, beta: number, maxim
   if (maximizing) {
     let maxEval = -Infinity;
     for (const move of moves) {
+      if (Date.now() >= deadlineMs) break;
       chess.move(move);
-      const evalScore = minimax(chess, depth - 1, alpha, beta, false);
+      const evalScore = minimax(chess, depth - 1, alpha, beta, false, deadlineMs);
       chess.undo();
       maxEval = Math.max(maxEval, evalScore);
       alpha = Math.max(alpha, evalScore);
@@ -87,8 +100,9 @@ function minimax(chess: Chess, depth: number, alpha: number, beta: number, maxim
   } else {
     let minEval = Infinity;
     for (const move of moves) {
+      if (Date.now() >= deadlineMs) break;
       chess.move(move);
-      const evalScore = minimax(chess, depth - 1, alpha, beta, true);
+      const evalScore = minimax(chess, depth - 1, alpha, beta, true, deadlineMs);
       chess.undo();
       minEval = Math.min(minEval, evalScore);
       beta = Math.min(beta, evalScore);
@@ -120,21 +134,36 @@ export function getBestMove(fen: string, difficulty: 'easy' | 'medium' | 'hard')
     }
   }
 
-  const depth = difficulty === 'medium' ? 2 : 4;
+  const maxDepth = difficulty === 'medium' ? 2 : 4;
+  // Aggressive budget for snappier UX on mobile/low-power devices.
+  const budgetMs = difficulty === 'medium' ? 220 : 260;
   const isMaximizing = chess.turn() === 'w';
+  const deadlineMs = Date.now() + budgetMs;
 
   let bestMove: Move | null = null;
-  let bestScore = isMaximizing ? -Infinity : Infinity;
 
-  for (const move of moves) {
-    chess.move(move);
-    const score = minimax(chess, depth - 1, -Infinity, Infinity, !isMaximizing);
-    chess.undo();
+  // Iterative deepening: keep a valid best move even if time budget is hit.
+  for (let depth = 1; depth <= maxDepth; depth++) {
+    let depthBestMove: Move | null = null;
+    let depthBestScore = isMaximizing ? -Infinity : Infinity;
 
-    if (isMaximizing ? score > bestScore : score < bestScore) {
-      bestScore = score;
-      bestMove = move;
+    for (const move of moves) {
+      if (Date.now() >= deadlineMs) break;
+      chess.move(move);
+      const score = minimax(chess, depth - 1, -Infinity, Infinity, !isMaximizing, deadlineMs);
+      chess.undo();
+
+      if (isMaximizing ? score > depthBestScore : score < depthBestScore) {
+        depthBestScore = score;
+        depthBestMove = move;
+      }
     }
+
+    if (depthBestMove) {
+      bestMove = depthBestMove;
+    }
+
+    if (Date.now() >= deadlineMs) break;
   }
 
   return bestMove?.san || null;

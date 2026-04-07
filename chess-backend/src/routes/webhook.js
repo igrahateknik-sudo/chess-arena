@@ -45,6 +45,10 @@ router.post('/midtrans', async (req, res) => {
     // This prevents replay attacks where an old successful webhook is re-submitted.
     if (body.transaction_time) {
       const webhookTs = new Date(body.transaction_time).getTime();
+      if (!Number.isFinite(webhookTs)) {
+        console.warn('[webhook/midtrans] Invalid transaction_time format for order', body.order_id);
+        return res.status(400).json({ error: 'Invalid transaction_time' });
+      }
       const ageMs = Date.now() - webhookTs;
       const MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -117,21 +121,42 @@ router.post('/midtrans', async (req, res) => {
     if (transactionStatus === 'capture' || transactionStatus === 'settlement') {
       // [SECURITY-6] Fraud status check — deny/challenge blocks credit
       if (fraudStatus === 'accept' || !fraudStatus) {
-        newStatus = 'completed';
-
-        // Credit uses atomic DB RPC function (no race condition)
-        const wallet = await wallets.credit(tx.user_id, grossAmount);
-
-        await transactions.update(tx.id, {
-          status:              'completed',
-          balance_after:       wallet?.balance,
-          midtrans_payment_type: statusResponse.payment_type,
-          midtrans_va_number:
-            statusResponse.va_numbers?.[0]?.va_number ||
-            statusResponse.payment_code ||
-            null,
+        // Claim pending transaction first to prevent concurrent double-credit.
+        const claimed = await transactions.updateIfStatus(tx.id, 'pending', {
+          status: 'processing',
           midtrans_raw: statusResponse,
         });
+        if (!claimed) {
+          const latest = await transactions.findByOrderId(orderId);
+          if (latest?.status === 'completed') {
+            processedOrders.add(orderId);
+            return res.json({ ok: true, message: 'Already processed' });
+          }
+          return res.status(409).json({ error: 'Transaction is being processed' });
+        }
+
+        newStatus = 'completed';
+        try {
+          // Credit uses atomic DB RPC function (no race condition)
+          const wallet = await wallets.credit(tx.user_id, grossAmount);
+
+          await transactions.update(tx.id, {
+            status:              'completed',
+            balance_after:       wallet?.balance,
+            midtrans_payment_type: statusResponse.payment_type,
+            midtrans_va_number:
+              statusResponse.va_numbers?.[0]?.va_number ||
+              statusResponse.payment_code ||
+              null,
+            midtrans_raw: statusResponse,
+          });
+        } catch (settleErr) {
+          await transactions.update(tx.id, {
+            status: 'failed',
+            midtrans_raw: { ...statusResponse, _audit: 'SETTLEMENT_FAILED' },
+          }).catch(() => {});
+          throw settleErr;
+        }
 
         // Mark as processed in both in-memory set and DB
         processedOrders.add(orderId);
@@ -148,16 +173,22 @@ router.post('/midtrans', async (req, res) => {
       }
     } else if (transactionStatus === 'pending') {
       newStatus = 'pending';
-      await transactions.update(tx.id, {
+      await transactions.updateIfStatus(tx.id, 'pending', {
         status:       'pending',
         midtrans_raw: statusResponse,
-      });
+      }).catch(() => {});
     } else if (['deny', 'expire', 'cancel', 'failure'].includes(transactionStatus)) {
       newStatus = 'failed';
-      await transactions.update(tx.id, {
+      const updated = await transactions.updateIfStatus(tx.id, 'pending', {
         status:       'failed',
         midtrans_raw: statusResponse,
       });
+      if (!updated) {
+        await transactions.updateIfStatus(tx.id, 'processing', {
+          status:       'failed',
+          midtrans_raw: statusResponse,
+        }).catch(() => {});
+      }
     }
 
     res.json({ ok: true, status: newStatus });

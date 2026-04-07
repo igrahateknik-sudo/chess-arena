@@ -265,6 +265,41 @@ describe('Socket.IO — Matchmaking Queue', () => {
       client2.emit('queue:join', { timeControl: tc, stakes: 0 });
     });
   });
+
+  it('does not emit duplicate game:found in join burst', (done) => {
+    const c1 = createClient('token-user-1');
+    const c2 = createClient('token-user-2');
+    const tc = { initial: 300, increment: 0 };
+    const seen = new Map();
+    let totalFound = 0;
+
+    const onFound = (clientId) => (payload) => {
+      const key = `${clientId}:${payload.gameId}`;
+      if (!seen.has(key)) {
+        seen.set(key, 1);
+        totalFound++;
+      } else {
+        seen.set(key, seen.get(key) + 1);
+      }
+      if (totalFound >= 2) {
+        expect(Math.max(...Array.from(seen.values()))).toBe(1);
+        c1.disconnect();
+        c2.disconnect();
+        done();
+      }
+    };
+
+    c1.on('connect', () => {
+      c1.on('game:found', onFound('u1'));
+      c1.emit('queue:join', { timeControl: tc, stakes: 0 });
+      c1.emit('queue:join', { timeControl: tc, stakes: 0 });
+    });
+    c2.on('connect', () => {
+      c2.on('game:found', onFound('u2'));
+      c2.emit('queue:join', { timeControl: tc, stakes: 0 });
+      c2.emit('queue:join', { timeControl: tc, stakes: 0 });
+    });
+  });
 });
 
 // ── Game Room ─────────────────────────────────────────────────────────────────

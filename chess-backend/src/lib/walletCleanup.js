@@ -25,6 +25,7 @@ const GAME_ABANDONED_MS = 5 * 60 * 1000;   // Game with 0 moves after 5 min = ab
 // Track per-user locked stakes (userId → { amount, lockedAt })
 // This is the in-memory source of truth for queue-locked funds.
 const lockedStakes = new Map();
+const unlockRetryCounts = new Map();
 
 /**
  * Record that a stake was locked for a user joining the queue.
@@ -48,7 +49,10 @@ async function unlockForUser(userId, amount) {
     lockedStakes.delete(userId);
     console.log(`[WalletCleanup] Unlocked ${amount} for user ${userId}`);
   } catch (err) {
+    const retries = (unlockRetryCounts.get(userId) || 0) + 1;
+    unlockRetryCounts.set(userId, retries);
     console.error(`[WalletCleanup] Failed to unlock for ${userId}:`, err.message);
+    console.warn(`[WalletCleanup] unlock_retry user=${userId} retries=${retries}`);
   }
 }
 
@@ -94,6 +98,14 @@ async function runCleanup() {
         `[WalletCleanup] Abandoned game ${game.id} — ${ageMin}min old, 0 moves, stakes=${game.stakes}. Unlocking both players.`
       );
 
+      // Claim game first so only one worker/process can settle this abandoned game.
+      const claimed = await games.updateIfStatus(game.id, 'active', {
+        status: 'aborting',
+        end_reason: 'never_started',
+        updated_at: new Date(),
+      }).catch(() => null);
+      if (!claimed) continue;
+
       // Unlock both players' locked stakes
       await Promise.allSettled([
         wallets.unlock(game.white_id, game.stakes),
@@ -101,10 +113,11 @@ async function runCleanup() {
       ]);
 
       // Mark game as aborted so it doesn't appear as active
-      await supabase
-        .from('games')
-        .update({ status: 'aborted', end_reason: 'never_started', ended_at: new Date() })
-        .eq('id', game.id);
+      await games.update(game.id, {
+        status: 'aborted',
+        end_reason: 'never_started',
+        ended_at: new Date(),
+      });
 
       console.log(`[WalletCleanup] ✅ Aborted game ${game.id} and unlocked stakes for both players`);
     }
