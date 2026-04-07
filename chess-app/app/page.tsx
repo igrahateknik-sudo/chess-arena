@@ -15,8 +15,27 @@ import {
 } from 'lucide-react';
 
 declare global {
+  interface GoogleCredentialResponse {
+    credential?: string;
+  }
+  interface GoogleIdAccounts {
+    initialize: (options: {
+      client_id: string;
+      callback: (response: GoogleCredentialResponse) => void;
+    }) => void;
+    renderButton: (
+      element: HTMLElement,
+      options: {
+        theme: 'filled_black' | 'outline' | 'filled_blue';
+        size: 'large' | 'medium' | 'small';
+        width?: number;
+        shape?: 'pill' | 'rectangular' | 'circle' | 'square';
+        text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
+      }
+    ) => void;
+  }
   interface Window {
-    google?: any;
+    google?: { accounts?: { id?: GoogleIdAccounts } };
   }
 }
 
@@ -139,7 +158,7 @@ export default function LandingPage() {
 
     window.google.accounts.id.initialize({
       client_id: clientId,
-      callback: async (response: { credential?: string }) => {
+      callback: async (response: GoogleCredentialResponse) => {
         if (!response?.credential) return;
         setLoading(true);
         setAuthError('');
