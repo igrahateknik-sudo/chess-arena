@@ -190,8 +190,19 @@ async function endGame(io, gameId, winner, endReason) {
   const game = gameCache.get(gameId);
   if (!game || game.status !== 'active') return;
 
-  // Mark finished immediately to prevent double-processing
-  updateGameState(gameId, { status: 'finished' });
+  // Cross-instance guard: claim finalization only if DB still active.
+  const claimed = await games.updateIfStatus(gameId, 'active', {
+    status: 'finishing',
+    end_reason: endReason,
+    updated_at: new Date(),
+  }).catch((e) => {
+    console.error('[endGame:claim]', e);
+    return null;
+  });
+  if (!claimed) return;
+
+  // Mark in-memory as non-active to prevent re-entry in this process.
+  updateGameState(gameId, { status: 'finishing' });
 
   try {
     const whiteUser = await users.findById(game.whiteId);

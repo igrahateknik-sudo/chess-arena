@@ -201,6 +201,18 @@ const games = {
     return data;
   },
 
+  async updateIfStatus(id, expectedStatus, updates) {
+    const { data, error } = await supabase
+      .from('games')
+      .update(updates)
+      .eq('id', id)
+      .eq('status', expectedStatus)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return data || null;
+  },
+
   async findActiveByUser(userId) {
     const { data } = await supabase
       .from('games').select('*')

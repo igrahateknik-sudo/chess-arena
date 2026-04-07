@@ -17,6 +17,7 @@ function getTcType(initial) {
 
 // In-memory queue: Map<queueKey, Array<{ userId, socketId, elo, joinedAt }>>
 const queues = new Map();
+const pairingLocks = new Map();
 const ABORT_RULE = {
   windowMinutes: 15,
   maxNoContest: 3,
@@ -25,6 +26,20 @@ const ABORT_RULE = {
 
 function queueKey(timeControl, stakes) {
   return `${timeControl.initial}-${timeControl.increment}-${stakes || 0}`;
+}
+
+async function withQueueLock(key, fn) {
+  const prev = pairingLocks.get(key) || Promise.resolve();
+  let release;
+  const current = new Promise((resolve) => { release = resolve; });
+  pairingLocks.set(key, prev.then(() => current));
+  await prev;
+  try {
+    return await fn();
+  } finally {
+    release();
+    if (pairingLocks.get(key) === current) pairingLocks.delete(key);
+  }
 }
 
 function registerMatchmaking(io, socket, userId) {
@@ -90,7 +105,7 @@ function registerMatchmaking(io, socket, userId) {
       console.log(`[Queue] ${user.username} (${user.elo}) joined: ${key}`);
 
       // Try pairing
-      await tryPairPlayers(io, key, timeControl, stakes);
+      await withQueueLock(key, () => tryPairPlayers(io, key, timeControl, stakes));
     } catch (err) {
       console.error('[queue:join]', err);
       socket.emit('queue:error', { message: 'Failed to join queue' });
