@@ -154,7 +154,7 @@ export default function PrivacyPage() {
 
         <Section id="anticheat-data" title="3. Data Anti-Cheat">
           <p>
-            Untuk menjaga integritas platform uang nyata, kami mengumpulkan dan memproses
+            Untuk menjaga integritas kompetisi skill-based, kami mengumpulkan dan memproses
             data berikut khusus untuk keperluan anti-cheat:
           </p>
           <Sub title="3.1 Device Fingerprinting">

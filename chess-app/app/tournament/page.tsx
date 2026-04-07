@@ -12,12 +12,6 @@ import { api } from '@/lib/api';
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-function formatIDR(n: number) {
-  if (n >= 1_000_000) return `Rp ${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `Rp ${(n / 1_000).toFixed(0)}K`;
-  return `Rp ${n.toLocaleString('id-ID')}`;
-}
-
 function toPoints(n: number) {
   return `${Math.max(100, Math.floor(n / 1000))} PTS`;
 }

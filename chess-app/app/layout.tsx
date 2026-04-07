@@ -23,10 +23,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }, [theme]);
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="id" suppressHydrationWarning>
       <head>
-        <title>Chess Arena — Play & Earn</title>
-        <meta name="description" content="Professional chess platform with real money matches, tournaments, and AI opponents." />
+        <title>Chess Arena — Competitive Chess Esports Platform</title>
+        <meta name="description" content="Platform kompetitif catur berbasis skill dengan ranked match, tournament esports, anti-cheat, dan progression ELO real-time." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♔</text></svg>" />
       </head>
