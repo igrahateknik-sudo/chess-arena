@@ -309,7 +309,7 @@ export default function LandingPage() {
             </nav>
 
             {/* ── Hero ──────────────────────────────────────────── */}
-            <section className="relative z-10 max-w-7xl mx-auto px-6 pt-12 pb-20 grid lg:grid-cols-2 gap-12 items-center">
+            <section className="relative z-10 max-w-7xl mx-auto px-6 pt-12 pb-20 grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
               <div>
                 <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}
                   className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-semibold mb-6 tracking-wide uppercase">
@@ -352,21 +352,21 @@ export default function LandingPage() {
               </div>
 
               {/* Chess board */}
-              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.2, type: 'spring', stiffness: 100 }}
-                className="hidden lg:flex items-center justify-center">
-                <div className="relative">
-                  <div className="w-[400px] h-[400px] rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(56,189,248,0.12)] border border-white/8">
+              <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.2, type: 'spring', stiffness: 100 }}
+                className="flex items-center justify-center lg:justify-end lg:order-none order-first">
+                <div className="relative w-full max-w-[420px]">
+                  <div className="aspect-square w-full rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(56,189,248,0.12)] border border-white/8 bg-[#0b1221]">
                     <ChessBoardVisual />
                   </div>
-                  <div className="mt-4 grid grid-cols-3 gap-2">
+                  <div className="mt-3 sm:mt-4 grid grid-cols-3 gap-2">
                     {[
                       { label: 'Mode', value: 'Ranked Live' },
                       { label: 'Format', value: 'Blitz 3+2' },
                       { label: 'Sistem', value: 'Swiss Fair' },
                     ].map((item) => (
-                      <div key={item.label} className="glass rounded-xl border border-white/10 px-3 py-2 text-center">
-                        <div className="text-[10px] text-slate-500 uppercase tracking-wider">{item.label}</div>
-                        <div className="text-xs font-semibold text-slate-200 mt-0.5">{item.value}</div>
+                      <div key={item.label} className="glass rounded-xl border border-white/10 px-2.5 sm:px-3 py-2 text-center">
+                        <div className="text-[10px] text-slate-500 uppercase tracking-wider leading-none">{item.label}</div>
+                        <div className="text-[11px] sm:text-xs font-semibold text-slate-200 mt-1 leading-tight">{item.value}</div>
                       </div>
                     ))}
                   </div>
