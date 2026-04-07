@@ -3,7 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
-const { createClient } = require('redis');
+const { getRedisClient } = require('../lib/redis');
 const { users } = require('../lib/db');
 const { signToken, verifyToken, passwordHashVersion } = require('../lib/auth');
 const { requireAuth } = require('../middleware/auth');
@@ -14,29 +14,6 @@ const { sendVerificationEmail, sendPasswordResetEmail } = require('../lib/mailer
 const loginAttempts = new Map(); // key: email/username, value: { count, lastAttempt }
 const MAX_LOGIN_ATTEMPTS = 10;
 const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 menit
-let redisClient = null;
-let redisReadyPromise = null;
-
-async function getRedisClient() {
-  if (!process.env.REDIS_URL) return null;
-  if (redisClient && redisClient.isOpen) return redisClient;
-  if (redisReadyPromise) return redisReadyPromise;
-  redisReadyPromise = (async () => {
-    try {
-      redisClient = createClient({ url: process.env.REDIS_URL });
-      redisClient.on('error', () => {});
-      await redisClient.connect();
-      return redisClient;
-    } catch {
-      redisClient = null;
-      return null;
-    } finally {
-      redisReadyPromise = null;
-    }
-  })();
-  return redisReadyPromise;
-}
-
 async function getLoginAttempts(loginKey) {
   const client = await getRedisClient();
   if (client) {

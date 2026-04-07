@@ -17,7 +17,7 @@
 
 const crypto = require('crypto');
 const os = require('os');
-const { createClient } = require('redis');
+const { getRedisClient } = require('../lib/redis');
 const { Chess } = require('chess.js');
 const { games, users, wallets, transactions, notifications, eloHistory } = require('../lib/db');
 const { calculateBothElo } = require('../lib/elo');
@@ -31,31 +31,8 @@ const { recordAndDetect, scoreFingerprintResult } = require('../lib/fingerprint'
 const { runCollusionDetection } = require('../lib/collusion');
 const INSTANCE_ID = `${os.hostname()}:${process.pid}`;
 const GAME_LEASE_TTL_MS = 5000;
-let redisLeaseClient = null;
-let redisLeaseClientReady = null;
-
-async function getRedisLeaseClient() {
-  if (!process.env.REDIS_URL) return null;
-  if (redisLeaseClient && redisLeaseClient.isOpen) return redisLeaseClient;
-  if (redisLeaseClientReady) return redisLeaseClientReady;
-  redisLeaseClientReady = (async () => {
-    try {
-      redisLeaseClient = createClient({ url: process.env.REDIS_URL });
-      redisLeaseClient.on('error', () => {});
-      await redisLeaseClient.connect();
-      return redisLeaseClient;
-    } catch {
-      redisLeaseClient = null;
-      return null;
-    } finally {
-      redisLeaseClientReady = null;
-    }
-  })();
-  return redisLeaseClientReady;
-}
-
 async function acquireGameLease(gameId) {
-  const client = await getRedisLeaseClient();
+  const client = await getRedisClient();
   if (!client) return true;
   const key = `game:lease:${gameId}`;
   const ok = await client.set(key, INSTANCE_ID, { NX: true, PX: GAME_LEASE_TTL_MS });

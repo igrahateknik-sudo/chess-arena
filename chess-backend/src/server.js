@@ -14,6 +14,7 @@ const { startWalletCleanupJob }       = require('./lib/walletCleanup');
 const { startTournamentScheduler }    = require('./lib/tournamentScheduler');
 const logger                          = require('./lib/logger');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const { getRedisClient, getSubClient, disconnectRedis } = require('./lib/redis');
 
 // ── Env var validation ────────────────────────────────────────────────────────
 const REQUIRED_ENV = ['SUPABASE_URL', 'SUPABASE_SERVICE_KEY', 'JWT_SECRET'];
@@ -62,17 +63,10 @@ let redisStatus = process.env.REDIS_URL ? 'connecting' : 'disabled';
 async function connectRedisAdapter() {
   if (!process.env.REDIS_URL) return;
   try {
-    const { createClient } = require('redis');
     const { createAdapter } = require('@socket.io/redis-adapter');
-
-    const pubClient = createClient({ url: process.env.REDIS_URL });
-    const subClient = pubClient.duplicate();
-
-    // Surface connection errors so we can fall back gracefully
-    pubClient.on('error', err => logger.error('Redis pub error', { error: err.message }));
-    subClient.on('error', err => logger.error('Redis sub error', { error: err.message }));
-
-    await Promise.all([pubClient.connect(), subClient.connect()]);
+    const pubClient = await getRedisClient();
+    const subClient = await getSubClient();
+    if (!pubClient || !subClient) throw new Error('Redis clients unavailable');
     io.adapter(createAdapter(pubClient, subClient));
     redisStatus = 'connected';
     const safeUrl = process.env.REDIS_URL.replace(/:\/\/[^@]*@/, '://***@');
@@ -361,5 +355,16 @@ const PORT = process.env.PORT || 4000;
     startTournamentScheduler();
   });
 })();
+
+// ── Graceful shutdown ─────────────────────────────────────────────────────────
+async function shutdown(signal) {
+  logger.info(`[${signal}] Shutting down...`);
+  server.close(async () => {
+    await disconnectRedis();
+    process.exit(0);
+  });
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
 
 module.exports = server;

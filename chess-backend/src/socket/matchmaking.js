@@ -6,7 +6,7 @@
 
 const { users, wallets, games } = require('../lib/db');
 const { unlockForUser, recordLock } = require('../lib/walletCleanup');
-const { createClient } = require('redis');
+const { getRedisClient } = require('../lib/redis');
 const crypto = require('crypto');
 const { logSecurityEvent } = require('../lib/auditLog');
 
@@ -21,10 +21,6 @@ function getTcType(initial) {
 // In-memory queue: Map<queueKey, Array<{ userId, socketId, elo, joinedAt }>>
 const queues = new Map();
 const pairingLocks = new Map();
-let redisLockClient = null;
-let redisLockClientReady = null;
-let redisQueueClient = null;
-let redisQueueClientReady = null;
 const ABORT_RULE = {
   windowMinutes: 15,
   maxNoContest: 3,
@@ -44,7 +40,7 @@ function parseStakeFromQueueKey(key) {
 }
 
 async function getQueuedStakeForUser(userId) {
-  const client = await getRedisQueueClient();
+  const client = await getRedisClient();
   if (client) {
     const qKey = await client.get(queueUserIndexKey(userId));
     return parseStakeFromQueueKey(qKey);
@@ -72,48 +68,6 @@ async function withQueueLock(key, fn) {
   }
 }
 
-async function getRedisLockClient() {
-  if (!process.env.REDIS_URL) return null;
-  if (redisLockClient && redisLockClient.isOpen) return redisLockClient;
-  if (redisLockClientReady) return redisLockClientReady;
-
-  redisLockClientReady = (async () => {
-    try {
-      redisLockClient = createClient({ url: process.env.REDIS_URL });
-      redisLockClient.on('error', () => {});
-      await redisLockClient.connect();
-      return redisLockClient;
-    } catch {
-      redisLockClient = null;
-      return null;
-    } finally {
-      redisLockClientReady = null;
-    }
-  })();
-
-  return redisLockClientReady;
-}
-
-async function getRedisQueueClient() {
-  if (!process.env.REDIS_URL) return null;
-  if (redisQueueClient && redisQueueClient.isOpen) return redisQueueClient;
-  if (redisQueueClientReady) return redisQueueClientReady;
-  redisQueueClientReady = (async () => {
-    try {
-      redisQueueClient = createClient({ url: process.env.REDIS_URL });
-      redisQueueClient.on('error', () => {});
-      await redisQueueClient.connect();
-      return redisQueueClient;
-    } catch {
-      redisQueueClient = null;
-      return null;
-    } finally {
-      redisQueueClientReady = null;
-    }
-  })();
-  return redisQueueClientReady;
-}
-
 function queueRedisKey(key) {
   return `mm:queue:${key}`;
 }
@@ -125,7 +79,7 @@ function queueUserIndexKey(userId) {
 }
 
 async function enqueuePlayer(key, entry) {
-  const client = await getRedisQueueClient();
+  const client = await getRedisClient();
   if (!client) {
     if (!queues.has(key)) queues.set(key, []);
     const queue = queues.get(key);
@@ -151,7 +105,7 @@ async function enqueuePlayer(key, entry) {
 }
 
 async function dequeuePlayerFromAll(userId) {
-  const client = await getRedisQueueClient();
+  const client = await getRedisClient();
   if (!client) {
     removeFromAllQueues(userId);
     return;
@@ -183,7 +137,7 @@ async function claimPairFromRedis(client, key, userIdA, userIdB) {
 }
 
 async function acquireDistributedPairingLock(key) {
-  const client = await getRedisLockClient();
+  const client = await getRedisClient();
   if (!client) return { acquired: true, token: null };
 
   const lockKey = `mm:lock:${key}`;
@@ -195,7 +149,7 @@ async function acquireDistributedPairingLock(key) {
 
 async function releaseDistributedPairingLock(key, token) {
   if (!token) return;
-  const client = await getRedisLockClient();
+  const client = await getRedisClient();
   if (!client) return;
   const lockKey = `mm:lock:${key}`;
   await client.eval(
@@ -308,7 +262,7 @@ function registerMatchmaking(io, socket, userId) {
 }
 
 async function tryPairPlayers(io, key, timeControl, stakes) {
-  const redis = await getRedisQueueClient();
+  const redis = await getRedisClient();
   let queue = null;
   if (redis) {
     const userIds = await redis.zRange(queueRedisKey(key), 0, -1);
