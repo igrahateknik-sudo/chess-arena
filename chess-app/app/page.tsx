@@ -408,8 +408,14 @@ export default function LandingPage() {
                       viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                       className="relative glass rounded-2xl p-6 border border-white/8 hover:border-white/15 transition-all group overflow-hidden">
                       <div className="relative h-28 rounded-xl border border-white/10 overflow-hidden mb-5 bg-white/[0.02] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                        <Image src={step.art} alt={step.title} fill className="object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#060c18]/60 via-[#060c18]/20 to-transparent" />
+                        <Image
+                          src={step.art}
+                          alt={step.title}
+                          fill
+                          className="object-cover scale-[1.02] contrast-110 brightness-[0.85] saturate-[1.1]"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-tr from-sky-500/15 via-transparent to-amber-400/10" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#060c18]/70 via-[#060c18]/25 to-transparent" />
                       </div>
                       <div className="text-5xl font-black text-white/4 absolute top-4 right-5 select-none">{step.step}</div>
                       <div className={`w-11 h-11 rounded-xl border flex items-center justify-center mb-4 ${cls}`}>
@@ -455,8 +461,14 @@ export default function LandingPage() {
                       </div>
                     </div>
                     <div className="relative h-24 rounded-xl border border-white/10 overflow-hidden mb-5 bg-white/[0.03] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                      <Image src={tier.art} alt={`Ilustrasi ${tier.label}`} fill className="object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#060c18]/55 via-[#060c18]/15 to-transparent" />
+                      <Image
+                        src={tier.art}
+                        alt={`Ilustrasi ${tier.label}`}
+                        fill
+                        className="object-cover contrast-110 brightness-[0.82] saturate-[1.08]"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-tr from-sky-500/10 via-transparent to-yellow-400/10" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#060c18]/60 via-[#060c18]/20 to-transparent" />
                     </div>
                     <div className="mb-5">
                       <div className="text-3xl font-black text-white mb-0.5">{tier.fee}</div>
