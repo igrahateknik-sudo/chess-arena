@@ -224,6 +224,17 @@ const games = {
       .limit(limit);
     return data || [];
   },
+
+  async getRecentNoContestCount(userId, sinceIso) {
+    const { count } = await supabase
+      .from('games')
+      .select('id', { count: 'exact', head: true })
+      .or(`white_id.eq.${userId},black_id.eq.${userId}`)
+      .eq('status', 'cancelled')
+      .in('end_reason', ['aborted', 'disconnect'])
+      .gte('ended_at', sinceIso);
+    return count || 0;
+  },
 };
 
 // ── Notifications ─────────────────────────────────────────────────────────

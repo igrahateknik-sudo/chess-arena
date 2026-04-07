@@ -17,6 +17,11 @@ function getTcType(initial) {
 
 // In-memory queue: Map<queueKey, Array<{ userId, socketId, elo, joinedAt }>>
 const queues = new Map();
+const ABORT_RULE = {
+  windowMinutes: 15,
+  maxNoContest: 3,
+  cooldownMinutes: 10,
+};
 
 function queueKey(timeControl, stakes) {
   return `${timeControl.initial}-${timeControl.increment}-${stakes || 0}`;
@@ -37,6 +42,16 @@ function registerMatchmaking(io, socket, userId) {
       if (activeGame) {
         socket.emit('queue:error', { message: 'You already have an active game' });
         return socket.emit('error', { message: 'You already have an active game' });
+      }
+
+      // Anti-abort abuse: if user repeatedly triggers no-contest games,
+      // apply temporary queue cooldown.
+      const since = new Date(Date.now() - ABORT_RULE.windowMinutes * 60_000).toISOString();
+      const recentNoContest = await games.getRecentNoContestCount(userId, since);
+      if (recentNoContest >= ABORT_RULE.maxNoContest) {
+        const msg = `Terlalu sering game batal. Coba antre lagi dalam ${ABORT_RULE.cooldownMinutes} menit.`;
+        socket.emit('queue:error', { message: msg, code: 'QUEUE_COOLDOWN_NO_CONTEST' });
+        return socket.emit('error', { message: msg });
       }
 
       // Lock the stake atomically via DB RPC (avoids TOCTOU race condition).
