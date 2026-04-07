@@ -6,6 +6,8 @@
 
 const { users, wallets, games } = require('../lib/db');
 const { unlockForUser, recordLock } = require('../lib/walletCleanup');
+const { createClient } = require('redis');
+const crypto = require('crypto');
 
 // ── Time-control type helper (mirrors gameRoom.js) ─────────────────────────
 function getTcType(initial) {
@@ -18,11 +20,14 @@ function getTcType(initial) {
 // In-memory queue: Map<queueKey, Array<{ userId, socketId, elo, joinedAt }>>
 const queues = new Map();
 const pairingLocks = new Map();
+let redisLockClient = null;
+let redisLockClientReady = null;
 const ABORT_RULE = {
   windowMinutes: 15,
   maxNoContest: 3,
   cooldownMinutes: 10,
 };
+const REDIS_LOCK_TTL_MS = 4000;
 
 function queueKey(timeControl, stakes) {
   return `${timeControl.initial}-${timeControl.increment}-${stakes || 0}`;
@@ -40,6 +45,50 @@ async function withQueueLock(key, fn) {
     release();
     if (pairingLocks.get(key) === current) pairingLocks.delete(key);
   }
+}
+
+async function getRedisLockClient() {
+  if (!process.env.REDIS_URL) return null;
+  if (redisLockClient && redisLockClient.isOpen) return redisLockClient;
+  if (redisLockClientReady) return redisLockClientReady;
+
+  redisLockClientReady = (async () => {
+    try {
+      redisLockClient = createClient({ url: process.env.REDIS_URL });
+      redisLockClient.on('error', () => {});
+      await redisLockClient.connect();
+      return redisLockClient;
+    } catch {
+      redisLockClient = null;
+      return null;
+    } finally {
+      redisLockClientReady = null;
+    }
+  })();
+
+  return redisLockClientReady;
+}
+
+async function acquireDistributedPairingLock(key) {
+  const client = await getRedisLockClient();
+  if (!client) return { acquired: true, token: null };
+
+  const lockKey = `mm:lock:${key}`;
+  const token = crypto.randomBytes(12).toString('hex');
+  const ok = await client.set(lockKey, token, { NX: true, PX: REDIS_LOCK_TTL_MS });
+  if (ok !== 'OK') return { acquired: false, token: null };
+  return { acquired: true, token };
+}
+
+async function releaseDistributedPairingLock(key, token) {
+  if (!token) return;
+  const client = await getRedisLockClient();
+  if (!client) return;
+  const lockKey = `mm:lock:${key}`;
+  await client.eval(
+    "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+    { keys: [lockKey], arguments: [token] }
+  ).catch(() => {});
 }
 
 function registerMatchmaking(io, socket, userId) {
@@ -105,7 +154,15 @@ function registerMatchmaking(io, socket, userId) {
       console.log(`[Queue] ${user.username} (${user.elo}) joined: ${key}`);
 
       // Try pairing
-      await withQueueLock(key, () => tryPairPlayers(io, key, timeControl, stakes));
+      await withQueueLock(key, async () => {
+        const lock = await acquireDistributedPairingLock(key);
+        if (!lock.acquired) return;
+        try {
+          await tryPairPlayers(io, key, timeControl, stakes);
+        } finally {
+          await releaseDistributedPairingLock(key, lock.token);
+        }
+      });
     } catch (err) {
       console.error('[queue:join]', err);
       socket.emit('queue:error', { message: 'Failed to join queue' });
