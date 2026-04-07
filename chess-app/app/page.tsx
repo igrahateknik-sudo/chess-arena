@@ -43,7 +43,7 @@ const HOW_IT_WORKS = [
   {
     step: '01',
     icon: Users,
-    art: '/illustrations/photo/register-real.jpg',
+    art: '/illustrations/register-card.svg',
     title: 'Daftar Gratis',
     desc: 'Buat akun dalam 30 detik. Verifikasi email dan mulai bermain langsung.',
     color: 'sky',
@@ -51,7 +51,7 @@ const HOW_IT_WORKS = [
   {
     step: '02',
     icon: Ticket,
-    art: '/illustrations/photo/division-real.jpg',
+    art: '/illustrations/ticket-card.svg',
     title: 'Pilih Divisi',
     desc: 'Pilih divisi Bronze, Silver, atau Gold sesuai target performa kamu.',
     color: 'amber',
@@ -59,7 +59,7 @@ const HOW_IT_WORKS = [
   {
     step: '03',
     icon: Swords,
-    art: '/illustrations/photo/battle-real.jpg',
+    art: '/illustrations/battle-card.svg',
     title: 'Gabung Turnamen',
     desc: 'Turnamen otomatis setiap jam. Daftar, tunggu mulai, lalu bertanding.',
     color: 'purple',
@@ -67,7 +67,7 @@ const HOW_IT_WORKS = [
   {
     step: '04',
     icon: Trophy,
-    art: '/illustrations/photo/rank-real.jpg',
+    art: '/illustrations/rank-card.svg',
     title: 'Naik Peringkat',
     desc: 'Kumpulkan poin ranking, naik leaderboard, dan raih badge kompetitif.',
     color: 'emerald',
@@ -86,7 +86,7 @@ const TIERS = [
     color: 'from-amber-700/30 to-amber-900/20',
     border: 'border-amber-700/30',
     badge: 'bg-amber-700/20 text-amber-500',
-    art: '/illustrations/photo/register-real.jpg',
+    art: '/illustrations/register-card.svg',
   },
   {
     key: 'silver',
@@ -99,7 +99,7 @@ const TIERS = [
     color: 'from-slate-400/20 to-slate-600/10',
     border: 'border-slate-400/30',
     badge: 'bg-slate-400/20 text-slate-300',
-    art: '/illustrations/photo/division-real.jpg',
+    art: '/illustrations/ticket-card.svg',
     featured: true,
   },
   {
@@ -113,7 +113,7 @@ const TIERS = [
     color: 'from-yellow-500/20 to-yellow-700/10',
     border: 'border-yellow-500/30',
     badge: 'bg-yellow-500/20 text-yellow-400',
-    art: '/illustrations/photo/battle-real.jpg',
+    art: '/illustrations/battle-card.svg',
   },
 ];
 
@@ -505,15 +505,19 @@ export default function LandingPage() {
             <section className="relative z-10 max-w-7xl mx-auto px-6 py-16 border-t border-white/5">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { icon: Zap, label: 'Bullet & Blitz', desc: '1+0, 3+2, 5+3', color: 'sky' },
-                  { icon: Shield, label: 'Anti-Cheat', desc: '5 lapis keamanan', color: 'emerald' },
-                  { icon: Award, label: 'ELO Rating', desc: 'Standard FIDE', color: 'violet' },
-                  { icon: Clock, label: 'Turnamen Tiap Jam', desc: '24 jam sehari', color: 'amber' },
+                  { icon: Zap, label: 'Bullet & Blitz', desc: '1+0, 3+2, 5+3', color: 'sky', art: '/illustrations/features/speed.svg' },
+                  { icon: Shield, label: 'Anti-Cheat', desc: '5 lapis keamanan', color: 'emerald', art: '/illustrations/features/shield.svg' },
+                  { icon: Award, label: 'ELO Rating', desc: 'Standard FIDE', color: 'violet', art: '/illustrations/features/rating.svg' },
+                  { icon: Clock, label: 'Turnamen Tiap Jam', desc: '24 jam sehari', color: 'amber', art: '/illustrations/features/tournament.svg' },
                 ].map((f, i) => (
                   <motion.div key={f.label}
                     initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }}
                     viewport={{ once: true }} transition={{ delay: i * 0.07 }}
-                    className="glass rounded-2xl p-5 border border-white/8 hover:border-white/15 transition-all">
+                    className="glass rounded-2xl p-5 border border-white/8 hover:border-white/15 transition-all overflow-hidden">
+                    <div className="relative h-16 rounded-lg border border-white/10 overflow-hidden mb-3 bg-white/[0.02]">
+                      <Image src={f.art} alt={f.label} fill className="object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#060c18]/70 to-transparent" />
+                    </div>
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${
                       f.color === 'sky' ? 'bg-sky-500/10' :
                       f.color === 'emerald' ? 'bg-emerald-500/10' :
