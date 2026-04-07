@@ -111,9 +111,6 @@ export const useAppStore = create<AppStore>()(
     {
       name: 'chess-arena-store',
       partialize: (state) => ({
-        user: state.user,
-        token: state.token,
-        isAuthenticated: state.isAuthenticated,
         theme: state.theme,
         boardTheme: state.boardTheme,
         showLegalMoves: state.showLegalMoves,
