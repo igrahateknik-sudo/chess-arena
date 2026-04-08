@@ -184,7 +184,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex gap-3">
             <Link href="/game"
-              className="flex items-center gap-2 px-5 py-2.5 btn-gold rounded-xl font-semibold text-sm text-black hover:opacity-90 transition-opacity"
+              className="flex items-center gap-2 px-5 py-2.5 btn-gold rounded-xl font-semibold text-sm text-black hover:opacity-90 transition-opacity">
               <Zap className="w-4 h-4" />
               Main Cepat
             </Link>

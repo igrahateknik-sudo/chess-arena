@@ -578,7 +578,7 @@ export default function TournamentPage() {
                         ) : (
                           <button onClick={() => handleJoin(tournament)}
                             disabled={joining === tournament.id || isFull(tournament)}
-                            className="w-full py-2.5 rounded-xl btn-gold text-black text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
+                            className="w-full py-2.5 rounded-xl btn-gold text-black text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20">
                             {joining === tournament.id ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Trophy className="w-4 h-4" />}
                             Daftar — GRATIS
                           </button>
