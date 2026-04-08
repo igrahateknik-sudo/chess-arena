@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS wallets (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE wallets ADD CONSTRAINT balance_check CHECK (balance >= 0);
+ALTER TABLE wallets ADD CONSTRAINT locked_check CHECK (locked >= 0);
 -- Auto-create wallet on user insert
 CREATE OR REPLACE FUNCTION create_wallet_on_user()
 RETURNS TRIGGER AS $$
