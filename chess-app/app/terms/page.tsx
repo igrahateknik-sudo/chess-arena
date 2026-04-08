@@ -37,8 +37,11 @@ export default function TermsPage() {
       {/* Header */}
       <div className="bg-[var(--bg-card)] border-b border-[var(--border)]">
         <div className="max-w-4xl mx-auto px-6 py-5 flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-2 text-amber-400 font-bold text-lg">
-            ♔ Chess<span className="text-white">Arena</span>
+          <Link href="/" className="flex items-center gap-2 font-bold text-lg">
+            <div className="w-8 h-8 flex-shrink-0 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
+              <span className="text-base leading-none">♔</span>
+            </div>
+            <span className="text-[var(--text-primary)]">Chess<span className="text-amber-400">Arena</span></span>
           </Link>
           <ChevronRight size={16} className="text-[var(--text-muted)]" />
           <span className="text-[var(--text-muted)] text-sm">Syarat Layanan</span>

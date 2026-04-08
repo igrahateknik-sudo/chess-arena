@@ -5,32 +5,32 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #050b18;
-  --bg-secondary: #0b1223;
-  --bg-card: #0e172b;
-  --bg-hover: #16233b;
+  --bg-primary: #06070f;
+  --bg-secondary: #0a0b14;
+  --bg-card: #0d0f1c;
+  --bg-hover: #13151f;
   --text-primary: #e2e8f0;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
-  --border: #223252;
-  --accent: #0ea5e9;
-  --accent-hover: #0284c7;
+  --border: #1e2035;
+  --accent: #f59e0b;
+  --accent-hover: #d97706;
   --success: #22c55e;
   --danger: #ef4444;
   --warning: #f59e0b;
 }
 
 .dark {
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-card: #1e293b;
-  --bg-hover: #334155;
+  --bg-primary: #06070f;
+  --bg-secondary: #0a0b14;
+  --bg-card: #0d0f1c;
+  --bg-hover: #13151f;
   --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
-  --border: #334155;
-  --accent: #38bdf8;
-  --accent-hover: #0ea5e9;
+  --border: #1e2035;
+  --accent: #f59e0b;
+  --accent-hover: #d97706;
   --success: #4ade80;
   --danger: #f87171;
   --warning: #fbbf24;
@@ -63,7 +63,7 @@ select {
 }
 
 :focus-visible {
-  outline: 2px solid rgba(56, 189, 248, 0.8);
+  outline: 2px solid rgba(245, 158, 11, 0.8);
   outline-offset: 2px;
 }
 
