@@ -35,7 +35,7 @@ jest.mock('../src/lib/db', () => ({
   },
   games: {
     findById: jest.fn(async (id) => ({
-      id, white_id: 'user-1', black_id: 'user-2',
+      id, white_id: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaab', black_id: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaac',
       fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
       move_history: [], status: 'active',
       time_control: { initial: 300, increment: 0 },
@@ -44,7 +44,7 @@ jest.mock('../src/lib/db', () => ({
       white_time_left: 300, black_time_left: 300,
     })),
     create: jest.fn(async (data) => ({
-      id: 'game-123',
+      id: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',
       ...data,
       fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
       status: 'active',
@@ -107,12 +107,67 @@ jest.mock('../src/lib/walletCleanup', () => ({
 
 jest.mock('../src/lib/auth', () => ({
   verifyToken: jest.fn((token) => {
-    if (token === 'token-user-1') return { userId: 'user-1' };
-    if (token === 'token-user-2') return { userId: 'user-2' };
+    if (token === 'token-user-1') return { userId: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaab' };
+    if (token === 'token-user-2') return { userId: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaac' };
     return null;
   }),
   signToken: jest.fn(() => 'mock-token'),
   passwordHashVersion: jest.fn(() => 'mock-phv'),
+}));
+
+// Mock Redis + all cache modules so tests run without a real Redis connection
+jest.mock('../src/lib/redis', () => ({
+  getRedisClient: jest.fn(async () => null),
+  getSubClient:   jest.fn(async () => null),
+  disconnectRedis: jest.fn(async () => {}),
+}));
+
+jest.mock('../src/cache/GameStateCache', () => {
+  const _map = new Map();
+  return {
+    get:      jest.fn(async () => null),
+    set:      jest.fn(async (gameId, state) => { _map.set(gameId, state); }),
+    update:   jest.fn(async (gameId, updates) => {
+      const s = _map.get(gameId);
+      if (s) Object.assign(s, updates);
+    }),
+    del:      jest.fn(async () => {}),
+    getLocal: jest.fn((gameId) => _map.get(gameId) || null),
+    localMap: jest.fn(() => _map),
+  };
+});
+
+jest.mock('../src/cache/MoveTokenStore', () => {
+  const _store = new Map();
+  return {
+    get:     jest.fn(async (gameId, userId) => _store.get(`${gameId}:${userId}`) || null),
+    set:     jest.fn(async (gameId, userId, token) => { _store.set(`${gameId}:${userId}`, token); }),
+    del:     jest.fn(async () => {}),
+    delGame: jest.fn(async () => {}),
+  };
+});
+
+jest.mock('../src/cache/MoveCooldownStore', () => ({
+  getLast:     jest.fn(async () => 0),
+  setLast:     jest.fn(async () => {}),
+  del:         jest.fn(async () => {}),
+  COOLDOWN_MS: 500,
+}));
+
+jest.mock('../src/cache/PresenceCache', () => ({
+  setOnline:        jest.fn(async () => {}),
+  setOffline:       jest.fn(async () => {}),
+  isOnline:         jest.fn(async () => true),
+  getSocketId:      jest.fn(async () => null),
+  addToGame:        jest.fn(async () => {}),
+  removeFromGame:   jest.fn(async () => {}),
+  getGamePresence:  jest.fn(async () => []),
+}));
+
+jest.mock('../src/cache/LeaderboardCache', () => ({
+  get:           jest.fn(async () => null),
+  set:           jest.fn(async () => {}),
+  invalidateAll: jest.fn(async () => {}),
 }));
 
 // ── Server Setup ──────────────────────────────────────────────────────────────
@@ -314,7 +369,7 @@ describe('Socket.IO — Game Room', () => {
         expect(data).toHaveProperty('nextMoveToken');
         done();
       });
-      client1.emit('game:join', { gameId: 'game-123' });
+      client1.emit('game:join', { gameId: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa' });
     });
   });
 
@@ -326,7 +381,7 @@ describe('Socket.IO — Game Room', () => {
         expect(data).toHaveProperty('reason');
         done();
       });
-      client1.emit('game:move', { gameId: 'game-123', from: 'e2', to: 'e4', moveToken: 'invalid' });
+      client1.emit('game:move', { gameId: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa', from: 'e2', to: 'e4', moveToken: 'invalid' });
     });
   });
 });

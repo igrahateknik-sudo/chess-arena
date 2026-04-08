@@ -15,6 +15,7 @@ const { startTournamentScheduler }    = require('./lib/tournamentScheduler');
 const logger                          = require('./lib/logger');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { getRedisClient, getSubClient, disconnectRedis } = require('./lib/redis');
+const PresenceCache = require('./cache/PresenceCache');
 
 // ── Env var validation ────────────────────────────────────────────────────────
 const REQUIRED_ENV = ['SUPABASE_URL', 'SUPABASE_SERVICE_KEY', 'JWT_SECRET'];
@@ -268,8 +269,8 @@ io.on('connection', async (socket) => {
   // Join per-user room untuk direct messaging
   socket.join(userId);
 
-  // Mark online in DB
-  await users.setOnline(userId, socket.id).catch(() => {});
+  // Mark online in Redis presence cache
+  await PresenceCache.setOnline(userId, socket.id).catch(() => {});
 
   // Broadcast updated online count + active games
   const onlineCount = io.sockets.sockets.size;
@@ -314,7 +315,7 @@ io.on('connection', async (socket) => {
 
   // ── Disconnect ───────────────────────────────────────────────────────────
   socket.on('disconnect', async () => {
-    await users.setOffline(userId).catch(() => {});
+    await PresenceCache.setOffline(userId).catch(() => {});
     const onlineCountAfter = io.sockets.sockets.size;
     const activeGamesAfter = [...gameCache.values()].filter(g => g.status === 'active').length;
     io.emit('lobby:online', { count: onlineCountAfter, activeGames: activeGamesAfter });
