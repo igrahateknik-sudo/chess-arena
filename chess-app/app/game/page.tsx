@@ -185,7 +185,7 @@ export default function GamePage() {
           <p className="text-[var(--text-muted)] mb-6">Mode tamu sudah dinonaktifkan. Silakan masuk atau daftar untuk bermain.</p>
           <button
             onClick={() => router.push('/')}
-            className="px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-semibold hover:opacity-90 transition-opacity"
+            className="px-6 py-3 rounded-xl btn-gold font-bold text-black"
           >
             Ke Halaman Masuk
           </button>
@@ -261,20 +261,20 @@ export default function GamePage() {
                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                   onClick={() => { setGameMode('pvp-online'); setStep('mode'); }}
                   className="card-hover card p-6 rounded-2xl text-left relative overflow-hidden group">
-                  <div className="absolute -right-4 -top-4 w-28 h-28 rounded-full bg-sky-500/10 group-hover:bg-sky-500/15 transition-colors" />
+                  <div className="absolute -right-4 -top-4 w-28 h-28 rounded-full bg-amber-500/10 group-hover:bg-amber-500/15 transition-colors" />
                   <div className="relative">
-                    <div className="w-12 h-12 rounded-2xl bg-sky-500/10 flex items-center justify-center text-2xl mb-4">⚔️</div>
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-2xl mb-4">⚔️</div>
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="text-xl font-black text-[var(--text-primary)]">Player vs Player</h3>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">LIVE</span>
                     </div>
                     <p className="text-sm text-[var(--text-muted)] mb-4">Real-time matchmaking with ELO-based pairing. Free to play, no entry fee.</p>
                     <div className="flex flex-wrap gap-2">
-                      <span className="text-xs px-2 py-1 rounded-lg bg-sky-500/10 text-sky-400 font-medium">WebSocket</span>
+                      <span className="text-xs px-2 py-1 rounded-lg bg-amber-500/10 text-amber-400 font-medium">WebSocket</span>
                       <span className="text-xs px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 font-medium">Free</span>
                       <span className="text-xs px-2 py-1 rounded-lg bg-purple-500/10 text-purple-400 font-medium">ELO Rated</span>
                     </div>
-                    <div className="flex items-center gap-1.5 mt-4 text-sky-400 font-semibold text-sm">
+                    <div className="flex items-center gap-1.5 mt-4 text-amber-400 font-semibold text-sm">
                       Cari Lawan <ChevronRight className="w-4 h-4" />
                     </div>
                   </div>
@@ -304,12 +304,12 @@ export default function GamePage() {
               {/* Live stats */}
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { icon: Users, label: 'Online Now', value: onlineUsers > 0 ? onlineUsers.toLocaleString() : '12,481', color: 'sky' },
+                  { icon: Users, label: 'Online Now', value: onlineUsers > 0 ? onlineUsers.toLocaleString() : '12,481', color: 'amber' },
                   { icon: Zap, label: 'Games Today', value: '89,234', color: 'yellow' },
                   { icon: Star, label: 'ELO Matches', value: '100% Free', color: 'emerald' },
                 ].map(s => (
                   <div key={s.label} className="card p-4 rounded-xl text-center">
-                    <s.icon className={`w-5 h-5 mx-auto mb-2 ${s.color === 'sky' ? 'text-sky-400' : s.color === 'yellow' ? 'text-yellow-400' : 'text-emerald-400'}`} />
+                    <s.icon className={`w-5 h-5 mx-auto mb-2 ${s.color === 'amber' ? 'text-amber-400' : s.color === 'yellow' ? 'text-yellow-400' : 'text-emerald-400'}`} />
                     <div className="text-lg font-black text-[var(--text-primary)]">{s.value}</div>
                     <div className="text-xs text-[var(--text-muted)]">{s.label}</div>
                   </div>
@@ -335,7 +335,7 @@ export default function GamePage() {
                   <TimeControlSelector selected={selectedTC} onSelect={setSelectedTC} />
                   <ColorSelector color={playerColor} onSelect={setPlayerColor} />
                   <button onClick={startMatchmaking}
-                    className="w-full mt-6 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl font-bold text-white shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+                    className="w-full mt-6 py-3.5 btn-gold rounded-xl font-bold text-black flex items-center justify-center gap-2">
                     <Search className="w-5 h-5" /> Cari Lawan
                   </button>
                 </>
@@ -346,7 +346,7 @@ export default function GamePage() {
                     {AI_LEVELS.map(level => (
                       <motion.button key={level.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
                         onClick={() => setAiLevel(level.id)}
-                        className={`card p-5 rounded-2xl text-left flex items-center gap-4 transition-all ${aiLevel === level.id ? 'border-sky-500 ring-1 ring-sky-500 bg-sky-500/5' : 'hover:border-[var(--accent)]'}`}>
+                        className={`card p-5 rounded-2xl text-left flex items-center gap-4 transition-all ${aiLevel === level.id ? 'border-amber-500 ring-1 ring-amber-500/50 bg-amber-500/5' : 'hover:border-[var(--accent)]'}`}>
                         <div className="text-4xl">{level.icon}</div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -357,7 +357,7 @@ export default function GamePage() {
                           </div>
                           <p className="text-sm text-[var(--text-muted)]">{level.desc}</p>
                         </div>
-                        {aiLevel === level.id && <div className="w-5 h-5 rounded-full bg-sky-500 flex items-center justify-center text-white text-xs">✓</div>}
+                        {aiLevel === level.id && <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center text-black text-xs font-bold">✓</div>}
                       </motion.button>
                     ))}
                   </div>
@@ -377,10 +377,10 @@ export default function GamePage() {
             <motion.div key="mm" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="flex flex-col items-center justify-center min-h-[60vh] text-center">
               <div className="relative mb-8">
-                <div className="w-24 h-24 rounded-full border-4 border-sky-500/20 animate-ping absolute inset-0" />
-                <div className="w-24 h-24 rounded-full border-4 border-sky-500/10 animate-ping absolute inset-0" style={{ animationDelay: '0.4s' }} />
-                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-sky-500/20 to-blue-500/20 flex items-center justify-center border border-sky-500/30">
-                  <Search className="w-10 h-10 text-sky-400" />
+                <div className="w-24 h-24 rounded-full border-4 border-amber-500/20 animate-ping absolute inset-0" />
+                <div className="w-24 h-24 rounded-full border-4 border-amber-500/10 animate-ping absolute inset-0" style={{ animationDelay: '0.4s' }} />
+                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-amber-500/20 to-yellow-500/20 flex items-center justify-center border border-amber-500/30">
+                  <Search className="w-10 h-10 text-amber-400" />
                 </div>
               </div>
 
@@ -388,7 +388,7 @@ export default function GamePage() {
               <p className="text-[var(--text-muted)] mb-1">Mencari match <strong>{selectedTC.label}</strong></p>
 
               <p className="text-sm text-[var(--text-muted)] mt-4">
-                <span className="font-mono text-sky-400 text-lg">
+                <span className="font-mono text-amber-400 text-lg">
                   {String(Math.floor(matchmakingTime / 60)).padStart(2, '0')}:{String(matchmakingTime % 60).padStart(2, '0')}
                 </span>
               </p>
@@ -398,7 +398,7 @@ export default function GamePage() {
                   ELO {user?.elo} ±{Math.min(100 + matchmakingTime * 5, 500)}
                 </span>
                 {onlineUsers > 0 && (
-                  <span className="text-xs px-3 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                  <span className="text-xs px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
                     {onlineUsers.toLocaleString()} online
                   </span>
                 )}
@@ -442,7 +442,7 @@ function TimeControlSelector({ selected, onSelect }: { selected: typeof TIME_CON
             <div className="flex flex-wrap gap-2">
               {tcs.map(tc => (
                 <button key={tc.label} onClick={() => onSelect(tc)}
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${selected.label === tc.label ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25' : 'bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:bg-[var(--border)]'}`}>
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${selected.label === tc.label ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/25' : 'bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:bg-[var(--border)]'}`}>
                   {tc.label}
                 </button>
               ))}
@@ -461,7 +461,7 @@ function ColorSelector({ color, onSelect }: { color: string; onSelect: (c: 'whit
       <div className="flex gap-3">
         {[{ value: 'white', label: 'White', icon: '⬜' }, { value: 'black', label: 'Black', icon: '⬛' }, { value: 'random', label: 'Random', icon: '🎲' }].map(opt => (
           <button key={opt.value} onClick={() => onSelect(opt.value as any)}
-            className={`flex-1 py-3 rounded-xl flex flex-col items-center gap-1.5 transition-all font-medium text-sm ${color === opt.value ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25' : 'bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:bg-[var(--border)]'}`}>
+            className={`flex-1 py-3 rounded-xl flex flex-col items-center gap-1.5 transition-all font-medium text-sm ${color === opt.value ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/25' : 'bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:bg-[var(--border)]'}`}>
             <span className="text-2xl">{opt.icon}</span>
             {opt.label}
           </button>

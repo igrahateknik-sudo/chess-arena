@@ -63,7 +63,7 @@ export default function PrivacyPage() {
       {/* Header */}
       <div className="bg-[var(--bg-card)] border-b border-[var(--border)]">
         <div className="max-w-4xl mx-auto px-6 py-5 flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-2 text-sky-400 font-bold text-lg">
+          <Link href="/" className="flex items-center gap-2 text-amber-400 font-bold text-lg">
             ♔ Chess<span className="text-white">Arena</span>
           </Link>
           <span className="text-[var(--text-muted)]">›</span>
@@ -76,15 +76,15 @@ export default function PrivacyPage() {
         {/* Title */}
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-green-500/20 border border-green-500/30 flex items-center justify-center">
-              <Lock size={20} className="text-green-400" />
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+              <Lock size={20} className="text-amber-400" />
             </div>
             <h1 className="text-3xl font-bold text-[var(--text-primary)]">Kebijakan Privasi</h1>
           </div>
           <p className="text-zinc-400 text-sm">
             Berlaku sejak: <strong className="text-zinc-200">{EFFECTIVE_DATE}</strong>
           </p>
-          <div className="mt-4 p-3 bg-sky-500/10 border border-sky-500/20 rounded-xl text-xs text-sky-300">
+          <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300">
             <strong>Chess Arena</strong> adalah platform <strong>kompetisi catur berbasis skill</strong> — bukan platform perjudian.
             Biaya entri turnamen adalah biaya partisipasi kompetisi, dan hadiah diberikan berdasarkan performa bermain catur.
           </div>
@@ -112,7 +112,7 @@ export default function PrivacyPage() {
               ['#changes', '11. Perubahan Kebijakan'],
               ['#contact', '12. Kontak & DPO'],
             ].map(([href, label]) => (
-              <a key={href} href={href} className="text-sky-400 hover:text-sky-300 transition-colors py-0.5">{label}</a>
+              <a key={href} href={href} className="text-amber-400 hover:text-amber-300 transition-colors py-0.5">{label}</a>
             ))}
           </div>
         </div>
@@ -123,7 +123,7 @@ export default function PrivacyPage() {
             melalui platform ini, sebagaimana didefinisikan dalam peraturan perlindungan data yang berlaku
             di Indonesia (UU PDP No. 27 Tahun 2022).
           </p>
-          <p>Kontak Pengelola Data: <a href={`mailto:${CONTACT_EMAIL}`} className="text-sky-400">{CONTACT_EMAIL}</a></p>
+          <p>Kontak Pengelola Data: <a href={`mailto:${CONTACT_EMAIL}`} className="text-amber-400">{CONTACT_EMAIL}</a></p>
         </Section>
 
         <Section id="collected" title="2. Data yang Dikumpulkan">
@@ -304,8 +304,8 @@ export default function PrivacyPage() {
         <Section id="contact" title="12. Kontak & DPO">
           <p>Untuk pertanyaan, permintaan hak pengguna, atau pelaporan kerentanan privasi:</p>
           <ul className="list-none space-y-2 mt-2">
-            <li>📧 Privacy & DPO: <a href={`mailto:${CONTACT_EMAIL}`} className="text-sky-400">{CONTACT_EMAIL}</a></li>
-            <li>📧 Support umum: <a href={`mailto:${CONTACT_EMAIL}`} className="text-sky-400">{CONTACT_EMAIL}</a></li>
+            <li>📧 Privacy & DPO: <a href={`mailto:${CONTACT_EMAIL}`} className="text-amber-400">{CONTACT_EMAIL}</a></li>
+            <li>📧 Support umum: <a href={`mailto:${CONTACT_EMAIL}`} className="text-amber-400">{CONTACT_EMAIL}</a></li>
           </ul>
           <p className="mt-3 text-zinc-500 text-xs">
             Kami berusaha merespons semua permintaan privasi dalam 30 hari kerja.
@@ -315,9 +315,9 @@ export default function PrivacyPage() {
 
         {/* Footer */}
         <div className="mt-12 pt-6 border-t border-white/10 flex flex-wrap gap-4 text-sm text-zinc-500">
-          <Link href="/terms" className="text-sky-400 hover:underline">Syarat Layanan</Link>
-          <Link href="/appeal" className="text-sky-400 hover:underline">Banding</Link>
-          <Link href="/dashboard" className="text-sky-400 hover:underline">Dashboard</Link>
+          <Link href="/terms" className="text-amber-400 hover:underline">Syarat Layanan</Link>
+          <Link href="/appeal" className="text-amber-400 hover:underline">Banding</Link>
+          <Link href="/dashboard" className="text-amber-400 hover:underline">Dashboard</Link>
           <span className="ml-auto">© 2026 {COMPANY}. Seluruh hak dilindungi.</span>
         </div>
 

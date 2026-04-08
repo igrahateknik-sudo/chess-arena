@@ -118,7 +118,7 @@ function ReplayContent() {
   if (loading) return (
     <AppLayout>
       <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-sky-400" />
+        <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
       </div>
     </AppLayout>
   );
@@ -154,7 +154,7 @@ function ReplayContent() {
               {pgnCopied ? 'Tersalin!' : 'Salin PGN'}
             </button>
             <button onClick={downloadPGN}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-sky-500/10 text-sm font-medium text-sky-400 hover:bg-sky-500/20 transition-colors border border-sky-500/20">
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 text-sm font-medium text-amber-400 hover:bg-amber-500/20 transition-colors border border-amber-500/20">
               <Download className="w-4 h-4" />
               PGN
             </button>
@@ -209,7 +209,7 @@ function ReplayContent() {
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <button onClick={() => setPlaying(p => !p)}
-                  className="w-10 h-10 rounded-xl bg-sky-500 hover:bg-sky-400 text-white flex items-center justify-center transition-colors shadow-lg shadow-sky-500/25">
+                  className="w-10 h-10 rounded-xl bg-amber-500 hover:bg-amber-400 text-white flex items-center justify-center transition-colors shadow-lg shadow-amber-500/25">
                   {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
                 </button>
                 <button onClick={handleNext} disabled={moveIndex >= totalMoves - 1} className="p-2 rounded-lg hover:bg-[var(--bg-hover)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors disabled:opacity-40">
@@ -223,7 +223,7 @@ function ReplayContent() {
               {/* Progress bar */}
               <div className="h-1 bg-[var(--bg-hover)] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-sky-400 transition-all duration-300"
+                  className="h-full bg-amber-400 transition-all duration-300"
                   style={{ width: totalMoves > 0 ? `${((moveIndex + 1) / totalMoves) * 100}%` : '0%' }}
                 />
               </div>
@@ -252,14 +252,14 @@ function ReplayContent() {
                         <button
                           onClick={() => { setPlaying(false); goToMove(whiteIdx); }}
                           className={`px-2 py-1 rounded-lg text-left font-mono font-medium transition-colors
-                            ${moveIndex === whiteIdx ? 'bg-sky-500 text-white' : 'hover:bg-[var(--bg-hover)] text-[var(--text-primary)]'}`}>
+                            ${moveIndex === whiteIdx ? 'bg-amber-500 text-white' : 'hover:bg-[var(--bg-hover)] text-[var(--text-primary)]'}`}>
                           {whiteMove?.san}
                         </button>
                         {blackMove && (
                           <button
                             onClick={() => { setPlaying(false); goToMove(blackIdx); }}
                             className={`px-2 py-1 rounded-lg text-left font-mono font-medium transition-colors
-                              ${moveIndex === blackIdx ? 'bg-sky-500 text-white' : 'hover:bg-[var(--bg-hover)] text-[var(--text-primary)]'}`}>
+                              ${moveIndex === blackIdx ? 'bg-amber-500 text-white' : 'hover:bg-[var(--bg-hover)] text-[var(--text-primary)]'}`}>
                             {blackMove.san}
                           </button>
                         )}
@@ -287,7 +287,7 @@ export default function ReplayPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="w-8 h-8 animate-spin rounded-full border-4 border-sky-400 border-t-transparent" />
+        <div className="w-8 h-8 animate-spin rounded-full border-4 border-amber-400 border-t-transparent" />
       </div>
     }>
       <ReplayContent />

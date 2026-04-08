@@ -37,14 +37,14 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className={`flex items-center gap-3 px-4 py-5 ${!sidebarOpen && 'justify-center'}`}>
-        <div className="w-9 h-9 flex-shrink-0 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+        <div className="w-9 h-9 flex-shrink-0 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
           <span className="text-xl">♔</span>
         </div>
         <AnimatePresence>
           {sidebarOpen && (
             <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }} exit={{ opacity: 0, width: 0 }}
               className="text-lg font-bold whitespace-nowrap overflow-hidden text-[var(--text-primary)]">
-              Chess<span className="text-sky-400">Arena</span>
+              Chess<span className="text-amber-400">Arena</span>
             </motion.span>
           )}
         </AnimatePresence>
@@ -64,11 +64,11 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               onClick={onMobileClose}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative
                 ${active
-                  ? 'bg-sky-500/15 text-sky-400 border border-sky-500/20'
+                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
                 } ${!sidebarOpen ? 'justify-center' : ''}`}>
-              {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-sky-400 rounded-r-full" />}
-              <item.icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-sky-400' : ''}`} />
+              {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-amber-400 rounded-r-full" />}
+              <item.icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-amber-400' : ''}`} />
               <AnimatePresence>
                 {sidebarOpen && (
                   <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -124,7 +124,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         <div className={`border-t border-[var(--border)] p-3 ${!sidebarOpen ? 'flex justify-center' : ''}`}>
           <div className={`flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--bg-hover)] transition-colors cursor-pointer ${!sidebarOpen ? '' : ''}`}>
             <div className="relative flex-shrink-0">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center overflow-hidden">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center overflow-hidden">
                 <img src={user.avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${user.username}`} alt={user.username} className="w-full h-full object-cover" />
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[var(--bg-card)]" />
@@ -155,7 +155,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
       <aside className={`hidden lg:flex flex-col fixed left-0 top-0 h-full z-30 bg-[var(--bg-card)] border-r border-[var(--border)] transition-all duration-300 ${sidebarOpen ? 'w-60' : 'w-[68px]'}`}>
         {!sidebarOpen && (
           <button onClick={() => setSidebarOpen(true)}
-            className="absolute -right-3 top-[72px] w-6 h-6 bg-sky-500 rounded-full flex items-center justify-center shadow-lg z-10">
+            className="absolute -right-3 top-[72px] w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center shadow-lg z-10">
             <ChevronLeft className="w-3 h-3 text-white rotate-180" />
           </button>
         )}
@@ -172,10 +172,10 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               className="fixed left-0 top-0 h-full w-64 z-50 bg-[var(--bg-card)] border-r border-[var(--border)] lg:hidden flex flex-col">
               <div className="flex items-center justify-between px-4 py-5 border-b border-[var(--border)]">
                 <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center">
+                  <div className="w-9 h-9 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-xl flex items-center justify-center">
                     <span className="text-xl">♔</span>
                   </div>
-                  <span className="text-lg font-bold text-[var(--text-primary)]">Chess<span className="text-sky-400">Arena</span></span>
+                  <span className="text-lg font-bold text-[var(--text-primary)]">Chess<span className="text-amber-400">Arena</span></span>
                 </div>
                 <button onClick={onMobileClose} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
                   <X className="w-5 h-5" />

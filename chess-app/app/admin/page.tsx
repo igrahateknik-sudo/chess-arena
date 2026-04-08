@@ -61,7 +61,7 @@ const fmtDate = (s: string) => s ? new Date(s).toLocaleString('id-ID', { dateSty
 // ── Payment sub-components ─────────────────────────────────────────────────
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   pending:   { label: 'Pending',    cls: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' },
-  approved:  { label: 'Disetujui', cls: 'bg-sky-500/20 text-sky-300 border-sky-500/40' },
+  approved:  { label: 'Disetujui', cls: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
   completed: { label: 'Selesai',   cls: 'bg-green-500/20 text-green-300 border-green-500/40' },
   rejected:  { label: 'Ditolak',   cls: 'bg-red-500/20 text-red-300 border-red-500/40' },
 };
@@ -89,8 +89,8 @@ function DepositCard({
     <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-sky-500/10 flex items-center justify-center flex-shrink-0">
-            <Building2 size={16} className="text-sky-400" />
+          <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+            <Building2 size={16} className="text-amber-400" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -98,7 +98,7 @@ function DepositCard({
               <span className="text-xs text-[var(--text-muted)]">{deposit.users?.email}</span>
             </div>
             <div className="text-xs text-[var(--text-muted)] mt-0.5">
-              Transfer: <span className="font-mono font-semibold text-sky-400">{fmtIDR(deposit.transfer_amount)}</span>
+              Transfer: <span className="font-mono font-semibold text-amber-400">{fmtIDR(deposit.transfer_amount)}</span>
               <span className="mx-1">·</span>
               Nominal: {fmtIDR(deposit.amount)}
               <span className="mx-1">·</span>
@@ -114,7 +114,7 @@ function DepositCard({
 
       {deposit.proof_url ? (
         <a href={deposit.proof_url} target="_blank" rel="noreferrer"
-          className="flex items-center gap-2 text-xs text-sky-400 hover:text-sky-300 transition-colors">
+          className="flex items-center gap-2 text-xs text-amber-400 hover:text-amber-300 transition-colors">
           <ExternalLink size={12} /> Lihat bukti transfer
         </a>
       ) : (
@@ -198,7 +198,7 @@ function WithdrawalCard({
           <div className="flex flex-wrap gap-2">
             {withdrawal.status === 'pending' && (
               <button onClick={() => onApprove(note)} disabled={busy}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 rounded-lg text-xs font-medium disabled:opacity-50 transition-colors">
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-medium disabled:opacity-50 transition-colors">
                 <CheckCircle size={13} /> Setujui
               </button>
             )}
@@ -798,7 +798,7 @@ export default function AdminPage() {
                     <button key={s} onClick={() => setPaymentStatusFilter(s)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                         paymentStatusFilter === s
-                          ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                           : 'text-[var(--text-muted)] hover:bg-[var(--bg-primary)] border border-transparent'
                       }`}>
                       {s === 'all' ? 'Semua' : s === 'pending' ? 'Pending' : 'Disetujui'}
@@ -809,8 +809,8 @@ export default function AdminPage() {
                 {/* Deposits */}
                 <div>
                   <h3 className="text-sm font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-                    <ArrowDownLeft size={15} className="text-sky-400" /> Deposit Manual
-                    <span className="text-xs bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded-full">{deposits.length}</span>
+                    <ArrowDownLeft size={15} className="text-amber-400" /> Deposit Manual
+                    <span className="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">{deposits.length}</span>
                   </h3>
                   <div className="space-y-3">
                     {deposits.length === 0 && (

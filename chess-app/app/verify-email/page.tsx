@@ -60,10 +60,10 @@ function VerifyEmailForm() {
         {/* Logo */}
         <div className="text-center mb-8">
           <button onClick={() => router.push('/')} className="inline-flex items-center gap-2 mb-6 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
               <span className="text-2xl">♔</span>
             </div>
-            <span className="text-2xl font-bold">Chess<span className="text-sky-400">Arena</span></span>
+            <span className="text-2xl font-bold">Chess<span className="text-amber-400">Arena</span></span>
           </button>
           <h1 className="text-2xl font-bold">Verifikasi Email</h1>
         </div>
@@ -71,7 +71,7 @@ function VerifyEmailForm() {
         <div className="bg-[var(--bg-card)]/80 backdrop-blur-xl rounded-2xl p-8 border border-[var(--border)]">
           {status === 'loading' && (
             <div className="flex flex-col items-center gap-4 py-6 text-center">
-              <Loader2 className="w-12 h-12 text-sky-400 animate-spin" />
+              <Loader2 className="w-12 h-12 text-amber-400 animate-spin" />
               <p className="text-[var(--text-secondary)]">Sedang memverifikasi email kamu...</p>
             </div>
           )}
@@ -84,7 +84,7 @@ function VerifyEmailForm() {
               <p className="text-emerald-400 font-semibold text-lg">Email berhasil diverifikasi!</p>
               <p className="text-[var(--text-muted)] text-sm">Akunmu sudah aktif. Kamu akan diarahkan ke halaman masuk dalam 4 detik...</p>
               <button onClick={() => router.push('/')}
-                className="px-6 py-2.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-blue-500/25">
+                className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-amber-500/25">
                 Masuk Sekarang
               </button>
             </div>
@@ -115,9 +115,9 @@ function VerifyEmailForm() {
                     <input type="email" value={resendEmail} required
                       onChange={e => setResendEmail(e.target.value)}
                       placeholder="Email yang terdaftar"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors text-sm" />
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors text-sm" />
                     <button type="submit" disabled={resendLoading}
-                      className="w-full py-2.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-70 flex items-center justify-center gap-2">
+                      className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 rounded-xl font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-70 flex items-center justify-center gap-2">
                       {resendLoading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Kirim Ulang Email'}
                     </button>
                   </form>
@@ -138,7 +138,7 @@ function VerifyEmailForm() {
               <p className="text-yellow-400 font-semibold">Token Tidak Ditemukan</p>
               <p className="text-slate-400 text-sm">Link verifikasi tidak valid. Pastikan kamu mengklik link yang ada di email, bukan menyalin sebagian URL.</p>
               <button onClick={() => router.push('/')}
-                className="text-sm text-sky-400 hover:text-sky-300 transition-colors">
+                className="text-sm text-amber-400 hover:text-amber-300 transition-colors">
                 Kembali ke Masuk
               </button>
             </div>

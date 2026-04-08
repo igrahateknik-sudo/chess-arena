@@ -37,7 +37,7 @@ export default function TermsPage() {
       {/* Header */}
       <div className="bg-[var(--bg-card)] border-b border-[var(--border)]">
         <div className="max-w-4xl mx-auto px-6 py-5 flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-2 text-sky-400 font-bold text-lg">
+          <Link href="/" className="flex items-center gap-2 text-amber-400 font-bold text-lg">
             ♔ Chess<span className="text-white">Arena</span>
           </Link>
           <ChevronRight size={16} className="text-[var(--text-muted)]" />
@@ -50,8 +50,8 @@ export default function TermsPage() {
         {/* Title */}
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center">
-              <Shield size={20} className="text-sky-400" />
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+              <Shield size={20} className="text-amber-400" />
             </div>
             <h1 className="text-3xl font-bold text-[var(--text-primary)]">Syarat Layanan</h1>
           </div>
@@ -92,7 +92,7 @@ export default function TermsPage() {
               ['#changes', '11. Perubahan Syarat'],
               ['#contact', '12. Kontak'],
             ].map(([href, label]) => (
-              <a key={href} href={href} className="text-sky-400 hover:text-sky-300 transition-colors py-0.5">
+              <a key={href} href={href} className="text-amber-400 hover:text-amber-300 transition-colors py-0.5">
                 {label}
               </a>
             ))}
@@ -268,7 +268,7 @@ export default function TermsPage() {
         <Section id="appeal" title="7. Proses Banding">
           <p>
             Jika akunmu terkena flag atau suspensi yang kamu yakini tidak adil, kamu berhak
-            mengajukan banding melalui halaman <Link href="/appeal" className="text-sky-400 hover:underline">Appeal</Link>.
+            mengajukan banding melalui halaman <Link href="/appeal" className="text-amber-400 hover:underline">Appeal</Link>.
           </p>
           <Sub title="7.1 Ketentuan Banding">
             <ul className="list-disc pl-5 space-y-1">
@@ -350,16 +350,16 @@ export default function TermsPage() {
         <Section id="contact" title="12. Kontak">
           <p>Pertanyaan tentang Syarat ini dapat dikirim ke:</p>
           <ul className="list-none space-y-1 mt-2">
-            <li>📧 Legal: <a href={`mailto:${CONTACT_EMAIL}`} className="text-sky-400">{CONTACT_EMAIL}</a></li>
-            <li>📧 Support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-sky-400">{SUPPORT_EMAIL}</a></li>
+            <li>📧 Legal: <a href={`mailto:${CONTACT_EMAIL}`} className="text-amber-400">{CONTACT_EMAIL}</a></li>
+            <li>📧 Support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-amber-400">{SUPPORT_EMAIL}</a></li>
           </ul>
         </Section>
 
         {/* Footer */}
         <div className="mt-12 pt-6 border-t border-white/10 flex flex-wrap gap-4 text-sm text-zinc-500">
-          <Link href="/privacy" className="text-sky-400 hover:underline">Kebijakan Privasi</Link>
-          <Link href="/appeal" className="text-sky-400 hover:underline">Banding</Link>
-          <Link href="/dashboard" className="text-sky-400 hover:underline">Dashboard</Link>
+          <Link href="/privacy" className="text-amber-400 hover:underline">Kebijakan Privasi</Link>
+          <Link href="/appeal" className="text-amber-400 hover:underline">Banding</Link>
+          <Link href="/dashboard" className="text-amber-400 hover:underline">Dashboard</Link>
           <span className="ml-auto">© 2026 {COMPANY}. Seluruh hak dilindungi.</span>
         </div>
 

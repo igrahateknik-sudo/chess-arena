@@ -39,17 +39,17 @@ function PendingContent() {
         {/* Logo */}
         <div className="text-center mb-8">
           <button onClick={() => router.push('/')} className="inline-flex items-center gap-2 mb-6 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
               <span className="text-2xl">♔</span>
             </div>
-            <span className="text-2xl font-bold">Chess<span className="bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent">Arena</span></span>
+            <span className="text-2xl font-bold">Chess<span className="text-amber-400">Arena</span></span>
           </button>
         </div>
 
         <div className="bg-[var(--bg-card)]/80 border border-[var(--border)] rounded-2xl p-8 backdrop-blur-sm text-center">
           {/* Icon */}
-          <div className="w-20 h-20 rounded-full bg-sky-500/20 border border-sky-500/30 flex items-center justify-center mx-auto mb-6">
-            <Mail className="w-10 h-10 text-sky-400" />
+          <div className="w-20 h-20 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mx-auto mb-6">
+            <Mail className="w-10 h-10 text-amber-400" />
           </div>
 
           <h1 className="text-2xl font-bold mb-2">Cek email kamu</h1>
@@ -57,7 +57,7 @@ function PendingContent() {
             Link verifikasi telah dikirim ke:
           </p>
           {email && (
-            <p className="text-sky-400 font-semibold mb-6 break-all">{email}</p>
+            <p className="text-amber-400 font-semibold mb-6 break-all">{email}</p>
           )}
           <p className="text-slate-400 text-sm mb-8 leading-relaxed">
             Klik link di email tersebut untuk mengaktifkan akun kamu dan mulai bermain.

@@ -42,7 +42,7 @@ function formatIDR(n: number) {
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   pending:   { label: 'Pending',    cls: 'bg-yellow-500/10 text-yellow-400' },
-  approved:  { label: 'Disetujui', cls: 'bg-sky-500/10 text-sky-400' },
+  approved:  { label: 'Disetujui', cls: 'bg-amber-500/10 text-amber-400' },
   completed: { label: 'Selesai',   cls: 'bg-emerald-500/10 text-emerald-400' },
   rejected:  { label: 'Ditolak',   cls: 'bg-red-500/10 text-red-400' },
   success:   { label: 'Sukses',    cls: 'bg-emerald-500/10 text-emerald-400' },
@@ -260,7 +260,7 @@ export default function WalletPage() {
 
         {/* Balance card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-600 via-blue-700 to-indigo-800 p-6 shadow-2xl shadow-blue-900/40">
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-600 via-yellow-700 to-orange-800 p-6 shadow-2xl shadow-amber-900/40">
           <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/5 -translate-y-20 translate-x-20" />
           <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full bg-white/5 translate-y-12 -translate-x-8" />
           <div className="relative z-10">
@@ -315,14 +315,14 @@ export default function WalletPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
           className="grid grid-cols-3 gap-4">
           {[
-            { label: 'Total Deposit', value: formatIDR(totalDeposits), icon: ArrowDownLeft, color: 'sky' },
+            { label: 'Total Deposit', value: formatIDR(totalDeposits), icon: ArrowDownLeft, color: 'amber' },
             { label: 'Kemenangan', value: formatIDR(totalWins), icon: TrendingUp, color: 'emerald' },
             { label: 'Ditarik', value: formatIDR(totalWithdrawn), icon: ArrowUpRight, color: 'orange' },
           ].map(s => (
             <div key={s.label} className="card p-4 rounded-2xl text-center">
               <div className={`w-9 h-9 rounded-xl mx-auto mb-2 flex items-center justify-center
-                ${s.color === 'sky' ? 'bg-sky-500/10' : s.color === 'emerald' ? 'bg-emerald-500/10' : 'bg-orange-500/10'}`}>
-                <s.icon className={`w-4 h-4 ${s.color === 'sky' ? 'text-sky-400' : s.color === 'emerald' ? 'text-emerald-400' : 'text-orange-400'}`} />
+                ${s.color === 'amber' ? 'bg-amber-500/10' : s.color === 'emerald' ? 'bg-emerald-500/10' : 'bg-orange-500/10'}`}>
+                <s.icon className={`w-4 h-4 ${s.color === 'amber' ? 'text-amber-400' : s.color === 'emerald' ? 'text-emerald-400' : 'text-orange-400'}`} />
               </div>
               <div className="text-sm font-bold text-[var(--text-primary)]">{s.value}</div>
               <div className="text-xs text-[var(--text-muted)] mt-0.5">{s.label}</div>
@@ -364,8 +364,8 @@ export default function WalletPage() {
             <div className="divide-y divide-[var(--border)]">
               {myDeposits.slice(0, 5).map(d => (
                 <div key={d.id} className="flex items-center gap-4 px-5 py-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center flex-shrink-0">
-                    <Building2 className="w-4 h-4 text-sky-400" />
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                    <Building2 className="w-4 h-4 text-amber-400" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm text-[var(--text-primary)]">Transfer BCA — Rp {d.amount?.toLocaleString('id-ID')}</div>
@@ -420,7 +420,7 @@ export default function WalletPage() {
               {(['all','deposit','withdraw','game'] as const).map(f => (
                 <button key={f} onClick={() => setTxFilter(f)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
-                    ${txFilter === f ? 'bg-sky-500/20 text-sky-400' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)]'}`}>
+                    ${txFilter === f ? 'bg-amber-500/20 text-amber-400' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)]'}`}>
                   {f === 'all' ? 'Semua' : f === 'deposit' ? 'Deposit' : f === 'withdraw' ? 'Tarik' : 'Game'}
                 </button>
               ))}
@@ -428,7 +428,7 @@ export default function WalletPage() {
           </div>
           {loadingTx ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 text-sky-400 animate-spin" />
+              <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
             </div>
           ) : filteredTx.length === 0 ? (
             <div className="text-center py-12 text-[var(--text-muted)]">
@@ -440,8 +440,8 @@ export default function WalletPage() {
               {filteredTx.map((tx) => (
                 <div key={tx.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-[var(--bg-hover)] transition-colors">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
-                    ${tx.type === 'deposit' ? 'bg-sky-500/10' : tx.type === 'withdraw' ? 'bg-orange-500/10' : tx.amount > 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
-                    {tx.type === 'deposit' ? <ArrowDownLeft className="w-4 h-4 text-sky-400" /> :
+                    ${tx.type === 'deposit' ? 'bg-amber-500/10' : tx.type === 'withdraw' ? 'bg-orange-500/10' : tx.amount > 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+                    {tx.type === 'deposit' ? <ArrowDownLeft className="w-4 h-4 text-amber-400" /> :
                      tx.type === 'withdraw' ? <ArrowUpRight className="w-4 h-4 text-orange-400" /> :
                      tx.amount > 0 ? <TrendingUp className="w-4 h-4 text-emerald-400" /> :
                      <DollarSign className="w-4 h-4 text-red-400" />}
@@ -490,7 +490,7 @@ export default function WalletPage() {
                     <div key={step} className="flex items-center gap-2">
                       {i > 0 && <div className="flex-1 h-px w-8 bg-[var(--border)]" />}
                       <div className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center
-                        ${depositStep === step ? 'bg-sky-500 text-white' :
+                        ${depositStep === step ? 'bg-amber-500 text-white' :
                           (['choose','details','proof'].indexOf(depositStep) > i) ? 'bg-emerald-500 text-white' :
                           'bg-[var(--bg-hover)] text-[var(--text-muted)]'}`}>
                         {(['choose','details','proof'].indexOf(depositStep) > i) ? <CheckCheck className="w-3 h-3" /> : i + 1}
@@ -516,7 +516,7 @@ export default function WalletPage() {
                           <button key={a} onClick={() => { setDepositAmount(a === depositAmount && !customAmountStr ? null : a); setCustomAmountStr(''); }}
                             className={`py-3 rounded-xl text-sm font-semibold transition-all border
                               ${depositAmount === a && !customAmountStr
-                                ? 'bg-sky-500 text-white border-sky-400'
+                                ? 'bg-amber-500 text-white border-amber-400'
                                 : 'bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:bg-[var(--border)] border-transparent'}`}>
                             {formatIDR(a)}
                           </button>
@@ -539,18 +539,18 @@ export default function WalletPage() {
                             const num = parseInt(val);
                             setDepositAmount(num > 0 ? num : null);
                           }}
-                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-sky-500 transition-colors"
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-amber-500 transition-colors"
                         />
                       </div>
                       {customAmountStr && parseInt(customAmountStr) < 25000 && (
                         <p className="text-xs text-red-400 mt-1">Minimum deposit Rp 25.000</p>
                       )}
                     </div>
-                    <div className="p-3 bg-sky-500/10 rounded-xl border border-sky-500/20 text-xs text-sky-400">
+                    <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20 text-xs text-amber-400">
                       Kode unik 3 digit akan ditambahkan ke nominal transfer untuk identifikasi pembayaran kamu.
                     </div>
                     <button onClick={handleCreateDeposit} disabled={!depositAmount || (!!customAmountStr && parseInt(customAmountStr) < 25000) || depositing}
-                      className="w-full py-3 bg-sky-500 text-white rounded-xl font-semibold disabled:opacity-40 hover:bg-sky-600 transition-colors flex items-center justify-center gap-2">
+                      className="w-full py-3 bg-amber-500 text-white rounded-xl font-semibold disabled:opacity-40 hover:bg-amber-600 transition-colors flex items-center justify-center gap-2">
                       {depositing ? <><Loader2 className="w-4 h-4 animate-spin" />Membuat...</> : `Lanjut — ${depositAmount ? formatIDR(depositAmount) : 'Pilih nominal'}`}
                     </button>
                   </div>
@@ -559,10 +559,10 @@ export default function WalletPage() {
                 {/* Step 2: transfer details */}
                 {depositStep === 'details' && currentDeposit && (
                   <div className="space-y-4">
-                    <div className="bg-gradient-to-br from-blue-600/20 to-sky-600/10 border border-sky-500/20 rounded-2xl p-5 text-center">
+                    <div className="bg-gradient-to-br from-amber-600/20 to-yellow-600/10 border border-amber-500/20 rounded-2xl p-5 text-center">
                       <p className="text-xs text-[var(--text-muted)] mb-1">Transfer tepat sebesar</p>
                       <p className="text-3xl font-black text-white">Rp {currentDeposit.transferAmount?.toLocaleString('id-ID')}</p>
-                      <p className="text-xs text-sky-400 mt-1">Nominal Rp {currentDeposit.amount?.toLocaleString('id-ID')} + kode unik <strong>{String(currentDeposit.uniqueCode).padStart(3,'0')}</strong></p>
+                      <p className="text-xs text-amber-400 mt-1">Nominal Rp {currentDeposit.amount?.toLocaleString('id-ID')} + kode unik <strong>{String(currentDeposit.uniqueCode).padStart(3,'0')}</strong></p>
                     </div>
 
                     <div className="space-y-2">
@@ -582,7 +582,7 @@ export default function WalletPage() {
                           <p className="font-bold text-[var(--text-primary)] font-mono tracking-widest">0811 3297 96</p>
                         </div>
                         <button onClick={() => handleCopy('0811329796')}
-                          className="flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 bg-sky-500/10 px-3 py-1.5 rounded-lg transition-colors">
+                          className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 bg-amber-500/10 px-3 py-1.5 rounded-lg transition-colors">
                           {copied ? <><CheckCheck className="w-3.5 h-3.5" />Copied</> : <><Copy className="w-3.5 h-3.5" />Salin</>}
                         </button>
                       </div>
@@ -600,7 +600,7 @@ export default function WalletPage() {
                     </div>
 
                     <button onClick={() => setDepositStep('proof')}
-                      className="w-full py-3 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition-colors">
+                      className="w-full py-3 bg-amber-500 text-white rounded-xl font-semibold hover:bg-amber-600 transition-colors">
                       Sudah Transfer — Upload Bukti
                     </button>
                   </div>
@@ -613,7 +613,7 @@ export default function WalletPage() {
                     <div
                       onClick={() => fileInputRef.current?.click()}
                       className={`relative border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors
-                        ${proofPreview ? 'border-emerald-500/40' : 'border-[var(--border)] hover:border-sky-500/40'}`}>
+                        ${proofPreview ? 'border-emerald-500/40' : 'border-[var(--border)] hover:border-amber-500/40'}`}>
                       {proofPreview ? (
                         <div className="relative">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -650,7 +650,7 @@ export default function WalletPage() {
                       <p className="text-sm text-[var(--text-muted)] mt-2">Admin akan memverifikasi transfer kamu dalam 1×24 jam kerja. Saldo akan otomatis ditambahkan setelah disetujui.</p>
                     </div>
                     <button onClick={() => { setModal(null); setError(''); }}
-                      className="w-full py-3 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition-colors">
+                      className="w-full py-3 bg-amber-500 text-white rounded-xl font-semibold hover:bg-amber-600 transition-colors">
                       Selesai
                     </button>
                   </div>
@@ -680,7 +680,7 @@ export default function WalletPage() {
                 <div>
                   <label className="text-sm font-medium text-[var(--text-primary)] mb-2 block">Nominal (min Rp 50.000)</label>
                   <input type="number" placeholder="Masukkan nominal" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)}
-                    className="w-full bg-[var(--bg-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-sky-500 transition-colors" />
+                    className="w-full bg-[var(--bg-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-amber-500 transition-colors" />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-[var(--text-primary)] mb-2 block">Bank Tujuan</label>
@@ -690,18 +690,18 @@ export default function WalletPage() {
                     onSelect={setWithdrawBank}
                   />
                   {withdrawBank && (
-                    <p className="text-xs text-sky-400 mt-1.5 font-medium">✓ {withdrawBank} dipilih</p>
+                    <p className="text-xs text-amber-400 mt-1.5 font-medium">✓ {withdrawBank} dipilih</p>
                   )}
                 </div>
                 <div>
                   <label className="text-sm font-medium text-[var(--text-primary)] mb-2 block">Nomor Rekening</label>
                   <input type="text" placeholder="Masukkan nomor rekening" value={withdrawAccount} onChange={e => setWithdrawAccount(e.target.value)}
-                    className="w-full bg-[var(--bg-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-sky-500 transition-colors" />
+                    className="w-full bg-[var(--bg-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-amber-500 transition-colors" />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-[var(--text-primary)] mb-2 block">Nama Pemilik Rekening</label>
                   <input type="text" placeholder="Sesuai nama di buku tabungan" value={withdrawName} onChange={e => setWithdrawName(e.target.value)}
-                    className="w-full bg-[var(--bg-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-sky-500 transition-colors" />
+                    className="w-full bg-[var(--bg-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-amber-500 transition-colors" />
                 </div>
 
                 <div className="flex items-start gap-2 p-3 bg-yellow-500/10 rounded-xl border border-yellow-500/20">

@@ -91,7 +91,7 @@ export function BankSelector({
           onClick={() => onSelect(bank)}
           className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all
             ${selected === bank
-              ? 'border-sky-500 bg-sky-500/10 ring-1 ring-sky-500/40'
+              ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500/40'
               : 'border-[var(--border)] bg-[var(--bg-hover)] hover:border-[var(--text-muted)]/40'
             }`}
         >

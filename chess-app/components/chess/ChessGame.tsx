@@ -560,7 +560,7 @@ export default function ChessGame({
         <div className="card p-4 rounded-xl">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              {isAI ? <Brain className="w-4 h-4 text-purple-400" /> : <Zap className="w-4 h-4 text-sky-400" />}
+              {isAI ? <Brain className="w-4 h-4 text-purple-400" /> : <Zap className="w-4 h-4 text-amber-400" />}
               <span className="font-semibold text-sm text-[var(--text-primary)]">
                 {isAI ? `vs AI (${aiLevel.charAt(0).toUpperCase() + aiLevel.slice(1)})` : 'Live Match'}
               </span>
@@ -638,7 +638,7 @@ export default function ChessGame({
               <div className="p-3 space-y-2 max-h-32 overflow-y-auto">
                 {chatMessages.map((msg, i) => (
                   <div key={i} className={`flex gap-2 ${msg.from === 'opponent' ? '' : 'flex-row-reverse'}`}>
-                    <div className={`max-w-[70%] px-3 py-1.5 rounded-xl text-sm ${msg.from === 'opponent' ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : 'bg-sky-500 text-white'}`}>
+                    <div className={`max-w-[70%] px-3 py-1.5 rounded-xl text-sm ${msg.from === 'opponent' ? 'bg-[var(--bg-hover)] text-[var(--text-primary)]' : 'bg-amber-500 text-white'}`}>
                       {msg.text}
                     </div>
                   </div>
@@ -646,7 +646,7 @@ export default function ChessGame({
               </div>
               <div className="p-3 border-t border-[var(--border)] flex gap-2">
                 <input placeholder="Type a message..." className="flex-1 bg-[var(--bg-hover)] rounded-lg px-3 py-1.5 text-sm outline-none text-[var(--text-primary)] placeholder:text-[var(--text-muted)]" />
-                <button className="px-3 py-1.5 bg-sky-500 rounded-lg text-white text-sm font-medium hover:bg-sky-600 transition-colors">Send</button>
+                <button className="px-3 py-1.5 bg-amber-500 rounded-lg text-white text-sm font-medium hover:bg-amber-600 transition-colors">Send</button>
               </div>
             </motion.div>
           )}
@@ -702,7 +702,7 @@ function PlayerBar({ name, elo, avatar, time, isActive, color, isThinking }: {
       style={{ minWidth: '280px' }}>
       <div className="flex items-center gap-2.5">
         <div className="relative">
-          <div className={`w-9 h-9 rounded-xl overflow-hidden flex-shrink-0 ${isActive ? 'ring-2 ring-sky-400' : ''}`}>
+          <div className={`w-9 h-9 rounded-xl overflow-hidden flex-shrink-0 ${isActive ? 'ring-2 ring-amber-400' : ''}`}>
             <img src={avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${name}`} alt={name} className="w-full h-full object-cover" />
           </div>
           {isActive && <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[var(--bg-card)] active-timer" />}
@@ -714,7 +714,7 @@ function PlayerBar({ name, elo, avatar, time, isActive, color, isThinking }: {
         {isThinking && (
           <div className="flex gap-1 ml-2">
             {[0, 1, 2].map(i => (
-              <div key={i} className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+              <div key={i} className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
             ))}
           </div>
         )}
@@ -732,10 +732,10 @@ function ControlBtn({ icon: Icon, onClick, title, active, badge }: {
 }) {
   return (
     <button onClick={onClick} title={title} className={`relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors
-      ${active ? 'bg-sky-500/20 text-sky-400' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`}>
+      ${active ? 'bg-amber-500/20 text-amber-400' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`}>
       <Icon className="w-4 h-4" />
       {badge && badge > 0 ? (
-        <span className="absolute -top-1 -right-1 w-4 h-4 bg-sky-500 rounded-full text-white text-[9px] flex items-center justify-center font-bold">{badge}</span>
+        <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full text-white text-[9px] flex items-center justify-center font-bold">{badge}</span>
       ) : null}
     </button>
   );
@@ -771,7 +771,7 @@ function GameEndOverlay({ status, winner, stakes, playerColor, endReason, onRema
         )}
         <div className="flex gap-3 justify-center mt-2">
           <button onClick={onRematch}
-            className="px-5 py-2.5 bg-sky-500 text-white rounded-xl font-semibold text-sm hover:bg-sky-600 transition-colors">
+            className="px-5 py-2.5 bg-amber-500 text-white rounded-xl font-semibold text-sm hover:bg-amber-600 transition-colors">
             Rematch
           </button>
           <button onClick={() => window.location.href = '/game'}

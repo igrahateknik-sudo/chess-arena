@@ -13,7 +13,7 @@ type ScopeTab = (typeof SCOPE_TABS)[number];
 type TimeControl = 'global' | 'bullet' | 'blitz' | 'rapid';
 
 const TC_TABS: { label: string; value: TimeControl; icon: React.ElementType; color: string }[] = [
-  { label: 'Overall',  value: 'global', icon: Globe,  color: 'text-sky-400' },
+  { label: 'Overall',  value: 'global', icon: Globe,  color: 'text-amber-400' },
   { label: 'Bullet',   value: 'bullet', icon: Zap,    color: 'text-red-400' },
   { label: 'Blitz',    value: 'blitz',  icon: Target,  color: 'text-orange-400' },
   { label: 'Rapid',    value: 'rapid',  icon: Clock,   color: 'text-emerald-400' },
@@ -98,7 +98,7 @@ export default function LeaderboardPage() {
           className="grid grid-cols-3 gap-4">
           {loading ? (
             <div className="col-span-3 flex items-center justify-center py-12">
-              <div className="w-6 h-6 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : [top3[1], top3[0], top3[2]].filter(Boolean).map((entry, i) => {
             if (!entry) return null;
@@ -160,7 +160,7 @@ export default function LeaderboardPage() {
           <div className="divide-y divide-[var(--border)]">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="w-6 h-6 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-10 text-[var(--text-muted)]">
@@ -170,19 +170,19 @@ export default function LeaderboardPage() {
             ) : filtered.map((entry, i) => (
               <motion.div key={entry.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.02 }}
                 className={`grid grid-cols-[40px_1fr_90px_80px_80px] gap-4 px-5 py-3.5 items-center hover:bg-[var(--bg-hover)] transition-colors cursor-pointer
-                  ${entry.id === user?.id ? 'bg-sky-500/5' : ''}`}>
+                  ${entry.id === user?.id ? 'bg-amber-500/5' : ''}`}>
                 <div className={`text-sm font-black text-center
                   ${entry.rank === 1 ? 'text-yellow-400' : entry.rank === 2 ? 'text-slate-300' : entry.rank === 3 ? 'text-amber-600' : 'text-[var(--text-muted)]'}`}>
                   {entry.rank <= 3 ? ['🥇','🥈','🥉'][entry.rank - 1] : entry.rank}
                 </div>
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-9 h-9 rounded-xl overflow-hidden flex-shrink-0 ${entry.id === user?.id ? 'ring-2 ring-sky-400' : ''}`}>
+                  <div className={`w-9 h-9 rounded-xl overflow-hidden flex-shrink-0 ${entry.id === user?.id ? 'ring-2 ring-amber-400' : ''}`}>
                     <img src={entry.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${entry.username}`} alt="" className="w-full h-full object-cover" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       {entry.title && <span className="text-xs font-bold text-yellow-400 bg-yellow-400/10 px-1.5 rounded hidden sm:block">{entry.title}</span>}
-                      <span className={`font-semibold text-sm truncate ${entry.id === user?.id ? 'text-sky-400' : 'text-[var(--text-primary)]'}`}>
+                      <span className={`font-semibold text-sm truncate ${entry.id === user?.id ? 'text-amber-400' : 'text-[var(--text-primary)]'}`}>
                         {entry.username}{entry.id === user?.id && ' (Kamu)'}
                       </span>
                     </div>
@@ -209,10 +209,10 @@ export default function LeaderboardPage() {
         {/* Your position sticky */}
         {myEntry && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="card border-sky-500/30 rounded-2xl p-4 bg-sky-500/5">
+            className="card border-amber-500/30 rounded-2xl p-4 bg-amber-500/5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-sky-500/20 flex items-center justify-center text-sm font-bold text-sky-400">#{myEntry.rank}</div>
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-sm font-bold text-amber-400">#{myEntry.rank}</div>
                 <div className="w-9 h-9 rounded-xl overflow-hidden">
                   <img src={user?.avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${user?.username}`} alt="" className="w-full h-full object-cover" />
                 </div>

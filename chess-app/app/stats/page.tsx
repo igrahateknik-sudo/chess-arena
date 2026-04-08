@@ -62,7 +62,7 @@ export default function StatsPage() {
   if (!user) return (
     <AppLayout>
       <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-sky-400" />
+        <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
       </div>
     </AppLayout>
   );
@@ -118,14 +118,14 @@ export default function StatsPage() {
           className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: 'Win Rate', value: `${winRate}%`, icon: Target, color: 'emerald', sub: `${user.wins}M ${user.losses}K ${user.draws}S` },
-            { label: 'Total Game', value: totalGames.toLocaleString(), icon: Clock, color: 'sky', sub: 'Sepanjang waktu' },
+            { label: 'Total Game', value: totalGames.toLocaleString(), icon: Clock, color: 'amber', sub: 'Sepanjang waktu' },
             { label: 'Streak', value: streak > 0 ? `${streak}${streakType}` : '—', icon: Zap, color: 'yellow', sub: 'Rangkaian saat ini' },
             { label: 'Perubahan ELO', value: eloChange >= 0 ? `+${eloChange}` : `${eloChange}`, icon: TrendingUp, color: eloChange >= 0 ? 'emerald' : 'red', sub: 'Sepanjang waktu' },
           ].map((m) => (
             <div key={m.label} className="card p-4 rounded-2xl">
               <div className={`w-9 h-9 rounded-xl mb-3 flex items-center justify-center
-                ${m.color === 'emerald' ? 'bg-emerald-500/10' : m.color === 'sky' ? 'bg-sky-500/10' : m.color === 'yellow' ? 'bg-yellow-500/10' : m.color === 'red' ? 'bg-red-500/10' : 'bg-purple-500/10'}`}>
-                <m.icon className={`w-4 h-4 ${m.color === 'emerald' ? 'text-emerald-400' : m.color === 'sky' ? 'text-sky-400' : m.color === 'yellow' ? 'text-yellow-400' : m.color === 'red' ? 'text-red-400' : 'text-purple-400'}`} />
+                ${m.color === 'emerald' ? 'bg-emerald-500/10' : m.color === 'amber' ? 'bg-amber-500/10' : m.color === 'yellow' ? 'bg-yellow-500/10' : m.color === 'red' ? 'bg-red-500/10' : 'bg-purple-500/10'}`}>
+                <m.icon className={`w-4 h-4 ${m.color === 'emerald' ? 'text-emerald-400' : m.color === 'amber' ? 'text-amber-400' : m.color === 'yellow' ? 'text-yellow-400' : m.color === 'red' ? 'text-red-400' : 'text-purple-400'}`} />
               </div>
               <div className="text-2xl font-black text-[var(--text-primary)] mb-0.5">{m.value}</div>
               <div className="text-xs font-medium text-[var(--text-muted)]">{m.label}</div>
@@ -148,7 +148,7 @@ export default function StatsPage() {
             </div>
             {loadingElo ? (
               <div className="h-[180px] flex items-center justify-center">
-                <Loader2 className="w-5 h-5 text-sky-400 animate-spin" />
+                <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={180}>
@@ -206,7 +206,7 @@ export default function StatsPage() {
             </div>
             {loadingGames ? (
               <div className="h-[180px] flex items-center justify-center">
-                <Loader2 className="w-5 h-5 text-sky-400 animate-spin" />
+                <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
               </div>
             ) : tcData.length === 0 ? (
               <div className="h-[180px] flex items-center justify-center text-[var(--text-muted)] text-sm">Belum ada data pertandingan</div>
@@ -233,7 +233,7 @@ export default function StatsPage() {
             </div>
             {loadingGames ? (
               <div className="p-8 flex items-center justify-center">
-                <Loader2 className="w-5 h-5 text-sky-400 animate-spin" />
+                <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
               </div>
             ) : games.length === 0 ? (
               <div className="p-8 text-center text-[var(--text-muted)] text-sm">

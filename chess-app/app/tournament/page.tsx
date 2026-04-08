@@ -248,29 +248,29 @@ export default function TournamentPage() {
           className={`relative overflow-hidden rounded-2xl border p-5
             ${phase === 'active'
               ? 'bg-gradient-to-r from-red-500/15 to-orange-500/10 border-red-500/20'
-              : 'bg-gradient-to-r from-sky-500/15 to-blue-500/10 border-sky-500/20'
+              : 'bg-gradient-to-r from-amber-500/15 to-yellow-500/10 border-amber-500/20'
             }`}>
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
-                ${phase === 'active' ? 'bg-red-500/20' : 'bg-sky-500/20'}`}>
+                ${phase === 'active' ? 'bg-red-500/20' : 'bg-amber-500/20'}`}>
                 {phase === 'active'
                   ? <Zap className="w-5 h-5 text-red-400" />
-                  : <Ticket className="w-5 h-5 text-sky-400" />
+                  : <Ticket className="w-5 h-5 text-amber-400" />
                 }
               </div>
               <div>
                 <div className={`text-xs font-bold uppercase tracking-wider mb-0.5
-                  ${phase === 'active' ? 'text-red-400' : 'text-sky-400'}`}>
+                  ${phase === 'active' ? 'text-red-400' : 'text-amber-400'}`}>
                   {phase === 'active' ? '● Live Sekarang' : '● Registrasi Dibuka'}
                 </div>
                 <div className="text-sm text-[var(--text-secondary)]">{phaseLabel}</div>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Clock className={`w-5 h-5 ${phase === 'active' ? 'text-red-400' : 'text-sky-400'}`} />
+              <Clock className={`w-5 h-5 ${phase === 'active' ? 'text-red-400' : 'text-amber-400'}`} />
               <span className={`text-3xl font-black font-mono tabular-nums
-                ${phase === 'active' ? 'text-red-400' : 'text-sky-400'}`}>
+                ${phase === 'active' ? 'text-red-400' : 'text-amber-400'}`}>
                 {countdown}
               </span>
             </div>
@@ -359,7 +359,7 @@ export default function TournamentPage() {
                       {tier.max_players > 0 && (
                         <div className="h-1 bg-white/5 rounded-full overflow-hidden mb-4">
                           <div className={`h-full rounded-full transition-all ${
-                            isTierFull ? 'bg-red-500' : 'bg-gradient-to-r from-sky-500 to-blue-500'
+                            isTierFull ? 'bg-red-500' : 'bg-gradient-to-r from-amber-500 to-yellow-500'
                           }`}
                             style={{ width: `${Math.min((tier.registrations_count / tier.max_players) * 100, 100)}%` }} />
                         </div>
@@ -379,8 +379,8 @@ export default function TournamentPage() {
                           onClick={() => handleJoin(tier)}
                           disabled={joining === tier.id || !canJoin || !token}
                           className="w-full py-2 rounded-xl text-sm font-bold transition-all
-                            bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:opacity-90
-                            disabled:opacity-40 flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/20">
+                            btn-gold text-black hover:opacity-90
+                            disabled:opacity-40 flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20">
                           {joining === tier.id
                             ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             : <Ticket className="w-4 h-4" />
@@ -441,7 +441,7 @@ export default function TournamentPage() {
           {/* Tournament cards */}
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-6 h-6 text-sky-400 animate-spin" />
+              <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
             </div>
           ) : tournaments.length === 0 ? (
             <div className="card rounded-2xl p-12 text-center text-[var(--text-muted)]">
@@ -462,7 +462,7 @@ export default function TournamentPage() {
                       ${tournament.status === 'active'
                         ? 'bg-gradient-to-r from-red-500/10 to-orange-500/10'
                         : tournament.status === 'upcoming'
-                        ? 'bg-gradient-to-r from-sky-500/10 to-blue-500/10'
+                        ? 'bg-gradient-to-r from-amber-500/10 to-yellow-500/10'
                         : 'bg-gradient-to-r from-slate-500/8 to-gray-500/8'
                       }`}>
                       {tournament.status === 'active' && (
@@ -514,7 +514,7 @@ export default function TournamentPage() {
                           </div>
                           {tournament.max_players && (
                             <div className="mt-1.5 h-1 bg-[var(--bg-hover)] rounded-full overflow-hidden">
-                              <div className="h-full bg-gradient-to-r from-sky-500 to-blue-600 rounded-full transition-all"
+                              <div className="h-full bg-gradient-to-r from-amber-500 to-yellow-600 rounded-full transition-all"
                                 style={{ width: `${Math.min((currentCount(tournament) / tournament.max_players) * 100, 100)}%` }} />
                             </div>
                           )}
@@ -523,7 +523,7 @@ export default function TournamentPage() {
                           <div className="text-xs text-[var(--text-muted)] mb-0.5">
                             {tournament.status === 'finished' ? 'Status' : tournament.status === 'active' ? 'Dimulai' : 'Mulai Dalam'}
                           </div>
-                          <div className={`text-sm font-bold ${tournament.status === 'active' ? 'text-red-400' : tournament.status === 'finished' ? 'text-slate-400' : 'text-sky-400'}`}>
+                          <div className={`text-sm font-bold ${tournament.status === 'active' ? 'text-red-400' : tournament.status === 'finished' ? 'text-slate-400' : 'text-amber-400'}`}>
                             {tournament.status === 'finished' ? 'Selesai' :
                              tournament.status === 'active' ? '● Live Sekarang' :
                              getTimeUntil(tournament.starts_at)}
@@ -572,13 +572,13 @@ export default function TournamentPage() {
                         )
                       ) : (
                         joined.includes(tournament.id) ? (
-                          <button className="w-full py-2.5 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 text-sm font-semibold flex items-center justify-center gap-2">
+                          <button className="w-full py-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 text-sm font-semibold flex items-center justify-center gap-2">
                             <CheckCircle className="w-4 h-4" /> Terdaftar
                           </button>
                         ) : (
                           <button onClick={() => handleJoin(tournament)}
                             disabled={joining === tournament.id || isFull(tournament)}
-                            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20">
+                            className="w-full py-2.5 rounded-xl btn-gold text-black text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
                             {joining === tournament.id ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Trophy className="w-4 h-4" />}
                             Daftar — GRATIS
                           </button>

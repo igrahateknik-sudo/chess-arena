@@ -624,7 +624,7 @@ export default function OnlineGame({
             <RotateCcw className="w-4 h-4" />
           </button>
           <button onClick={() => setShowChat(c => !c)}
-            className={`w-9 h-9 rounded-lg transition-colors flex items-center justify-center ${showChat ? 'bg-sky-500/20 text-sky-400' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`}>
+            className={`w-9 h-9 rounded-lg transition-colors flex items-center justify-center ${showChat ? 'bg-amber-500/20 text-amber-400' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`}>
             <MessageSquare className="w-4 h-4" />
           </button>
           {/* Cancel premove button */}
@@ -750,7 +750,7 @@ export default function OnlineGame({
                   ? <p className="text-xs text-[var(--text-muted)] text-center">No messages yet</p>
                   : chatMessages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.from === 'me' ? 'flex-row-reverse' : ''}`}>
-                      <div className={`px-3 py-1.5 rounded-xl text-sm max-w-[75%] ${msg.from === 'me' ? 'bg-sky-500 text-white' : 'bg-[var(--bg-hover)] text-[var(--text-primary)]'}`}>
+                      <div className={`px-3 py-1.5 rounded-xl text-sm max-w-[75%] ${msg.from === 'me' ? 'bg-amber-500 text-white' : 'bg-[var(--bg-hover)] text-[var(--text-primary)]'}`}>
                         {msg.text}
                       </div>
                     </div>
@@ -761,7 +761,7 @@ export default function OnlineGame({
                 <input value={chatInput} onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && sendChat()}
                   placeholder="Message..." className="flex-1 bg-[var(--bg-hover)] rounded-lg px-3 py-1.5 text-sm outline-none text-[var(--text-primary)] placeholder:text-[var(--text-muted)]" />
-                <button onClick={sendChat} className="px-3 py-1.5 bg-sky-500 rounded-lg text-white text-sm font-medium hover:bg-sky-600 transition-colors">Send</button>
+                <button onClick={sendChat} className="px-3 py-1.5 bg-amber-500 rounded-lg text-white text-sm font-medium hover:bg-amber-600 transition-colors">Send</button>
               </div>
             </motion.div>
           )}
@@ -804,7 +804,7 @@ function OnlinePlayerBar({ player, time, isActive, connected, isMe }: {
       style={{ minWidth: 280 }}>
       <div className="flex items-center gap-2.5">
         <div className="relative">
-          <div className={`w-9 h-9 rounded-xl overflow-hidden ${isActive ? 'ring-2 ring-sky-400' : ''}`}>
+          <div className={`w-9 h-9 rounded-xl overflow-hidden ${isActive ? 'ring-2 ring-amber-400' : ''}`}>
             <img src={player.avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${player.username}`} alt="" className="w-full h-full object-cover" />
           </div>
           <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[var(--bg-card)] ${connected ? 'bg-emerald-400' : 'bg-red-400'}`} />
@@ -812,7 +812,7 @@ function OnlinePlayerBar({ player, time, isActive, connected, isMe }: {
         <div>
           <div className="flex items-center gap-1.5">
             {player.title && <span className="text-xs font-bold text-yellow-400">{player.title}</span>}
-            <span className={`font-semibold text-sm ${isMe ? 'text-sky-400' : 'text-[var(--text-primary)]'}`}>
+            <span className={`font-semibold text-sm ${isMe ? 'text-amber-400' : 'text-[var(--text-primary)]'}`}>
               {player.username}{isMe ? ' (You)' : ''}
             </span>
           </div>
@@ -861,7 +861,7 @@ function GameEndOverlay({ result, playerColor, stakes, onNewGame }: {
           </div>
         )}
         <div className="flex gap-3 justify-center mt-3">
-          <button onClick={onNewGame} className="px-5 py-2.5 bg-sky-500 text-white rounded-xl font-semibold text-sm hover:bg-sky-600 transition-colors">
+          <button onClick={onNewGame} className="px-5 py-2.5 bg-amber-500 text-white rounded-xl font-semibold text-sm hover:bg-amber-600 transition-colors">
             New Game
           </button>
         </div>

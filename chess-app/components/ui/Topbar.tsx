@@ -98,7 +98,7 @@ export default function Topbar({ onMenuClick, title }: TopbarProps) {
 
       {/* Quick play */}
       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-        className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:opacity-90 transition-opacity"
+        className="hidden sm:flex items-center gap-2 px-4 py-2 btn-gold rounded-xl text-sm font-bold text-black"
         onClick={() => window.location.href = '/game'}>
         <Zap className="w-4 h-4" />
         Main Cepat
@@ -133,10 +133,10 @@ export default function Topbar({ onMenuClick, title }: TopbarProps) {
               className="absolute right-0 top-12 w-80 bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-2xl z-50 overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
                 <span className="font-semibold text-[var(--text-primary)]">
-                  Notifikasi {unreadCount > 0 && <span className="text-sky-400">({unreadCount})</span>}
+                  Notifikasi {unreadCount > 0 && <span className="text-amber-400">({unreadCount})</span>}
                 </span>
                 {unreadCount > 0 && (
-                  <button onClick={handleMarkRead} className="text-xs text-sky-400 font-medium hover:text-sky-300">
+                  <button onClick={handleMarkRead} className="text-xs text-amber-400 font-medium hover:text-amber-300">
                     Tandai dibaca
                   </button>
                 )}
@@ -149,14 +149,14 @@ export default function Topbar({ onMenuClick, title }: TopbarProps) {
                 </div>
               ) : (
                 serverNotifications.slice(0, 10).map((n) => (
-                  <div key={n.id} className={`flex items-start gap-3 px-4 py-3 hover:bg-[var(--bg-hover)] transition-colors cursor-pointer ${!n.read ? 'bg-sky-500/5' : ''}`}>
+                  <div key={n.id} className={`flex items-start gap-3 px-4 py-3 hover:bg-[var(--bg-hover)] transition-colors cursor-pointer ${!n.read ? 'bg-amber-500/5' : ''}`}>
                     <div className="w-9 h-9 rounded-xl bg-[var(--bg-hover)] flex items-center justify-center text-lg flex-shrink-0">
                       {NOTIF_ICONS[n.type] || '🔔'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-[var(--text-primary)]">{n.title}</span>
-                        {!n.read && <span className="w-2 h-2 rounded-full bg-sky-400 flex-shrink-0" />}
+                        {!n.read && <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />}
                       </div>
                       <p className="text-xs text-[var(--text-muted)] mt-0.5">{n.body}</p>
                       <span className="text-xs text-[var(--text-muted)] mt-1 block">{timeAgo(n.created_at)}</span>
@@ -166,7 +166,7 @@ export default function Topbar({ onMenuClick, title }: TopbarProps) {
               )}
 
               <div className="p-3 border-t border-[var(--border)]">
-                <button className="w-full text-center text-sm text-sky-400 hover:text-sky-300 font-medium transition-colors">
+                <button className="w-full text-center text-sm text-amber-400 hover:text-amber-300 font-medium transition-colors">
                   Lihat semua
                 </button>
               </div>
@@ -180,7 +180,7 @@ export default function Topbar({ onMenuClick, title }: TopbarProps) {
         <div className="relative">
           <button onClick={() => { setShowProfile((v) => !v); setShowNotifs(false); }}
             className="flex items-center gap-2 hover:bg-[var(--bg-hover)] rounded-xl p-1.5 transition-colors">
-            <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-sky-400 to-blue-600 flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-amber-400 to-yellow-600 flex-shrink-0">
               <img src={user.avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${user.username}`} alt={user.username} className="w-full h-full object-cover" />
             </div>
             <div className="hidden md:block text-left">
@@ -206,8 +206,8 @@ export default function Topbar({ onMenuClick, title }: TopbarProps) {
                       <div className="text-xs text-[var(--text-muted)]">{user.email}</div>
                       {user.verified && (
                         <div className="flex items-center gap-1 mt-1">
-                          <Shield className="w-3 h-3 text-sky-400" />
-                          <span className="text-xs text-sky-400">Terverifikasi</span>
+                          <Shield className="w-3 h-3 text-amber-400" />
+                          <span className="text-xs text-amber-400">Terverifikasi</span>
                         </div>
                       )}
                     </div>

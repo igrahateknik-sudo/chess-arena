@@ -46,7 +46,7 @@ const HOW_IT_WORKS = [
     art: '/illustrations/register-card.svg',
     title: 'Daftar Gratis',
     desc: 'Buat akun dalam 30 detik. Verifikasi email dan mulai bermain langsung.',
-    color: 'sky',
+    color: 'amber',
   },
   {
     step: '02',
@@ -282,7 +282,7 @@ export default function LandingPage() {
         {/* Deep gold secondary */}
         <div className="absolute top-[30%] left-[-10%] w-[600px] h-[600px] bg-yellow-600/8 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: '2s' }} />
         {/* Subtle blue accent */}
-        <div className="absolute bottom-[-10%] right-[20%] w-[500px] h-[500px] bg-sky-600/6 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[20%] w-[500px] h-[500px] bg-amber-600/6 rounded-full blur-[100px]" />
         {/* Chess pattern grid */}
         <div className="absolute inset-0 opacity-[0.018]"
           style={{ backgroundImage: 'linear-gradient(rgba(245,158,11,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,0.8) 1px, transparent 1px)', backgroundSize: '80px 80px' }} />
@@ -519,7 +519,7 @@ export default function LandingPage() {
                       ].map((row) => (
                         <div key={row.label} className="flex items-center justify-between text-sm py-2 border-b border-white/5">
                           <span className="text-slate-500">{row.label}</span>
-                          <span className={`font-bold ${(row as { mono?: boolean }).mono ? 'font-mono text-white' : (row as { gold?: boolean }).gold ? 'text-amber-400' : (row as { sky?: boolean }).sky ? 'text-sky-400' : 'text-white'}`}>
+                          <span className={`font-bold ${(row as { mono?: boolean }).mono ? 'font-mono text-white' : (row as { gold?: boolean }).gold ? 'text-amber-400' : (row as { sky?: boolean }).sky ? 'text-amber-400' : 'text-white'}`}>
                             {row.value}
                           </span>
                         </div>
@@ -549,7 +549,7 @@ export default function LandingPage() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { icon: Zap, label: 'Bullet & Blitz', desc: '1+0, 3+2, 5+3', color: 'from-sky-500/10 to-blue-600/5', border: 'border-sky-500/20 hover:border-sky-400/40', icon_color: 'text-sky-400' },
+                  { icon: Zap, label: 'Bullet & Blitz', desc: '1+0, 3+2, 5+3', color: 'from-amber-500/10 to-yellow-600/5', border: 'border-amber-500/20 hover:border-amber-400/40', icon_color: 'text-amber-400' },
                   { icon: Shield, label: 'Anti-Cheat AI', desc: '5 lapis keamanan', color: 'from-emerald-500/10 to-green-600/5', border: 'border-emerald-500/20 hover:border-emerald-400/40', icon_color: 'text-emerald-400' },
                   { icon: Award, label: 'ELO Rating', desc: 'Standard FIDE', color: 'from-violet-500/10 to-purple-600/5', border: 'border-violet-500/20 hover:border-violet-400/40', icon_color: 'text-violet-400' },
                   { icon: Clock, label: 'Turnamen 24/7', desc: 'Setiap jam', color: 'from-amber-500/10 to-yellow-600/5', border: 'border-amber-500/20 hover:border-amber-400/40', icon_color: 'text-amber-400' },
@@ -627,7 +627,7 @@ export default function LandingPage() {
             <div className="w-full max-w-md">
               <div className="text-center mb-8">
                 <button onClick={() => setMode('login')} className="inline-flex items-center gap-2 mb-6 hover:opacity-80 transition-opacity">
-                  <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                  <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
                     <span className="text-2xl">♔</span>
                   </div>
                   <span className="text-2xl font-black">Chess<span className="gradient-text">Arena</span></span>
@@ -645,7 +645,7 @@ export default function LandingPage() {
                   <div className="flex flex-col items-center gap-4 py-4">
                     <div className="w-14 h-14 rounded-full bg-emerald-500/20 flex items-center justify-center text-3xl">✉️</div>
                     <p className="text-emerald-400 text-sm text-center">{forgotSuccess}</p>
-                    <button onClick={() => setMode('login')} className="text-sm text-sky-400 hover:text-sky-300 transition-colors">Kembali ke Masuk</button>
+                    <button onClick={() => setMode('login')} className="text-sm text-amber-400 hover:text-amber-300 transition-colors">Kembali ke Masuk</button>
                   </div>
                 ) : (
                   <form onSubmit={handleForgotPassword} className="space-y-4">
@@ -654,10 +654,10 @@ export default function LandingPage() {
                       <input type="email" value={form.email} required
                         onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                         placeholder="you@example.com"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors" />
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors" />
                     </div>
                     <button type="submit" disabled={loading}
-                      className="w-full py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl font-semibold text-base hover:opacity-90 transition-opacity shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 disabled:opacity-70">
+                      className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-600 rounded-xl font-semibold text-base hover:opacity-90 transition-opacity shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 disabled:opacity-70">
                       {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Kirim Link Reset'}
                     </button>
                     <button type="button" onClick={() => setMode('login')} className="w-full text-sm text-slate-400 hover:text-slate-300 transition-colors mt-2">
@@ -677,7 +677,7 @@ export default function LandingPage() {
             <div className="w-full max-w-md">
               <div className="text-center mb-8">
                 <button onClick={() => setMode('landing')} className="inline-flex items-center gap-2 mb-6 hover:opacity-80 transition-opacity">
-                  <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                  <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
                     <span className="text-2xl">♔</span>
                   </div>
                   <span className="text-2xl font-black">Chess<span className="gradient-text">Arena</span></span>
@@ -686,7 +686,7 @@ export default function LandingPage() {
                 <p className="text-slate-400 mt-2 text-sm">
                   {mode === 'login' ? 'Belum punya akun? ' : 'Sudah punya akun? '}
                   <button onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-                    className="text-sky-400 hover:text-sky-300 font-medium transition-colors">
+                    className="text-amber-400 hover:text-amber-300 font-medium transition-colors">
                     {mode === 'login' ? 'Daftar sekarang' : 'Masuk'}
                   </button>
                 </p>
@@ -722,7 +722,7 @@ export default function LandingPage() {
                       <input type="text" value={form.username}
                         onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
                         placeholder="GrandMaster123"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors" />
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors" />
                     </div>
                   )}
                   <div>
@@ -730,7 +730,7 @@ export default function LandingPage() {
                     <input type="email" value={form.email}
                       onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                       placeholder="you@example.com"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors" />
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
@@ -738,7 +738,7 @@ export default function LandingPage() {
                       <input type={showPassword ? 'text' : 'password'} value={form.password}
                         onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                         placeholder="••••••••"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors" />
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors" />
                       <button type="button" onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -747,11 +747,11 @@ export default function LandingPage() {
                   </div>
                   {mode === 'login' && (
                     <div className="text-right">
-                      <button type="button" onClick={() => { setMode('forgot'); setAuthError(''); setForgotSuccess(''); }} className="text-sm text-sky-400 hover:text-sky-300 transition-colors">Lupa password?</button>
+                      <button type="button" onClick={() => { setMode('forgot'); setAuthError(''); setForgotSuccess(''); }} className="text-sm text-amber-400 hover:text-amber-300 transition-colors">Lupa password?</button>
                     </div>
                   )}
                   <button type="submit" disabled={loading}
-                    className="w-full py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl font-semibold text-base hover:opacity-90 transition-opacity shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 disabled:opacity-70">
+                    className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-600 rounded-xl font-semibold text-base hover:opacity-90 transition-opacity shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 disabled:opacity-70">
                     {loading ? (
                       <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (

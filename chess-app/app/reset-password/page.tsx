@@ -48,10 +48,10 @@ function ResetPasswordForm() {
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <button onClick={() => router.push('/')} className="inline-flex items-center gap-2 mb-6 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
               <span className="text-2xl">♔</span>
             </div>
-            <span className="text-2xl font-bold">Chess<span className="text-sky-400">Arena</span></span>
+            <span className="text-2xl font-bold">Chess<span className="text-amber-400">Arena</span></span>
           </button>
           <h1 className="text-2xl font-bold">Buat Password Baru</h1>
           <p className="text-[var(--text-muted)] mt-2 text-sm">Masukkan password baru kamu di bawah.</p>
@@ -63,7 +63,7 @@ function ResetPasswordForm() {
               <div className="w-14 h-14 rounded-full bg-emerald-500/20 flex items-center justify-center text-3xl">✅</div>
               <p className="text-emerald-400 font-medium">Password berhasil diubah!</p>
               <p className="text-[var(--text-muted)] text-sm">Kamu akan diarahkan ke halaman masuk dalam 3 detik...</p>
-              <button onClick={() => router.push('/')} className="text-sm text-sky-400 hover:text-sky-300 transition-colors">Masuk Sekarang</button>
+              <button onClick={() => router.push('/')} className="text-sm text-amber-400 hover:text-amber-300 transition-colors">Masuk Sekarang</button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -78,7 +78,7 @@ function ResetPasswordForm() {
                   <input type={showPassword ? 'text' : 'password'} value={password} required minLength={8}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="Minimal 8 karakter"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors" />
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors" />
                   <button type="button" onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -90,10 +90,10 @@ function ResetPasswordForm() {
                 <input type={showPassword ? 'text' : 'password'} value={confirm} required
                   onChange={e => setConfirm(e.target.value)}
                   placeholder="Ulangi password baru"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors" />
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors" />
               </div>
               <button type="submit" disabled={loading || !token}
-                className="w-full py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl font-semibold text-base hover:opacity-90 transition-opacity shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 disabled:opacity-70">
+                className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-600 rounded-xl font-semibold text-base hover:opacity-90 transition-opacity shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 disabled:opacity-70">
                 {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Simpan Password Baru'}
               </button>
               <button type="button" onClick={() => router.push('/')}

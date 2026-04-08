@@ -122,7 +122,7 @@ export default function DashboardPage() {
   if (!user) return (
     <AppLayout>
       <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-sky-400" />
+        <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
       </div>
     </AppLayout>
   );
@@ -135,7 +135,7 @@ export default function DashboardPage() {
     {
       label: 'ELO Rating', value: user.elo.toString(), icon: TrendingUp,
       change: todayEloChange !== null ? (todayEloChange >= 0 ? `+${todayEloChange}` : `${todayEloChange}`) : null,
-      positive: (todayEloChange ?? 0) >= 0, color: 'sky', desc: 'Standar FIDE',
+      positive: (todayEloChange ?? 0) >= 0, color: 'amber', desc: 'Standar FIDE',
     },
     {
       label: 'Win Rate', value: `${winRate}%`, icon: Target,
@@ -161,7 +161,7 @@ export default function DashboardPage() {
         <motion.div variants={FADE} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-sky-400/50 shadow-lg shadow-sky-500/20">
+              <div className="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-amber-400/50 shadow-lg shadow-amber-500/20">
                 <img src={user.avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${user.username}`} alt={user.username} className="w-full h-full object-cover" />
               </div>
               <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg"
@@ -176,7 +176,7 @@ export default function DashboardPage() {
                     {user.title}
                   </span>
                 )}
-                {user.verified && <Shield className="w-4 h-4 text-sky-400" />}
+                {user.verified && <Shield className="w-4 h-4 text-amber-400" />}
               </div>
               <h1 className="text-2xl font-black text-[var(--text-primary)] mt-0.5">{user.username}</h1>
               <p className="text-sm text-[var(--text-muted)]">{user.rank} · {user.country}</p>
@@ -184,7 +184,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex gap-3">
             <Link href="/game"
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl font-semibold text-sm text-white shadow-lg shadow-blue-500/25 hover:opacity-90 transition-opacity">
+              className="flex items-center gap-2 px-5 py-2.5 btn-gold rounded-xl font-semibold text-sm text-black hover:opacity-90 transition-opacity"
               <Zap className="w-4 h-4" />
               Main Cepat
             </Link>
@@ -203,8 +203,8 @@ export default function DashboardPage() {
               className="card p-4 rounded-2xl hover:border-[var(--accent)] transition-all group cursor-default">
               <div className="flex items-start justify-between mb-3">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center
-                  ${card.color === 'sky' ? 'bg-sky-500/10' : card.color === 'emerald' ? 'bg-emerald-500/10' : card.color === 'yellow' ? 'bg-yellow-500/10' : 'bg-purple-500/10'}`}>
-                  <card.icon className={`w-5 h-5 ${card.color === 'sky' ? 'text-sky-400' : card.color === 'emerald' ? 'text-emerald-400' : card.color === 'yellow' ? 'text-yellow-400' : 'text-purple-400'}`} />
+                  ${card.color === 'amber' ? 'bg-amber-500/10' : card.color === 'emerald' ? 'bg-emerald-500/10' : card.color === 'yellow' ? 'bg-yellow-500/10' : 'bg-purple-500/10'}`}>
+                  <card.icon className={`w-5 h-5 ${card.color === 'amber' ? 'text-amber-400' : card.color === 'emerald' ? 'text-emerald-400' : card.color === 'yellow' ? 'text-yellow-400' : 'text-purple-400'}`} />
                 </div>
                 {card.change && (
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${card.positive ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
@@ -237,7 +237,7 @@ export default function DashboardPage() {
             </div>
             {loadingChart ? (
               <div className="flex items-center justify-center h-48">
-                <Loader2 className="w-6 h-6 text-sky-400 animate-spin" />
+                <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
               </div>
             ) : eloChart.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-48 text-[var(--text-muted)]">
@@ -250,8 +250,8 @@ export default function DashboardPage() {
                 <AreaChart data={eloChart} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="eloGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#38bdf8" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
@@ -259,8 +259,8 @@ export default function DashboardPage() {
                   <Tooltip
                     contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 12 }}
                     labelStyle={{ color: 'var(--text-primary)' }}
-                    itemStyle={{ color: '#38bdf8' }} />
-                  <Area type="monotone" dataKey="elo" stroke="#38bdf8" strokeWidth={2.5} fill="url(#eloGrad)" dot={{ fill: '#38bdf8', r: 4 }} activeDot={{ r: 6 }} />
+                    itemStyle={{ color: '#f59e0b' }} />
+                  <Area type="monotone" dataKey="elo" stroke="#f59e0b" strokeWidth={2.5} fill="url(#eloGrad)" dot={{ fill: '#f59e0b', r: 4 }} activeDot={{ r: 6 }} />
                 </AreaChart>
               </ResponsiveContainer>
             )}
@@ -316,14 +316,14 @@ export default function DashboardPage() {
           <motion.div variants={FADE} className="card rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
               <h3 className="font-bold text-[var(--text-primary)]">Game Terakhir</h3>
-              <Link href="/games" className="text-sm text-sky-400 hover:text-sky-300 flex items-center gap-1 transition-colors">
+              <Link href="/games" className="text-sm text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors">
                 Lihat semua <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
             <div className="divide-y divide-[var(--border)]">
               {loadingGames ? (
                 <div className="flex items-center justify-center py-10">
-                  <Loader2 className="w-6 h-6 text-sky-400 animate-spin" />
+                  <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
                 </div>
               ) : recentGames.length === 0 ? (
                 <div className="text-center py-10 text-[var(--text-muted)]">
@@ -377,14 +377,14 @@ export default function DashboardPage() {
           <motion.div variants={FADE} className="card rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
               <h3 className="font-bold text-[var(--text-primary)]">Pemain Teratas</h3>
-              <Link href="/leaderboard" className="text-sm text-sky-400 hover:text-sky-300 flex items-center gap-1 transition-colors">
+              <Link href="/leaderboard" className="text-sm text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors">
                 Leaderboard <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
             <div className="divide-y divide-[var(--border)]">
               {loadingLeaderboard ? (
                 <div className="flex items-center justify-center py-10">
-                  <Loader2 className="w-6 h-6 text-sky-400 animate-spin" />
+                  <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
                 </div>
               ) : topPlayers.length === 0 ? (
                 <div className="text-center py-10 text-[var(--text-muted)]">
@@ -394,7 +394,7 @@ export default function DashboardPage() {
               ) : topPlayers.map((entry, idx) => (
                 <div key={entry.id}
                   className={`flex items-center gap-3 px-5 py-3 transition-colors cursor-pointer
-                    ${entry.id === user.id ? 'bg-sky-500/5 hover:bg-sky-500/10' : 'hover:bg-[var(--bg-hover)]'}`}>
+                    ${entry.id === user.id ? 'bg-amber-500/5 hover:bg-amber-500/10' : 'hover:bg-[var(--bg-hover)]'}`}>
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-black flex-shrink-0
                     ${idx === 0 ? 'bg-yellow-500/20 text-yellow-400' : idx === 1 ? 'bg-slate-300/20 text-slate-300' : idx === 2 ? 'bg-amber-700/20 text-amber-600' : 'bg-[var(--bg-hover)] text-[var(--text-muted)]'}`}>
                     {idx < 3 ? ['🥇', '🥈', '🥉'][idx] : idx + 1}
@@ -405,7 +405,7 @@ export default function DashboardPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       {entry.title && <span className="text-xs font-bold text-yellow-400">{entry.title}</span>}
-                      <span className={`text-sm font-semibold truncate ${entry.id === user.id ? 'text-sky-400' : 'text-[var(--text-primary)]'}`}>
+                      <span className={`text-sm font-semibold truncate ${entry.id === user.id ? 'text-amber-400' : 'text-[var(--text-primary)]'}`}>
                         {entry.username}
                       </span>
                     </div>
@@ -450,7 +450,7 @@ export default function DashboardPage() {
         {/* Quick start banners */}
         <motion.div variants={FADE} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { title: 'Main Bullet', sub: '1+0 · Tanpa taruhan', icon: '⚡', href: '/game', gradient: 'from-sky-500 to-blue-600', badge: 'Gratis' },
+            { title: 'Main Bullet', sub: '1+0 · Tanpa taruhan', icon: '⚡', href: '/game', gradient: 'from-amber-500 to-yellow-600', badge: 'Gratis' },
             { title: 'Ranked Match', sub: 'Naikkan ELO kamu', icon: '🎯', href: '/game', gradient: 'from-emerald-500 to-teal-600', badge: 'Ranked' },
             { title: 'Turnamen', sub: 'Reward poin & badge', icon: '🏆', href: '/tournament', gradient: 'from-yellow-500 to-orange-500', badge: 'Esports' },
           ].map((item) => (
