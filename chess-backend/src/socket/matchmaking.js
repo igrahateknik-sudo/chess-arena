@@ -9,14 +9,11 @@ const { unlockForUser, recordLock } = require('../lib/walletCleanup');
 const { getRedisClient } = require('../lib/redis');
 const crypto = require('crypto');
 const { logSecurityEvent } = require('../lib/auditLog');
+const { getTimeControlType } = require('../lib/timeControl'); // M5: shared, no longer duplicated
+const { schemas, validateOrReject } = require('./payloadSchemas'); // C5: Zod validation
 
-// ── Time-control type helper (mirrors gameRoom.js) ─────────────────────────
-function getTcType(initial) {
-  if (!initial) return 'blitz';
-  if (initial < 180) return 'bullet';
-  if (initial < 600) return 'blitz';
-  return 'rapid';
-}
+// Alias to match existing call sites in this file
+const getTcType = getTimeControlType;
 
 // In-memory queue: Map<queueKey, Array<{ userId, socketId, elo, joinedAt }>>
 const queues = new Map();
@@ -160,8 +157,13 @@ async function releaseDistributedPairingLock(key, token) {
 
 function registerMatchmaking(io, socket, userId) {
   // ── Join matchmaking queue ──────────────────────────────────────────────
-  socket.on('queue:join', async ({ timeControl, stakes = 0, color }) => {
+  socket.on('queue:join', async (payload) => {
     try {
+      // C5: Validate payload with Zod schema (previously unvalidated raw destructuring)
+      const parsed = validateOrReject(schemas.queueJoinSchema, payload, socket, 'queue:join');
+      if (!parsed) return;
+      const { timeControl, stakes = 0, color } = parsed;
+
       const user = await users.findById(userId);
       if (!user) {
         socket.emit('queue:error', { message: 'User not found' });

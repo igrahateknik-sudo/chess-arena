@@ -105,8 +105,15 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.9);
 }
 
-/* Gradient text */
+/* Gradient text — gold is now the primary premium accent */
 .gradient-text {
+  background: linear-gradient(135deg, #fde68a 0%, #f59e0b 40%, #d97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-blue {
   background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #e879f9 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -114,10 +121,34 @@ select {
 }
 
 .gradient-gold {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+  background: linear-gradient(135deg, #fde68a 0%, #f59e0b 40%, #d97706 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Premium gold button */
+.btn-gold {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.35), 0 4px 15px rgba(0,0,0,0.4);
+  transition: all 0.2s ease;
+}
+.btn-gold:hover {
+  box-shadow: 0 0 45px rgba(245, 158, 11, 0.5), 0 4px 20px rgba(0,0,0,0.5);
+  transform: translateY(-1px);
+}
+
+/* Gold glass card */
+.glass-gold {
+  background: rgba(245, 158, 11, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+}
+.glass-gold:hover {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.07);
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.08);
 }
 
 /* Neon glow effects */
@@ -126,11 +157,37 @@ select {
 }
 
 .neon-gold {
-  box-shadow: 0 0 20px rgba(251, 191, 36, 0.4), 0 0 40px rgba(251, 191, 36, 0.2);
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.5), 0 0 60px rgba(245, 158, 11, 0.2);
 }
 
 .neon-green {
   box-shadow: 0 0 20px rgba(74, 222, 128, 0.4), 0 0 40px rgba(74, 222, 128, 0.2);
+}
+
+/* Chess board premium glow */
+.board-glow {
+  box-shadow: 0 0 0 1px rgba(245,158,11,0.2), 0 0 60px rgba(245,158,11,0.12), 0 30px 80px rgba(0,0,0,0.6);
+}
+
+/* Shimmer animation for premium borders */
+@keyframes shimmer-border {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.shimmer-gold {
+  background: linear-gradient(90deg, #f59e0b, #fde68a, #d97706, #fde68a, #f59e0b);
+  background-size: 200% auto;
+  animation: shimmer-border 3s linear infinite;
+}
+
+/* Floating animation for hero elements */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+.animate-float {
+  animation: float 4s ease-in-out infinite;
 }
 
 /* Card styles */

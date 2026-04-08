@@ -21,6 +21,7 @@
 const crypto     = require('crypto');
 const os         = require('os');
 const { Chess }  = require('chess.js');
+const { getTimeControlType: _getTimeControlType } = require('../lib/timeControl'); // M5: shared
 
 // ── Cache layer (Redis-backed, replaces in-memory Maps) ──────────────────────
 const GameStateCache    = require('../cache/GameStateCache');
@@ -53,6 +54,9 @@ const GAME_LEASE_TTL_MS = 5000;
 // Map<`${gameId}:${userId}`, socketId>  — anti multi-tab enforcement
 const activeGameSockets = new Map();
 
+// C4: Track consecutive DB write failures per game (circuit-breaker)
+const dbWriteFailures = new Map();
+
 // Reverse lookup for disconnect cleanup: Map<socketId, {gameId, userId}[]>
 const socketGameRooms = new Map();
 
@@ -74,12 +78,8 @@ function withTimeout(promise, ms, label) {
   return Promise.race([promise, timeout]);
 }
 
-function getTimeControlType(initial) {
-  if (!initial) return 'blitz';
-  if (initial < 180) return 'bullet';
-  if (initial < 600) return 'blitz';
-  return 'rapid';
-}
+// M5: Use shared function from lib/timeControl.js — no longer duplicated
+const getTimeControlType = _getTimeControlType;
 
 function eloColumnForType(tcType) {
   return `elo_${tcType}`;
@@ -252,15 +252,27 @@ function scheduleDisconnectForfeit(io, gameId, game, userId, socket) {
   const dcKey = `${gameId}:${userId}`;
   if (disconnectTimers.get(dcKey)) return;
 
-  const dcTimer = setTimeout(() => {
-    acquireGameLease(gameId).then((hasLease) => {
+  const dcTimer = setTimeout(async () => {
+    try {
+      const hasLease = await acquireGameLease(gameId);
       if (!hasLease) return;
       disconnectTimers.delete(dcKey);
       const currentGame = GameStateCache.getLocal(gameId);
       if (!currentGame || currentGame.status !== 'active') return;
 
-      const room = io.sockets.adapter.rooms.get(gameId);
-      if (!room || room.size === 0) {
+      // C2: Use fetchSockets (cross-instance aware with Redis adapter) instead of
+      // io.sockets.adapter.rooms which only reflects sockets on the LOCAL instance.
+      let roomHasOpponent = false;
+      try {
+        const sockets = await io.in(gameId).fetchSockets();
+        roomHasOpponent = sockets.length > 0;
+      } catch {
+        // Fallback to local rooms if fetchSockets unavailable
+        const room = io.sockets.adapter.rooms.get(gameId);
+        roomHasOpponent = !!(room && room.size > 0);
+      }
+
+      if (!roomHasOpponent) {
         stopTimer(gameId);
         const opponentId = game.whiteId === userId ? game.blackId : game.whiteId;
         const opponentHasPendingDc = disconnectTimers.has(`${gameId}:${opponentId}`);
@@ -276,10 +288,12 @@ function scheduleDisconnectForfeit(io, gameId, game, userId, socket) {
         endGame(io, gameId, winner, 'disconnect', {
           responsibleUserId: userId,
           finalizationSource: 'disconnect-timeout',
-          disconnectSnapshot: { triggerUserId: userId, roomSize: room.size },
+          disconnectSnapshot: { triggerUserId: userId, crossInstanceRoomSize: 'checked' },
         });
       }
-    }).catch(() => {});
+    } catch (e) {
+      console.error('[disconnectTimer]', e);
+    }
   }, 60_000);
 
   disconnectTimers.set(dcKey, dcTimer);
@@ -621,7 +635,7 @@ function registerGameRoom(io, socket, userId) {
         socket.to(gameId).emit('opponent:reconnected', { userId });
       }
 
-      // Start clock when both players are in room
+      // Start clock when both players are in room (local fast-path)
       const room           = io.sockets.adapter.rooms.get(gameId);
       const whiteSocketId  = activeGameSockets.get(`${gameId}:${game.whiteId}`);
       const blackSocketId  = activeGameSockets.get(`${gameId}:${game.blackId}`);
@@ -630,6 +644,12 @@ function registerGameRoom(io, socket, userId) {
         room.has(whiteSocketId) && room.has(blackSocketId)
       );
       if (hasBothPlayers && game.status === 'active') {
+        startTimer(io, gameId);
+      }
+      // C3: Timer recovery — if game is active but no timer is running locally
+      // (e.g. after instance crash/restart), restart clock.
+      // acquireGameLease inside startTimer ensures only one instance ticks.
+      if (game.status === 'active' && !timers.has(gameId)) {
         startTimer(io, gameId);
       }
 
@@ -818,17 +838,37 @@ function registerGameRoom(io, socket, userId) {
       });
 
       // Persist live snapshot for process-restart recovery
+      // C4: Circuit breaker — 3 consecutive DB write failures halts the game
+      // to prevent Redis/DB state divergence on staked games.
       games.update(gameId, {
         fen:             chess.fen(),
         move_history:    newMoveHistory,
         white_time_left: whiteTimeLeft,
         black_time_left: blackTimeLeft,
         updated_at:      new Date(),
-      }).catch((e) => console.error('[game:move persist]', e));
+      }).then(() => {
+        dbWriteFailures.delete(gameId); // reset on success
+      }).catch((e) => {
+        console.error('[game:move persist]', e);
+        const fails = (dbWriteFailures.get(gameId) || 0) + 1;
+        dbWriteFailures.set(gameId, fails);
+        if (fails >= 3) {
+          logSecurityEvent('DB_WRITE_FAILURE_HALT', { gameId, userId, fails });
+          console.error(`[game:move] Halting game ${gameId} after ${fails} consecutive DB write failures`);
+          stopTimer(gameId);
+          dbWriteFailures.delete(gameId);
+          endGame(io, gameId, 'draw', 'aborted', {
+            responsibleUserId: null,
+            finalizationSource: 'db-failure',
+          });
+        }
+      });
 
       // [SECURITY-5] Real-time anticheat
       const tcType           = getTimeControlType(game.timeControl?.initial);
-      const anticheatInterval = tcType === 'bullet' ? 20 : 10;
+      // C1 FIX: bullet games are SHORTER — check MORE frequently (every 10 moves).
+      // Blitz/rapid are longer, so every 20 moves is sufficient.
+      const anticheatInterval = tcType === 'bullet' ? 10 : 20;
       if (newMoveHistory.length > 0 && newMoveHistory.length % anticheatInterval === 0) {
         try {
           const realtimeResult = analyzeRealtime(newMoveHistory);
@@ -878,11 +918,10 @@ function registerGameRoom(io, socket, userId) {
     logSecurityEvent('TAB_HIDDEN', { userId, gameId, hiddenMs, totalHiddenMs });
 
     if (totalHiddenMs >= 30_000) {
+      // H8 FIX: tab-hidden is CLIENT self-reported — a cheat client simply never
+      // sends this event. Log for manual review only; never auto-enforce based
+      // solely on client-reported data (trust boundary violation).
       logSecurityEvent('TAB_HIDDEN_EXCESSIVE', { userId, gameId, totalHiddenMs });
-      enforceAnticheat(userId, gameId, {
-        flags: [`TAB_HIDDEN:${Math.round(totalHiddenMs / 1000)}s`],
-        score: Math.min(30, Math.floor(totalHiddenMs / 10_000) * 5),
-      }, io).catch(e => console.error('[TabHidden:enforce]', e.message));
     }
   });
 
@@ -1007,10 +1046,11 @@ function registerGameRoom(io, socket, userId) {
     }
     socketGameRooms.delete(socket.id);
 
-    // Schedule forfeit for any active game this player was in
-    for (const [gameId, game] of GameStateCache.localMap().entries()) {
-      if (game.status !== 'active') continue;
-      if (game.whiteId !== userId && game.blackId !== userId) continue;
+    // P2 FIX: Use already-captured `rooms` (O(1)) instead of O(n) full localMap scan.
+    // `rooms` was captured before socketGameRooms.delete() above and still holds game IDs.
+    for (const { gameId } of rooms) {
+      const game = GameStateCache.getLocal(gameId);
+      if (!game || game.status !== 'active') continue;
       scheduleDisconnectForfeit(io, gameId, game, userId, socket);
       break;
     }

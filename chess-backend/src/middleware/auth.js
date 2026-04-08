@@ -19,6 +19,10 @@ async function requireAuth(req, res, next) {
   if (payload.phv && payload.phv !== passwordHashVersion(user.password_hash)) {
     return res.status(401).json({ error: 'Session expired. Please log in again.' });
   }
+  // H4: Suspended users cannot use the API — check on every authenticated request
+  if (user.flagged) {
+    return res.status(403).json({ error: 'Account suspended. Visit /appeal to contest this decision.' });
+  }
 
   req.user = user;
   req.userId = user.id;

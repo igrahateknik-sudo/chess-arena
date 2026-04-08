@@ -274,295 +274,344 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#060c18] text-white overflow-x-hidden relative">
-      {/* Background — absolute (not fixed) to avoid GPU compositor issues */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[20%] w-[700px] h-[700px] bg-sky-600/10 rounded-full blur-[80px]" />
-        <div className="absolute bottom-[-10%] right-[10%] w-[600px] h-[600px] bg-violet-600/10 rounded-full blur-[80px]" />
-        <div className="absolute top-[40%] left-[-5%] w-[400px] h-[400px] bg-emerald-500/6 rounded-full blur-[60px]" />
-        <div className="absolute inset-0 opacity-[0.025]"
-          style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+    <div className="min-h-screen bg-[#06070f] text-white overflow-x-hidden relative">
+      {/* ── Premium Background ── */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        {/* Gold primary orb */}
+        <div className="absolute top-[-15%] right-[5%] w-[800px] h-[800px] bg-amber-500/10 rounded-full blur-[130px] animate-pulse-slow" />
+        {/* Deep gold secondary */}
+        <div className="absolute top-[30%] left-[-10%] w-[600px] h-[600px] bg-yellow-600/8 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: '2s' }} />
+        {/* Subtle blue accent */}
+        <div className="absolute bottom-[-10%] right-[20%] w-[500px] h-[500px] bg-sky-600/6 rounded-full blur-[100px]" />
+        {/* Chess pattern grid */}
+        <div className="absolute inset-0 opacity-[0.018]"
+          style={{ backgroundImage: 'linear-gradient(rgba(245,158,11,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,0.8) 1px, transparent 1px)', backgroundSize: '80px 80px' }} />
+        {/* Diagonal light ray */}
+        <div className="absolute top-0 left-1/2 w-px h-[60vh] bg-gradient-to-b from-amber-400/20 to-transparent" />
       </div>
 
       <AnimatePresence mode="wait">
         {mode === 'landing' && (
-          <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.98 }}>
+          <motion.div key="landing" className="relative z-10" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.98 }}>
 
-            {/* ── Nav ───────────────────────────────────────────── */}
-            <nav className="relative z-10 flex items-center justify-between px-6 py-5 max-w-7xl mx-auto">
-              <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="flex items-center gap-2.5">
-                <div className="w-9 h-9 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+            {/* ── Nav ── */}
+            <nav className="relative z-20 flex items-center justify-between px-6 py-5 max-w-7xl mx-auto">
+              <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/40">
                   <span className="text-xl">♔</span>
                 </div>
                 <span className="text-xl font-black tracking-tight">Chess<span className="gradient-text">Arena</span></span>
               </motion.div>
               <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="flex items-center gap-2">
                 <button onClick={() => setMode('login')}
-                  className="px-5 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors">
+                  className="px-5 py-2 text-sm font-semibold text-amber-400/80 hover:text-amber-300 border border-amber-500/20 hover:border-amber-500/40 rounded-xl transition-all">
                   Masuk
                 </button>
                 <button onClick={() => setMode('register')}
-                  className="px-5 py-2 bg-gradient-to-r from-sky-500 to-blue-600 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity shadow-lg shadow-blue-500/25">
+                  className="btn-gold px-5 py-2 rounded-xl text-sm font-bold text-black">
                   Daftar Gratis
                 </button>
               </motion.div>
             </nav>
 
-            {/* ── Hero ──────────────────────────────────────────── */}
-            <section className="relative z-10 max-w-7xl mx-auto px-6 pt-12 pb-20 grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
+            {/* ── HERO ── */}
+            <section className="relative z-10 max-w-7xl mx-auto px-6 pt-10 pb-24 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               <div>
+                {/* Badge */}
                 <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}
-                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-semibold mb-6 tracking-wide uppercase">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
-                  Platform Kompetitif Catur #1 Indonesia
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold mb-7 tracking-widest uppercase">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-lg shadow-amber-400/50" />
+                  Platform Esports Catur #1 Indonesia
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-lg shadow-amber-400/50" />
                 </motion.div>
 
+                {/* Headline */}
                 <motion.h1 initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.15 }}
-                  className="text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.05] tracking-tight mb-5">
-                  Kuasai Papan Catur.<br />
-                  <span className="bg-gradient-to-r from-sky-400 via-blue-400 to-violet-400 bg-clip-text text-transparent">
-                    Jadi Juara Esports.
-                  </span>
+                  className="text-5xl lg:text-6xl xl:text-[4.5rem] font-black leading-[1.04] tracking-tight mb-6">
+                  <span className="text-white">Kuasai Papan.</span><br />
+                  <span className="text-white">Jadi </span>
+                  <span className="gradient-text">Grandmaster.</span>
                 </motion.h1>
 
                 <motion.p initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}
-                  className="text-base text-slate-400 mb-8 max-w-lg leading-relaxed">
-                  Arena catur kompetitif berbasis skill dengan event setiap jam.
-                  Sistem Swiss yang adil, anti-cheat ketat, dan leaderboard real-time.
+                  className="text-lg text-slate-400 mb-9 max-w-lg leading-relaxed">
+                  Platform esports catur paling kompetitif di Indonesia. Turnamen setiap jam,
+                  anti-cheat 5 lapis, dan sistem ELO berstandar FIDE.
                 </motion.p>
 
+                {/* CTA Buttons */}
                 <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.25 }}
-                  className="flex flex-wrap gap-3 mb-10">
+                  className="flex flex-wrap gap-4 mb-12">
                   <button onClick={() => setMode('register')}
-                    className="flex items-center gap-2 px-7 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-2xl text-sm font-bold hover:opacity-90 transition-all shadow-2xl shadow-blue-500/30">
-                    Mulai Bermain <ChevronRight className="w-4 h-4" />
+                    className="btn-gold flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-black text-black">
+                    <Crown className="w-5 h-5" /> Mulai Bertanding
+                  </button>
+                  <button onClick={() => setMode('login')}
+                    className="flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-bold text-white border border-white/15 hover:border-amber-500/40 hover:bg-amber-500/5 transition-all">
+                    Sudah Punya Akun <ChevronRight className="w-4 h-4" />
                   </button>
                 </motion.div>
 
                 {/* Stats strip */}
-                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
-                  className="grid grid-cols-4 gap-4 pt-6 border-t border-white/8">
+                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.32 }}
+                  className="grid grid-cols-4 gap-5 pt-7 border-t border-amber-500/10">
                   {STATS.map((s) => (
                     <div key={s.label}>
-                      <div className="text-xl font-black text-sky-400">{s.value}</div>
-                      <div className="text-xs text-slate-500 mt-0.5 leading-tight">{s.label}</div>
+                      <div className="text-2xl font-black gradient-text">{s.value}</div>
+                      <div className="text-xs text-slate-500 mt-1 leading-tight">{s.label}</div>
                     </div>
                   ))}
                 </motion.div>
               </div>
 
-              {/* Chess board */}
-              <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.2, type: 'spring', stiffness: 100 }}
-                className="flex items-center justify-center lg:justify-end lg:order-none order-first">
-                <div className="relative w-full max-w-[420px]">
-                  <div className="aspect-square w-full rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(56,189,248,0.12)] border border-white/8 bg-[#0b1221]">
+              {/* Chess board — with premium gold glow */}
+              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.2, type: 'spring', stiffness: 80 }}
+                className="flex items-center justify-center lg:justify-end order-first lg:order-none">
+                <div className="relative w-full max-w-[440px]">
+                  {/* Outer glow ring */}
+                  <div className="absolute -inset-4 bg-gradient-to-br from-amber-500/15 via-yellow-400/5 to-transparent rounded-3xl blur-xl" />
+                  <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-amber-500/20 to-transparent" />
+
+                  <div className="relative aspect-square w-full rounded-2xl overflow-hidden board-glow border border-amber-500/20 bg-[#0a0c15]">
+                    {/* Gold corner accents */}
+                    <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-amber-400/60 rounded-tl-2xl z-10" />
+                    <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 border-amber-400/60 rounded-tr-2xl z-10" />
+                    <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 border-amber-400/60 rounded-bl-2xl z-10" />
+                    <div className="absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 border-amber-400/60 rounded-br-2xl z-10" />
                     <ChessBoardVisual />
                   </div>
-                  <div className="mt-3 sm:mt-4 grid grid-cols-3 gap-2">
+
+                  {/* Board info strip */}
+                  <div className="mt-4 grid grid-cols-3 gap-2.5">
                     {[
                       { label: 'Mode', value: 'Ranked Live' },
                       { label: 'Format', value: 'Blitz 3+2' },
                       { label: 'Sistem', value: 'Swiss Fair' },
                     ].map((item) => (
-                      <div key={item.label} className="glass rounded-xl border border-white/10 px-2.5 sm:px-3 py-2 text-center">
-                        <div className="text-[10px] text-slate-500 uppercase tracking-wider leading-none">{item.label}</div>
-                        <div className="text-[11px] sm:text-xs font-semibold text-slate-200 mt-1 leading-tight">{item.value}</div>
+                      <div key={item.label} className="glass-gold rounded-xl px-3 py-2.5 text-center">
+                        <div className="text-[10px] text-amber-500/60 uppercase tracking-widest leading-none">{item.label}</div>
+                        <div className="text-xs font-bold text-amber-200 mt-1">{item.value}</div>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Live indicator */}
+                  <div className="mt-3 flex items-center justify-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-lg shadow-emerald-400/50" />
+                    <span className="text-xs text-emerald-400 font-semibold tracking-wider uppercase">Demo Langsung</span>
                   </div>
                 </div>
               </motion.div>
             </section>
 
-            {/* ── Live Stats Ticker ─────────────────────────────── */}
-            <div className="relative z-10 max-w-7xl mx-auto px-6 pb-6">
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-                className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.04]">
+            {/* ── Live Ticker ── */}
+            <div className="relative z-10 max-w-7xl mx-auto px-6 pb-8">
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
+                className="overflow-hidden rounded-2xl border border-amber-500/15 bg-amber-500/[0.03]">
                 <LiveStatsTicker />
               </motion.div>
             </div>
 
-            {/* ── Cara Bermain ──────────────────────────────────── */}
-            <section className="relative z-10 max-w-7xl mx-auto px-6 py-20 border-t border-white/5">
+            {/* ── Cara Bermain ── */}
+            <section className="relative z-10 max-w-7xl mx-auto px-6 py-24 border-t border-amber-500/8">
               <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }}
-                className="text-center mb-14">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-semibold uppercase tracking-wider mb-4">
+                className="text-center mb-16">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-bold uppercase tracking-widest mb-5">
                   <Target className="w-3.5 h-3.5" /> Cara Bermain
                 </div>
-                <h2 className="text-3xl font-black mb-3">Dari Daftar ke Menang dalam 4 Langkah</h2>
-                <p className="text-slate-400 max-w-md mx-auto">Mulai gratis, pilih divisi, dan fokus ke performa permainanmu.</p>
+                <h2 className="text-4xl font-black mb-4">Dari Daftar ke <span className="gradient-text">Menang</span> dalam 4 Langkah</h2>
+                <p className="text-slate-400 max-w-md mx-auto text-lg">Mulai gratis, pilih divisi, dan fokus ke performa permainanmu.</p>
               </motion.div>
 
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                {HOW_IT_WORKS.map((step, i) => {
-                  const colorMap: Record<string, string> = {
-                    sky: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
-                    amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-                    purple: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
-                    emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-                  };
-                  const cls = colorMap[step.color];
-                  return (
-                    <motion.div key={step.step}
-                      initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }}
-                      viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                      className="relative glass rounded-2xl p-6 border border-white/8 hover:border-white/15 transition-all group overflow-hidden">
-                      <div className="relative h-28 rounded-xl border border-white/10 overflow-hidden mb-5 bg-white/[0.02] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                        <Image
-                          src={step.art}
-                          alt={step.title}
-                          fill
-                          className="object-cover scale-[1.02] contrast-110 brightness-[0.85] saturate-[1.1]"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-tr from-sky-500/15 via-transparent to-amber-400/10" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#060c18]/70 via-[#060c18]/25 to-transparent" />
-                      </div>
-                      <div className="text-5xl font-black text-white/4 absolute top-4 right-5 select-none">{step.step}</div>
-                      <div className={`w-11 h-11 rounded-xl border flex items-center justify-center mb-4 ${cls}`}>
-                        <step.icon className="w-5 h-5" />
-                      </div>
-                      <h3 className="font-bold text-white mb-2">{step.title}</h3>
-                      <p className="text-sm text-slate-400 leading-relaxed">{step.desc}</p>
-                      {i < 3 && (
-                        <div className="hidden lg:block absolute -right-2.5 top-1/2 -translate-y-1/2 w-5 h-0.5 bg-white/10 z-10" />
-                      )}
-                    </motion.div>
-                  );
-                })}
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {HOW_IT_WORKS.map((step, i) => (
+                  <motion.div key={step.step}
+                    initial={{ y: 30, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }}
+                    viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                    className="glass-gold rounded-2xl p-6 transition-all group relative overflow-hidden cursor-default">
+                    {/* Big step number watermark */}
+                    <div className="text-[5rem] font-black text-amber-400/5 absolute -top-2 -right-2 select-none leading-none">{step.step}</div>
+                    {/* Step number pill */}
+                    <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-sm font-black mb-5">
+                      {step.step}
+                    </div>
+                    <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-4 group-hover:border-amber-500/40 group-hover:bg-amber-500/5 transition-all">
+                      <step.icon className="w-6 h-6 text-amber-400" />
+                    </div>
+                    <h3 className="font-black text-white text-lg mb-2">{step.title}</h3>
+                    <p className="text-sm text-slate-400 leading-relaxed">{step.desc}</p>
+                    {i < 3 && (
+                      <div className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-px bg-gradient-to-r from-amber-500/30 to-transparent z-10" />
+                    )}
+                  </motion.div>
+                ))}
               </div>
             </section>
 
-            {/* ── Tournament Tiers ──────────────────────────────── */}
-            <section className="relative z-10 max-w-7xl mx-auto px-6 py-20 border-t border-white/5">
+            {/* ── Tournament Tiers ── */}
+            <section className="relative z-10 max-w-7xl mx-auto px-6 py-24 border-t border-amber-500/8">
               <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }}
-                className="text-center mb-14">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-semibold uppercase tracking-wider mb-4">
-                  <Trophy className="w-3.5 h-3.5" /> Tier Turnamen
+                className="text-center mb-16">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-bold uppercase tracking-widest mb-5">
+                  <Trophy className="w-3.5 h-3.5" /> Divisi Kompetisi
                 </div>
-                <h2 className="text-3xl font-black mb-3">Pilih Tier, Bertanding, Naikkan Peringkat</h2>
-                <p className="text-slate-400">Event otomatis setiap jam dengan sistem poin dan leaderboard kompetitif.</p>
+                <h2 className="text-4xl font-black mb-4">Pilih <span className="gradient-text">Divisi</span>, Bertanding, Naik Peringkat</h2>
+                <p className="text-slate-400 text-lg">Event otomatis setiap jam — siap kapanpun kamu mau bertanding.</p>
               </motion.div>
 
-              <div className="grid md:grid-cols-3 gap-5">
-                {TIERS.map((tier, i) => (
+              <div className="grid md:grid-cols-3 gap-6">
+                {[
+                  {
+                    key: 'bronze', label: 'Bronze', icon: '🥉',
+                    subtitle: 'Divisi Pemula', tc: '3+2', max: 32, prize: '+120 PTS',
+                    bg: 'bg-gradient-to-b from-amber-900/30 to-amber-950/20',
+                    border: 'border-amber-700/30 hover:border-amber-600/50',
+                    badge: 'bg-amber-700/20 text-amber-500 border-amber-700/30',
+                    glow: '',
+                  },
+                  {
+                    key: 'silver', label: 'Silver', icon: '🥈',
+                    subtitle: 'Divisi Menengah', tc: '5+3', max: 32, prize: '+240 PTS',
+                    bg: 'bg-gradient-to-b from-slate-700/30 to-slate-800/20',
+                    border: 'border-slate-400/40 hover:border-slate-300/60',
+                    badge: 'bg-slate-500/20 text-slate-300 border-slate-400/30',
+                    glow: 'shadow-xl shadow-white/5',
+                    featured: true,
+                  },
+                  {
+                    key: 'gold', label: 'Gold', icon: '🥇',
+                    subtitle: 'Divisi Pro', tc: '10+5', max: 16, prize: '+360 PTS',
+                    bg: 'bg-gradient-to-b from-amber-500/20 to-yellow-900/15',
+                    border: 'border-amber-400/50 hover:border-amber-300/70',
+                    badge: 'bg-amber-400/20 text-amber-300 border-amber-400/30',
+                    glow: 'shadow-2xl shadow-amber-500/15 neon-gold',
+                  },
+                ].map((tier, i) => (
                   <motion.div key={tier.key}
-                    initial={{ y: 25, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }}
-                    viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                    className={`relative rounded-2xl p-6 border bg-gradient-to-b ${tier.color} ${tier.border} ${tier.featured ? 'ring-1 ring-slate-400/20 shadow-xl' : ''} transition-all hover:-translate-y-1 hover:shadow-2xl`}>
-                    {tier.featured && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-slate-400/20 border border-slate-400/30 rounded-full text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                    initial={{ y: 30, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }}
+                    viewport={{ once: true }} transition={{ delay: i * 0.12 }}
+                    className={`relative rounded-2xl p-7 border ${tier.bg} ${tier.border} ${tier.glow} transition-all duration-300 hover:-translate-y-2`}>
+                    {(tier as { featured?: boolean }).featured && (
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 bg-slate-400 text-slate-900 rounded-full text-[11px] font-black uppercase tracking-widest">
                         Populer
                       </div>
                     )}
-                    <div className="flex items-center gap-3 mb-5">
-                      <span className="text-3xl">{tier.icon}</span>
+                    {tier.key === 'gold' && (
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 btn-gold text-black rounded-full text-[11px] font-black uppercase tracking-widest">
+                        ★ Pro Tier
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-3 mb-6">
+                      <span className="text-4xl">{tier.icon}</span>
                       <div>
-                        <div className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${tier.badge}`}>{tier.label}</div>
+                        <div className={`text-xs font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border ${tier.badge}`}>{tier.label}</div>
+                        <div className="text-slate-500 text-xs mt-1">{tier.subtitle}</div>
                       </div>
                     </div>
-                    <div className="relative h-24 rounded-xl border border-white/10 overflow-hidden mb-5 bg-white/[0.03] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                      <Image
-                        src={tier.art}
-                        alt={`Ilustrasi ${tier.label}`}
-                        fill
-                        className="object-cover contrast-110 brightness-[0.82] saturate-[1.08]"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-tr from-sky-500/10 via-transparent to-yellow-400/10" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#060c18]/60 via-[#060c18]/20 to-transparent" />
+
+                    <div className="space-y-3 mb-7">
+                      {[
+                        { label: 'Kontrol Waktu', value: tier.tc, mono: true },
+                        { label: 'Max Pemain', value: String(tier.max), mono: false },
+                        { label: 'Reward', value: tier.prize, gold: true },
+                        { label: 'Jadwal', value: 'Setiap jam', sky: true },
+                      ].map((row) => (
+                        <div key={row.label} className="flex items-center justify-between text-sm py-2 border-b border-white/5">
+                          <span className="text-slate-500">{row.label}</span>
+                          <span className={`font-bold ${(row as { mono?: boolean }).mono ? 'font-mono text-white' : (row as { gold?: boolean }).gold ? 'text-amber-400' : (row as { sky?: boolean }).sky ? 'text-sky-400' : 'text-white'}`}>
+                            {row.value}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                    <div className="mb-5">
-                      <div className="text-3xl font-black text-white mb-0.5">{tier.fee}</div>
-                      <div className="text-xs text-slate-500">level kompetisi</div>
-                    </div>
-                    <div className="space-y-2.5 mb-6">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-400">Kontrol Waktu</span>
-                        <span className="font-bold text-white font-mono">{tier.tc}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-400">Max Pemain</span>
-                        <span className="font-bold text-white">{tier.max}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-400">Reward</span>
-                        <span className="font-bold text-yellow-400">{tier.prize}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-400">Jadwal</span>
-                        <span className="font-bold text-sky-400">Setiap jam</span>
-                      </div>
-                    </div>
+
                     <button onClick={() => setMode('register')}
-                      className="w-full py-2.5 rounded-xl text-sm font-bold bg-white/8 border border-white/10 hover:bg-white/15 transition-all">
-                    Gabung Divisi →
+                      className={`w-full py-3 rounded-xl text-sm font-black transition-all ${
+                        tier.key === 'gold'
+                          ? 'btn-gold text-black'
+                          : 'bg-white/6 border border-white/10 hover:bg-white/12 text-white'
+                      }`}>
+                      Gabung {tier.label} →
                     </button>
                   </motion.div>
                 ))}
               </div>
             </section>
 
-            {/* ── Features strip ────────────────────────────────── */}
-            <section className="relative z-10 max-w-7xl mx-auto px-6 py-16 border-t border-white/5">
+            {/* ── Features ── */}
+            <section className="relative z-10 max-w-7xl mx-auto px-6 py-20 border-t border-amber-500/8">
+              <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }}
+                className="text-center mb-12">
+                <h2 className="text-3xl font-black mb-3">Platform <span className="gradient-text">Kelas Dunia</span></h2>
+                <p className="text-slate-400">Dibangun dengan teknologi terdepan untuk pengalaman esports terbaik.</p>
+              </motion.div>
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { icon: Zap, label: 'Bullet & Blitz', desc: '1+0, 3+2, 5+3', color: 'sky', art: '/illustrations/features/speed.svg' },
-                  { icon: Shield, label: 'Anti-Cheat', desc: '5 lapis keamanan', color: 'emerald', art: '/illustrations/features/shield.svg' },
-                  { icon: Award, label: 'ELO Rating', desc: 'Standard FIDE', color: 'violet', art: '/illustrations/features/rating.svg' },
-                  { icon: Clock, label: 'Turnamen Tiap Jam', desc: '24 jam sehari', color: 'amber', art: '/illustrations/features/tournament.svg' },
+                  { icon: Zap, label: 'Bullet & Blitz', desc: '1+0, 3+2, 5+3', color: 'from-sky-500/10 to-blue-600/5', border: 'border-sky-500/20 hover:border-sky-400/40', icon_color: 'text-sky-400' },
+                  { icon: Shield, label: 'Anti-Cheat AI', desc: '5 lapis keamanan', color: 'from-emerald-500/10 to-green-600/5', border: 'border-emerald-500/20 hover:border-emerald-400/40', icon_color: 'text-emerald-400' },
+                  { icon: Award, label: 'ELO Rating', desc: 'Standard FIDE', color: 'from-violet-500/10 to-purple-600/5', border: 'border-violet-500/20 hover:border-violet-400/40', icon_color: 'text-violet-400' },
+                  { icon: Clock, label: 'Turnamen 24/7', desc: 'Setiap jam', color: 'from-amber-500/10 to-yellow-600/5', border: 'border-amber-500/20 hover:border-amber-400/40', icon_color: 'text-amber-400' },
                 ].map((f, i) => (
                   <motion.div key={f.label}
                     initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }}
-                    viewport={{ once: true }} transition={{ delay: i * 0.07 }}
-                    className="glass rounded-2xl p-5 border border-white/8 hover:border-white/15 transition-all overflow-hidden">
-                    <div className="relative h-16 rounded-lg border border-white/10 overflow-hidden mb-3 bg-white/[0.02]">
-                      <Image src={f.art} alt={f.label} fill className="object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#060c18]/70 to-transparent" />
+                    viewport={{ once: true }} transition={{ delay: i * 0.08 }}
+                    className={`rounded-2xl p-6 border bg-gradient-to-br ${f.color} ${f.border} transition-all group`}>
+                    <div className={`w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                      <f.icon className={`w-6 h-6 ${f.icon_color}`} />
                     </div>
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${
-                      f.color === 'sky' ? 'bg-sky-500/10' :
-                      f.color === 'emerald' ? 'bg-emerald-500/10' :
-                      f.color === 'violet' ? 'bg-violet-500/10' : 'bg-amber-500/10'
-                    }`}>
-                      <f.icon className={`w-5 h-5 ${
-                        f.color === 'sky' ? 'text-sky-400' :
-                        f.color === 'emerald' ? 'text-emerald-400' :
-                        f.color === 'violet' ? 'text-violet-400' : 'text-amber-400'
-                      }`} />
-                    </div>
-                    <div className="font-semibold text-sm mb-0.5">{f.label}</div>
-                    <div className="text-xs text-slate-500">{f.desc}</div>
+                    <div className="font-bold text-white mb-1">{f.label}</div>
+                    <div className="text-sm text-slate-500">{f.desc}</div>
                   </motion.div>
                 ))}
               </div>
-              <div className="mt-6 grid md:grid-cols-3 gap-4">
+
+              <div className="mt-5 grid md:grid-cols-3 gap-4">
                 {[
-                  { title: 'Kebijakan Fair Play', desc: 'Deteksi anti-cheat berlapis dan audit pertandingan otomatis.' },
-                  { title: 'Ranking Transparan', desc: 'Perubahan ELO dan leaderboard diperbarui real-time.' },
-                  { title: 'Aturan Kompetisi Jelas', desc: 'Syarat turnamen, status akun, dan proses banding terbuka.' },
+                  { title: '⚖️ Kebijakan Fair Play', desc: 'Deteksi anti-cheat berlapis dan audit pertandingan otomatis setiap game.' },
+                  { title: '📊 Ranking Transparan', desc: 'Perubahan ELO dan leaderboard diperbarui real-time setiap match selesai.' },
+                  { title: '📋 Aturan Kompetisi Jelas', desc: 'Syarat turnamen, status akun, dan proses banding terbuka dan tertulis.' },
                 ].map((item) => (
-                  <div key={item.title} className="glass rounded-2xl p-4 border border-white/8">
-                    <p className="text-sm font-semibold text-white">{item.title}</p>
-                    <p className="text-xs text-slate-400 mt-1.5">{item.desc}</p>
+                  <div key={item.title} className="glass-gold rounded-2xl p-5">
+                    <p className="text-sm font-bold text-white mb-2">{item.title}</p>
+                    <p className="text-xs text-slate-400 leading-relaxed">{item.desc}</p>
                   </div>
                 ))}
               </div>
             </section>
 
-            {/* ── CTA ───────────────────────────────────────────── */}
-            <section className="relative z-10 max-w-4xl mx-auto px-6 py-20 text-center">
+            {/* ── CTA ── */}
+            <section className="relative z-10 max-w-4xl mx-auto px-6 py-24 text-center">
               <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }}
-                className="relative overflow-hidden glass rounded-3xl p-12 border border-white/10">
-                <div className="absolute inset-0 bg-gradient-to-br from-sky-600/10 to-violet-600/10" />
+                className="relative overflow-hidden rounded-3xl p-14 border border-amber-500/20"
+                style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(6,7,15,0.95) 50%, rgba(245,158,11,0.05) 100%)' }}>
+                {/* Glow */}
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/8 to-yellow-600/5 rounded-3xl" />
+                {/* Corner ornaments */}
+                <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-amber-400/40 rounded-tl-3xl" />
+                <div className="absolute top-0 right-0 w-20 h-20 border-t-2 border-r-2 border-amber-400/40 rounded-tr-3xl" />
+                <div className="absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 border-amber-400/40 rounded-bl-3xl" />
+                <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-amber-400/40 rounded-br-3xl" />
+
                 <div className="relative z-10">
-                  <Crown className="w-12 h-12 text-yellow-400 mx-auto mb-5" />
-                  <h2 className="text-3xl font-black mb-3">Siap Naik ke Level Berikutnya?</h2>
-                  <p className="text-slate-400 mb-8 max-w-md mx-auto">
-                    Daftar gratis, mainkan match pertama, dan naikkan ranking kamu hari ini.
+                  <div className="w-20 h-20 btn-gold rounded-2xl flex items-center justify-center mx-auto mb-6 text-3xl text-black animate-float">
+                    ♔
+                  </div>
+                  <h2 className="text-4xl lg:text-5xl font-black mb-4">
+                    Siap Jadi <span className="gradient-text">Grandmaster</span>?
+                  </h2>
+                  <p className="text-slate-400 mb-10 max-w-md mx-auto text-lg">
+                    Daftar gratis sekarang, mainkan match pertama, dan mulai perjalanan esports caturmu.
                   </p>
-                  <div className="flex flex-wrap items-center justify-center gap-3">
+                  <div className="flex flex-wrap items-center justify-center gap-4">
                     <button onClick={() => setMode('register')}
-                    className="px-8 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 rounded-2xl font-bold text-base hover:opacity-90 transition-opacity shadow-2xl shadow-blue-500/30">
-                      Daftar Gratis
+                      className="btn-gold flex items-center gap-2.5 px-10 py-4 rounded-2xl font-black text-lg text-black">
+                      <Crown className="w-5 h-5" /> Daftar Gratis Sekarang
+                    </button>
+                    <button onClick={() => setMode('login')}
+                      className="px-10 py-4 rounded-2xl font-bold text-lg border border-white/15 hover:border-amber-500/30 text-slate-300 hover:text-white transition-all">
+                      Sudah Punya Akun
                     </button>
                   </div>
                 </div>

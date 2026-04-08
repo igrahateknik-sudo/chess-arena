@@ -52,6 +52,7 @@ const io = new Server(server, {
   transports: ['websocket', 'polling'],
   pingTimeout: 60000,
   pingInterval: 25000,
+  maxHttpBufferSize: 1e5, // SEC1: 100 KB max payload — prevents oversized payload attacks
 });
 
 // ── Redis Adapter (optional — only when REDIS_URL is set) ────────────────────

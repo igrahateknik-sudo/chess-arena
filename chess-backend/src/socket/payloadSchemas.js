@@ -56,6 +56,20 @@ const tabHiddenSchema = z.object({
   totalHiddenMs: z.number().int().min(0).max(3_600_000),
 });
 
+// C5: Zod schema for queue:join — was previously unvalidated raw destructuring
+const ALLOWED_INITIALS  = [60, 120, 180, 300, 600, 900];  // 1, 2, 3, 5, 10, 15 min
+const ALLOWED_INCREMENTS = [0, 1, 2, 3, 5, 10];
+const queueJoinSchema = z.object({
+  timeControl: z.object({
+    initial:   z.number().int().refine(v => ALLOWED_INITIALS.includes(v),
+      { message: `initial must be one of ${ALLOWED_INITIALS.join(',')}` }),
+    increment: z.number().int().refine(v => ALLOWED_INCREMENTS.includes(v),
+      { message: `increment must be one of ${ALLOWED_INCREMENTS.join(',')}` }),
+  }),
+  stakes: z.number().int().min(0).max(10_000_000).default(0),  // max 10M IDR
+  color:  z.enum(['white', 'black', 'random']).optional(),
+});
+
 // ── Validation helper ─────────────────────────────────────────────────────────
 
 /**
@@ -105,6 +119,7 @@ module.exports = {
     spectateSchema,
     chatSchema,
     tabHiddenSchema,
+    queueJoinSchema,
   },
   validateOrReject,
 };
