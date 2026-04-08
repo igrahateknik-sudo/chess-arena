@@ -182,7 +182,7 @@ ALTER TABLE wallets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 
 -- Public read for leaderboard
-CREATE POLICY "Public read users" ON users FOR SELECT USING (true);
+CREATE VIEW public_profiles AS SELECT id, username, elo, title, country, avatar_url, online, created_at FROM users WHERE is_public = true; GRANT SELECT ON public_profiles TO anon, authenticated;
 CREATE POLICY "Users manage own wallet" ON wallets FOR ALL USING (auth.uid()::text = user_id::text);
 CREATE POLICY "Users view own transactions" ON transactions FOR SELECT USING (auth.uid()::text = user_id::text);
 
