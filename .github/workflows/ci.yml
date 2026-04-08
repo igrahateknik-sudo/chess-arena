@@ -36,7 +36,7 @@ jobs:
           # Dummy values so Supabase client doesn't crash at import time
           SUPABASE_URL: https://placeholder.supabase.co
           SUPABASE_SERVICE_KEY: placeholder-key
-          JWT_SECRET: test-secret-key
+          JWT_SECRET: test-secret-key-minimum-32-chars-padded
           MIDTRANS_SERVER_KEY: placeholder-server-key
 
       - name: Upload coverage
