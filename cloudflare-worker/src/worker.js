@@ -60,6 +60,20 @@ const MALICIOUS = [
   /(?:^|@)(?:localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|169\.254\.|10\.\d+\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|::1)/i,
 ];
 
+// ── In-memory anomaly counters (per isolate, resets every 60s) ───────────────
+const anomaly = { authBlocks: 0, badRequests: 0, totalRequests: 0, resetAt: Date.now() + 60_000 };
+
+function trackAnomaly(path, status) {
+  const now = Date.now();
+  if (now > anomaly.resetAt) {
+    anomaly.authBlocks = 0; anomaly.badRequests = 0;
+    anomaly.totalRequests = 0; anomaly.resetAt = now + 60_000;
+  }
+  anomaly.totalRequests++;
+  if (status === 429 && (path.includes('/auth/login') || path.includes('/auth/register'))) anomaly.authBlocks++;
+  if (status === 400 || status === 403) anomaly.badRequests++;
+}
+
 // ── In-memory rate limit store ────────────────────────────────────────────────
 // NOTE: Cloudflare Workers isolates are per-PoP, state resets on isolate cold-start.
 // For production-grade rate limiting, upgrade to Cloudflare Rate Limiting rules.
@@ -129,6 +143,25 @@ export default {
                    '0.0.0.0';
     const path   = url.pathname;
 
+    // ── 0. Worker health / alert endpoint ─────────────────────────────────
+    if (path === '/_worker/health') {
+      const alerts = [];
+      if (anomaly.authBlocks > 50)    alerts.push({ type: 'BRUTE_FORCE_SPIKE',    count: anomaly.authBlocks });
+      if (anomaly.badRequests > 30)   alerts.push({ type: 'HIGH_BAD_REQUEST_RATE', count: anomaly.badRequests });
+      if (anomaly.totalRequests > 500) alerts.push({ type: 'TRAFFIC_SPIKE',        count: anomaly.totalRequests });
+
+      return new Response(JSON.stringify({
+        status: 'ok',
+        worker: 'chess-arena-security',
+        counters: { ...anomaly },
+        alerts,
+        ts: new Date().toISOString(),
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...securityHeaders(origin) },
+      });
+    }
+
     // ── 1. CORS Preflight ──────────────────────────────────────────────────
     if (method === 'OPTIONS') {
       return new Response(null, {
@@ -145,6 +178,7 @@ export default {
     // ── 2. Block malicious User-Agents ─────────────────────────────────────
     for (const pattern of BLOCKED_UA) {
       if (pattern.test(ua)) {
+        trackAnomaly(path, 403);
         return errResp(403, 'Forbidden', origin);
       }
     }
@@ -242,9 +276,12 @@ export default {
     respHeaders.delete('X-Powered-By');
     respHeaders.delete('Via');
 
-    return new Response(backendResp.body, {
+    const finalResp = new Response(backendResp.body, {
       status:  backendResp.status,
       headers: respHeaders,
     });
+
+    trackAnomaly(path, backendResp.status);
+    return finalResp;
   },
 };

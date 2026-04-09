@@ -8,7 +8,8 @@
     "dev": "nodemon src/server.js",
     "test": "jest --runInBand --forceExit",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage --runInBand --forceExit"
+    "test:coverage": "jest --coverage --runInBand --forceExit",
+    "monitor": "node scripts/monitor.js"
   },
   "jest": {
     "testEnvironment": "node",
