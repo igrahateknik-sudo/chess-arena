@@ -1,0 +1,9 @@
+name = "chess-arena-security"
+main = "src/worker.js"
+compatibility_date = "2024-11-01"
+account_id = "8bd5f17cb3fe2bffbb63937653c23543"
+
+[vars]
+BACKEND_URL   = "https://chess-arena-backend-production-4548.up.railway.app"
+FRONTEND_URL  = "https://chess-app-two-kappa.vercel.app"
+ENVIRONMENT   = "production"
