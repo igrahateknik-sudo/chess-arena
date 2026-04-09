@@ -1,0 +1,52 @@
+{
+  "packageId": "com.chessarena.app",
+  "host": "chess-app-two-kappa.vercel.app",
+  "name": "Chess Arena",
+  "launcherName": "Chess Arena",
+  "display": "standalone",
+  "themeColor": "#f59e0b",
+  "navigationColor": "#06070f",
+  "navigationColorDark": "#06070f",
+  "navigationDividerColor": "#1e2035",
+  "navigationDividerColorDark": "#1e2035",
+  "backgroundColor": "#06070f",
+  "enableNotifications": false,
+  "startUrl": "/dashboard",
+  "iconUrl": "https://chess-app-two-kappa.vercel.app/icons/icon-512.png",
+  "maskableIconUrl": "https://chess-app-two-kappa.vercel.app/icons/icon-512.png",
+  "monochromeIconUrl": "https://chess-app-two-kappa.vercel.app/icons/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "chess-arena"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Main Cepat",
+      "short_name": "Main",
+      "url": "/game",
+      "icons": [{ "src": "https://chess-app-two-kappa.vercel.app/icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Turnamen",
+      "short_name": "Turnamen",
+      "url": "/tournament",
+      "icons": [{ "src": "https://chess-app-two-kappa.vercel.app/icons/icon-96.png", "sizes": "96x96" }]
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://chess-app-two-kappa.vercel.app/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://chess-app-two-kappa.vercel.app/",
+  "minSdkVersion": 21,
+  "orientation": "portrait"
+}

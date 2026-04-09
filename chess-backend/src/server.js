@@ -262,6 +262,22 @@ io.use(async (socket, next) => {
   }
 });
 
+// ── Throttled lobby:online broadcaster ──────────────────────────────────────
+// Instead of io.emit on every connect/disconnect (O(n²) at scale),
+// broadcast at most once per second via a fixed interval.
+// At 1000 concurrent users: 1 msg/sec to all vs 1000 msg/sec per join.
+let _lobbyBroadcastScheduled = false;
+function scheduleLobbyBroadcast() {
+  if (_lobbyBroadcastScheduled) return;
+  _lobbyBroadcastScheduled = true;
+  setTimeout(() => {
+    _lobbyBroadcastScheduled = false;
+    const count = io.sockets.sockets.size;
+    const activeGames = [...gameCache.values()].filter(g => g.status === 'active').length;
+    io.emit('lobby:online', { count, activeGames });
+  }, 1000);
+}
+
 // ── Socket.io Connection ─────────────────────────────────────────────────────
 io.on('connection', async (socket) => {
   const { userId, username } = socket;
@@ -273,10 +289,8 @@ io.on('connection', async (socket) => {
   // Mark online in Redis presence cache
   await PresenceCache.setOnline(userId, socket.id).catch(() => {});
 
-  // Broadcast updated online count + active games
-  const onlineCount = io.sockets.sockets.size;
-  const activeGames = [...gameCache.values()].filter(g => g.status === 'active').length;
-  io.emit('lobby:online', { count: onlineCount, activeGames });
+  // Broadcast updated online count (throttled — max once per second)
+  scheduleLobbyBroadcast();
 
   // ── Per-user rate limiter ─────────────────────────────────────────────────
   // Shared across all sockets for the same userId — prevents multi-tab bypass.
@@ -329,9 +343,7 @@ io.on('connection', async (socket) => {
   // ── Disconnect ───────────────────────────────────────────────────────────
   socket.on('disconnect', async () => {
     await PresenceCache.setOffline(userId).catch(() => {});
-    const onlineCountAfter = io.sockets.sockets.size;
-    const activeGamesAfter = [...gameCache.values()].filter(g => g.status === 'active').length;
-    io.emit('lobby:online', { count: onlineCountAfter, activeGames: activeGamesAfter });
+    scheduleLobbyBroadcast(); // throttled broadcast
     logger.info('Socket disconnected', { username, socketId: socket.id });
     // Clean up per-user rate limit windows if user has no remaining sockets
     const userRoom = io.sockets.adapter.rooms.get(userId);

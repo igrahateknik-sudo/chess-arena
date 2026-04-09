@@ -3,6 +3,7 @@
   "target": {
     "namespace": "android_app",
     "package_name": "com.chessarena.app",
+    "sha256_cert_fingerprints_note": "Run: keytool -list -v -keystore android.keystore -alias chess-arena | grep SHA256",
     "sha256_cert_fingerprints": [
       "REPLACE_WITH_YOUR_KEYSTORE_SHA256_FINGERPRINT"
     ]

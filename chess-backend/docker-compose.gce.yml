@@ -14,12 +14,21 @@ volumes:
 
 services:
 
-  # ── Redis (Socket.io adapter + pub/sub) ─────────────────────────────────
+  # ── Redis (Socket.io adapter + game state cache + pub/sub) ─────────────
   redis:
     image: redis:7-alpine
     container_name: chess-redis
     restart: unless-stopped
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save ""
+    command: >
+      redis-server
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save ""
+      --tcp-backlog 511
+      --tcp-keepalive 60
+      --timeout 0
+      --hz 20
+      --lazyfree-lazy-eviction yes
     volumes:
       - redis-data:/data
     networks:
@@ -29,8 +38,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 600M
+        reservations:
+          memory: 128M
 
-  # ── Chess Backend (Node.js Express + Socket.io) ──────────────────────────
+  # ── Chess Backend (Node.js + PM2 cluster + Socket.io) ───────────────────
   backend:
     build:
       context: .
@@ -42,8 +58,17 @@ services:
       NODE_ENV: production
       PORT: 4000
       REDIS_URL: redis://redis:6379
+      # PM2 cluster will spawn one process per CPU core
+      # e2-standard-2  → 2 workers  (supports ~300 concurrent matches)
+      # e2-standard-4  → 4 workers  (supports ~700 concurrent matches)
+      # e2-standard-8  → 8 workers  (supports ~1500+ concurrent matches)
+      UV_THREADPOOL_SIZE: 16
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
     ports:
-      - "127.0.0.1:4000:4000"   # Only expose to localhost (nginx proxies)
+      - "127.0.0.1:4000:4000"
     depends_on:
       redis:
         condition: service_healthy
@@ -53,15 +78,16 @@ services:
       test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
       interval: 30s
       timeout: 10s
-      start_period: 20s
+      start_period: 30s
       retries: 3
     deploy:
       resources:
         limits:
-          cpus: '2.0'
-          memory: 1G
+          cpus: '3.5'
+          memory: 3G
         reservations:
-          memory: 256M
+          cpus: '1.0'
+          memory: 512M
 
   # ── Nginx (SSL termination + reverse proxy) ──────────────────────────────
   nginx:

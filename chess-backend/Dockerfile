@@ -23,11 +23,13 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install stockfish binary (Layer 5: engine detection via UCI spawn)
-# node:20-slim = Debian Bookworm — stockfish ada di repo standar
+# Install stockfish + pm2 dependencies
 RUN apt-get update \
  && apt-get install -y --no-install-recommends stockfish \
  && rm -rf /var/lib/apt/lists/*
+
+# Install PM2 globally for process clustering
+RUN npm install -g pm2@latest
 
 # Non-root user untuk security
 RUN groupadd --system --gid 1001 nodejs \
@@ -46,4 +48,5 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD wget -qO- http://localhost:${PORT:-4000}/health || exit 1
 
-CMD ["node", "src/server.js"]
+# PM2 cluster mode: uses all available CPUs, graceful reload, auto-restart
+CMD ["pm2-runtime", "ecosystem.config.js", "--env", "production"]
