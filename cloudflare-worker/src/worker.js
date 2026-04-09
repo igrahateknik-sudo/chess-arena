@@ -20,6 +20,8 @@
 const BACKEND_URL = 'https://chess-arena-backend-production-4548.up.railway.app';
 
 const ALLOWED_ORIGINS = [
+  'https://www.chess-arena.app',
+  'https://chess-arena.app',
   'https://chess-app-two-kappa.vercel.app',
   'http://localhost:3000',
   'http://localhost:3001',

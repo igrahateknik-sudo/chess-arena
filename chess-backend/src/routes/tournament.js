@@ -99,6 +99,24 @@ router.get('/upcoming-hourly', async (req, res) => {
   }
 });
 
+// ── GET /api/tournament/my-registrations ─────────────────────────────────────
+// Returns list of tournament IDs the authenticated user is registered for
+router.get('/my-registrations', requireAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('tournament_registrations')
+      .select('tournament_id')
+      .eq('user_id', req.userId);
+
+    if (error) throw error;
+
+    res.json({ tournamentIds: (data || []).map(r => r.tournament_id) });
+  } catch (err) {
+    console.error('[tournament/my-registrations]', err);
+    res.status(500).json({ error: 'Failed to fetch registrations' });
+  }
+});
+
 // ── GET /api/tournament/:id ───────────────────────────────────────────────────
 // Get a single tournament with registration count
 router.get('/:id', async (req, res) => {
@@ -187,7 +205,7 @@ router.post('/:id/register', requireAuth, async (req, res) => {
       return res.status(409).json({ error: 'Tournament is full' });
     }
 
-    // Validate entry fee server-side (frontend sends amount; verify it matches tournament definition)
+    // Validate entry fee server-side
     const MAX_ENTRY_FEE = 10_000_000; // 10 juta IDR hard cap
     if (tournament.entry_fee && tournament.entry_fee > 0) {
       if (tournament.entry_fee < 0 || !Number.isFinite(tournament.entry_fee)) {
@@ -198,36 +216,48 @@ router.post('/:id/register', requireAuth, async (req, res) => {
       }
     }
 
-    // Debit entry fee if applicable
-    let paid = false;
-    if (tournament.entry_fee && tournament.entry_fee > 0) {
-      await wallets.debit(userId, tournament.entry_fee);
-
-      await transactions.create({
-        user_id: userId,
-        type: 'tournament_entry',
-        amount: -tournament.entry_fee,
-        status: 'completed',
-        description: `Entry fee for tournament: ${tournament.name}`,
-        metadata: { tournament_id: id },
-      });
-
-      paid = true;
-    }
-
-    // Create registration record
+    // Create registration record FIRST (before any debit) — atomic order prevents money loss on DB failure
     const { data: registration, error: regErr } = await supabase
       .from('tournament_registrations')
       .insert({
         tournament_id: id,
         user_id: userId,
-        paid,
+        paid: false,
         score: 0,
       })
       .select()
       .single();
 
     if (regErr) throw regErr;
+
+    // THEN debit entry fee — if this fails, rollback the registration
+    let paid = false;
+    if (tournament.entry_fee && tournament.entry_fee > 0) {
+      try {
+        await wallets.debit(userId, tournament.entry_fee);
+
+        await transactions.create({
+          user_id: userId,
+          type: 'tournament_entry',
+          amount: -tournament.entry_fee,
+          status: 'completed',
+          description: `Entry fee for tournament: ${tournament.name}`,
+          metadata: { tournament_id: id },
+        });
+
+        // Mark as paid
+        await supabase
+          .from('tournament_registrations')
+          .update({ paid: true })
+          .eq('id', registration.id);
+
+        paid = true;
+      } catch (debitErr) {
+        // Rollback: remove the registration so user can retry
+        await supabase.from('tournament_registrations').delete().eq('id', registration.id);
+        throw debitErr;
+      }
+    }
 
     // Notify the user
     await notifications.create(

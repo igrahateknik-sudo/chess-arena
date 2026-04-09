@@ -187,6 +187,14 @@ export default function TournamentPage() {
       .finally(() => setLoading(false));
   }, [activeTab]);
 
+  // Fetch user's existing registrations to restore joined state after refresh
+  useEffect(() => {
+    if (!token) return;
+    api.tournament.myRegistrations(token)
+      .then((data: { tournamentIds: string[] }) => setJoined(data.tournamentIds || []))
+      .catch(() => {}); // non-critical — just means join buttons may show for already-registered
+  }, [token]);
+
   // Fetch hourly tiers
   const fetchHourlyTiers = useCallback(() => {
     setTiersLoading(true);
@@ -374,13 +382,22 @@ export default function TournamentPage() {
                           Dibuka pukul :55
                         </div>
                       ) : isJoined ? (
-                        <button className="w-full py-2 rounded-xl text-sm font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center gap-1.5">
-                          <CheckCircle className="w-4 h-4" /> Terdaftar
-                        </button>
+                        <Link href={`/tournament/${tier.id}`}
+                          className="w-full py-2 rounded-xl text-sm font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center gap-1.5">
+                          <CheckCircle className="w-4 h-4" /> Terdaftar — Lihat Bracket
+                        </Link>
+                      ) : tier.status === 'active' ? (
+                        <div className="w-full py-2 rounded-xl text-center text-xs text-red-400 bg-red-500/10 border border-red-500/20 font-semibold">
+                          ● Sedang Berlangsung — Registrasi Ditutup
+                        </div>
+                      ) : isTierFull ? (
+                        <div className="w-full py-2 rounded-xl text-center text-xs text-[var(--text-muted)] bg-[var(--bg-hover)] border border-[var(--border)]">
+                          Slot Penuh
+                        </div>
                       ) : (
                         <button
                           onClick={() => handleJoin(tier)}
-                          disabled={joining === tier.id || !canJoin || !token}
+                          disabled={joining === tier.id || !token}
                           className="w-full py-2 rounded-xl text-sm font-bold transition-all
                             btn-gold text-black hover:opacity-90
                             disabled:opacity-40 flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20">
@@ -388,7 +405,11 @@ export default function TournamentPage() {
                             ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             : <Ticket className="w-4 h-4" />
                           }
-                          {!token ? 'Masuk untuk Daftar' : 'Gabung Bracket'}
+                          {!token
+                            ? 'Masuk untuk Daftar'
+                            : tier.entry_fee > 0
+                              ? `Beli Tiket — Rp ${tier.entry_fee.toLocaleString('id-ID')}`
+                              : 'Daftar Gratis'}
                         </button>
                       )}
                     </div>
@@ -570,12 +591,9 @@ export default function TournamentPage() {
                             <CheckCircle className="w-4 h-4" /> Sudah Bergabung — Lihat Bracket
                           </Link>
                         ) : (
-                          <button onClick={() => handleJoin(tournament)}
-                            disabled={joining === tournament.id}
-                            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white text-sm font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 disabled:opacity-60">
-                            {joining === tournament.id ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Zap className="w-4 h-4" />}
-                            Gabung Turnamen Live
-                          </button>
+                          <div className="w-full py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-semibold flex items-center justify-center gap-2">
+                            <Zap className="w-4 h-4" /> Sedang Berlangsung — Registrasi Ditutup
+                          </div>
                         )
                       ) : (
                         joined.includes(tournament.id) ? (

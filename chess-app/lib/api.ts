@@ -113,6 +113,9 @@ export const api = {
     register: (id: string, token: string) =>
       fetchAPI(`/api/tournament/${id}/register`, { method: 'POST' }, token),
 
+    myRegistrations: (token: string) =>
+      fetchAPI('/api/tournament/my-registrations', {}, token),
+
     players: (id: string) =>
       fetchAPI(`/api/tournament/${id}/players`),
 
