@@ -116,6 +116,12 @@ export const api = {
     players: (id: string) =>
       fetchAPI(`/api/tournament/${id}/players`),
 
+    standings: (id: string) =>
+      fetchAPI(`/api/tournament/${id}/standings`),
+
+    bracket: (id: string) =>
+      fetchAPI(`/api/tournament/${id}/bracket`),
+
     create: (token: string, body: Record<string, unknown>) =>
       fetchAPI('/api/tournament', { method: 'POST', body: JSON.stringify(body) }, token),
   },

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import {
   Trophy, ChevronRight, Zap, CheckCircle, Loader2,
   AlertCircle, Clock, Users, Ticket, Crown, TrendingUp
@@ -335,8 +336,10 @@ export default function TournamentPage() {
                       {/* Stats */}
                       <div className="space-y-2 mb-4">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-[var(--text-muted)]">Akses</span>
-                          <span className="font-black text-[var(--text-primary)]">Gratis</span>
+                          <span className="text-[var(--text-muted)]">Tiket</span>
+                          <span className="font-black text-[var(--text-primary)]">
+                            {tier.entry_fee > 0 ? `Rp ${tier.entry_fee.toLocaleString('id-ID')}` : 'GRATIS'}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-[var(--text-muted)]">Kontrol Waktu</span>
@@ -494,9 +497,11 @@ export default function TournamentPage() {
                           <div className="text-xl font-black text-yellow-400">{toPoints(tournament.prize_pool)}</div>
                         </div>
                         <div>
-                          <div className="text-xs text-[var(--text-muted)] mb-0.5">Akses</div>
+                          <div className="text-xs text-[var(--text-muted)] mb-0.5">Tiket</div>
                           <div className="text-xl font-black text-[var(--text-primary)]">
-                            GRATIS
+                            {tournament.entry_fee > 0
+                              ? `Rp ${tournament.entry_fee.toLocaleString('id-ID')}`
+                              : 'GRATIS'}
                           </div>
                         </div>
                         <div>
@@ -554,14 +559,16 @@ export default function TournamentPage() {
 
                       {/* Action */}
                       {tournament.status === 'finished' ? (
-                        <button className="w-full py-2.5 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] text-sm font-medium hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center gap-2">
+                        <Link href={`/tournament/${tournament.id}`}
+                          className="w-full py-2.5 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] text-sm font-medium hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center gap-2">
                           Lihat Hasil <ChevronRight className="w-4 h-4" />
-                        </button>
+                        </Link>
                       ) : tournament.status === 'active' ? (
                         joined.includes(tournament.id) ? (
-                          <button className="w-full py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-sm font-semibold flex items-center justify-center gap-2">
+                          <Link href={`/tournament/${tournament.id}`}
+                            className="w-full py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-sm font-semibold flex items-center justify-center gap-2">
                             <CheckCircle className="w-4 h-4" /> Sudah Bergabung — Lihat Bracket
-                          </button>
+                          </Link>
                         ) : (
                           <button onClick={() => handleJoin(tournament)}
                             disabled={joining === tournament.id}
@@ -572,15 +579,18 @@ export default function TournamentPage() {
                         )
                       ) : (
                         joined.includes(tournament.id) ? (
-                          <button className="w-full py-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 text-sm font-semibold flex items-center justify-center gap-2">
-                            <CheckCircle className="w-4 h-4" /> Terdaftar
-                          </button>
+                          <Link href={`/tournament/${tournament.id}`}
+                            className="w-full py-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 text-sm font-semibold flex items-center justify-center gap-2">
+                            <CheckCircle className="w-4 h-4" /> Terdaftar — Lihat Detail
+                          </Link>
                         ) : (
                           <button onClick={() => handleJoin(tournament)}
                             disabled={joining === tournament.id || isFull(tournament)}
                             className="w-full py-2.5 rounded-xl btn-gold text-black text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20">
                             {joining === tournament.id ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Trophy className="w-4 h-4" />}
-                            Daftar — GRATIS
+                            {tournament.entry_fee > 0
+                              ? `Daftar — Rp ${tournament.entry_fee.toLocaleString('id-ID')}`
+                              : 'Daftar — GRATIS'}
                           </button>
                         )
                       )}

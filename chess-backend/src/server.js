@@ -303,6 +303,18 @@ io.on('connection', async (socket) => {
   registerGameRoom(io, socket, userId);
   registerSpectator(io, socket);
 
+  // ── Tournament room subscription ──────────────────────────────────────────
+  socket.on('tournament:join', ({ tournamentId } = {}) => {
+    if (tournamentId && typeof tournamentId === 'string') {
+      socket.join(`tournament:${tournamentId}`);
+    }
+  });
+  socket.on('tournament:leave', ({ tournamentId } = {}) => {
+    if (tournamentId && typeof tournamentId === 'string') {
+      socket.leave(`tournament:${tournamentId}`);
+    }
+  });
+
   // ── Lobby chat ───────────────────────────────────────────────────────────
   socket.on('lobby:chat', ({ message }) => {
     if (!message || !message.trim()) return;
@@ -354,7 +366,7 @@ const PORT = process.env.PORT || 4000;
 
     startMonitor();
     startWalletCleanupJob();
-    startTournamentScheduler();
+    startTournamentScheduler(io);
   });
 })();
 

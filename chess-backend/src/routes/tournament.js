@@ -3,6 +3,7 @@ const router = express.Router();
 const { supabase, wallets, transactions, notifications } = require('../lib/db');
 const { requireAuth } = require('../middleware/auth');
 const { requireAdmin } = require('../middleware/adminAuth');
+const { generateRound } = require('../lib/tournamentScheduler');
 
 // ── GET /api/tournament ───────────────────────────────────────────────────────
 // List tournaments, optionally filtered by status: upcoming | active | finished
@@ -567,7 +568,7 @@ router.get('/:id/bracket', async (req, res) => {
     const { data: pairings } = await supabase
       .from('tournament_pairings')
       .select(`
-        id, round, result, board_number,
+        id, round, result, board_number, game_id,
         white:white_id (id, username, elo, avatar_url, title),
         black:black_id (id, username, elo, avatar_url, title)
       `)
@@ -598,7 +599,7 @@ router.get('/:id/bracket', async (req, res) => {
 });
 
 // ── POST /api/tournament/:id/next-round ───────────────────────────────────────
-// Admin: generate Swiss pairings for the next round
+// Admin: generate Swiss pairings for the next round + create game records
 router.post('/:id/next-round', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -612,70 +613,36 @@ router.post('/:id/next-round', requireAdmin, async (req, res) => {
     if (tErr || !tournament) return res.status(404).json({ error: 'Tournament not found' });
     if (tournament.status !== 'active') return res.status(400).json({ error: 'Tournament must be active' });
 
-    const nextRound = (tournament.current_round || 0) + 1;
-
-    // Fetch all registered players ordered by score (Swiss: pair by score group)
-    const { data: registrations, error: regErr } = await supabase
+    const { count: playerCount } = await supabase
       .from('tournament_registrations')
-      .select('user_id, score')
-      .eq('tournament_id', id)
-      .order('score', { ascending: false });
+      .select('id', { count: 'exact', head: true })
+      .eq('tournament_id', id);
 
-    if (regErr) throw regErr;
-    if (!registrations || registrations.length < 2) {
+    if (!playerCount || playerCount < 2) {
       return res.status(400).json({ error: 'Need at least 2 players to generate pairings' });
     }
 
-    // Simple Swiss pairing: pair adjacent players in score order.
-    // If odd number of players, last player gets a bye (score +1).
-    const players = [...registrations];
-    const pairingsToInsert = [];
-    let boardNumber = 1;
+    const nextRound = (tournament.current_round || 0) + 1;
 
-    for (let i = 0; i + 1 < players.length; i += 2) {
-      const [p1, p2] = [players[i], players[i + 1]];
-      // Alternate colors: even board → p1 white, odd board → p1 black
-      const whiteId = boardNumber % 2 === 1 ? p1.user_id : p2.user_id;
-      const blackId = boardNumber % 2 === 1 ? p2.user_id : p1.user_id;
-      pairingsToInsert.push({
-        tournament_id: id,
-        round:         nextRound,
-        board_number:  boardNumber++,
-        white_id:      whiteId,
-        black_id:      blackId,
-        result:        null, // pending
-      });
-    }
+    // Use the shared generateRound utility (creates pairings + game records + notifies)
+    await generateRound(id, nextRound, tournament.time_control);
 
-    // Bye player (if odd count)
-    if (players.length % 2 === 1) {
-      const byePlayer = players[players.length - 1];
-      // Award 1 point for bye
-      await supabase
-        .from('tournament_registrations')
-        .update({ score: (byePlayer.score || 0) + 1 })
-        .eq('tournament_id', id)
-        .eq('user_id', byePlayer.user_id);
-    }
-
-    const { data: inserted, error: pairErr } = await supabase
+    // Fetch the created pairings to return them
+    const { data: pairings } = await supabase
       .from('tournament_pairings')
-      .insert(pairingsToInsert)
-      .select();
-
-    if (pairErr) throw pairErr;
-
-    // Advance tournament round counter
-    await supabase
-      .from('tournaments')
-      .update({ current_round: nextRound })
-      .eq('id', id);
+      .select(`
+        id, round, result, board_number, game_id,
+        white:white_id (id, username, elo),
+        black:black_id (id, username, elo)
+      `)
+      .eq('tournament_id', id)
+      .eq('round', nextRound)
+      .order('board_number', { ascending: true });
 
     res.status(201).json({
       message: `Round ${nextRound} pairings created`,
       round:    nextRound,
-      pairings: inserted || [],
-      bye:      players.length % 2 === 1 ? players[players.length - 1].user_id : null,
+      pairings: pairings || [],
     });
   } catch (err) {
     console.error('[tournament/next-round]', err);
