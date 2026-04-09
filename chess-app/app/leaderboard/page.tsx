@@ -65,6 +65,7 @@ export default function LeaderboardPage() {
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
           <div>
+            <div className="esports-label mb-1">Global Rankings</div>
             <h1 className="text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
               <Trophy className="w-7 h-7 text-yellow-400" />
               Papan Peringkat
@@ -209,20 +210,30 @@ export default function LeaderboardPage() {
         {/* Your position sticky */}
         {myEntry && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="card border-amber-500/30 rounded-2xl p-4 bg-amber-500/5">
+            className="card card-accent-top border-amber-500/40 rounded-2xl p-4 bg-amber-500/5 shadow-[0_0_24px_rgba(245,158,11,0.08)]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-sm font-bold text-amber-400">#{myEntry.rank}</div>
-                <div className="w-9 h-9 rounded-xl overflow-hidden">
+                <div className="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-500/30 flex flex-col items-center justify-center flex-shrink-0">
+                  <span className="text-xs font-black text-amber-400/60 leading-none">Rank</span>
+                  <span className="text-base font-black text-amber-400 leading-none">#{myEntry.rank}</span>
+                </div>
+                <div className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-amber-400/40 flex-shrink-0">
                   <img src={user?.avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${user?.username}`} alt="" className="w-full h-full object-cover" />
                 </div>
                 <div>
-                  <div className="font-semibold text-[var(--text-primary)] text-sm">Posisi Kamu</div>
+                  <div className="flex items-center gap-2">
+                    <span className="esports-label">Posisi Kamu</span>
+                  </div>
+                  <div className="font-bold text-[var(--text-primary)] text-sm">{user?.username}</div>
                   <div className="text-xs text-[var(--text-muted)]">
                     {tc === 'global' ? `ELO ${user?.elo}` : `${tc.charAt(0).toUpperCase() + tc.slice(1)} ELO ${getDisplayElo(myEntry)}`}
-                    {' • '}{myEntry.winRate}% WR
+                    {' · '}{myEntry.winRate}% WR · {(myEntry.games_played || 0)} games
                   </div>
                 </div>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <div className="text-2xl font-black text-amber-400">{getDisplayElo(myEntry)}</div>
+                <div className="text-xs text-[var(--text-muted)]">ELO</div>
               </div>
             </div>
           </motion.div>

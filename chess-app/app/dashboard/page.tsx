@@ -212,7 +212,7 @@ export default function DashboardPage() {
                   </span>
                 )}
               </div>
-              <div className="text-2xl font-black text-[var(--text-primary)] mb-0.5">{card.value}</div>
+              <div className="text-3xl font-black text-[var(--text-primary)] mb-0.5 leading-none">{card.value}</div>
               <div className="text-xs font-medium text-[var(--text-muted)]">{card.label}</div>
               <div className="text-xs text-[var(--text-muted)] mt-0.5">{card.desc}</div>
             </motion.div>
@@ -225,6 +225,7 @@ export default function DashboardPage() {
           <motion.div variants={FADE} className="lg:col-span-2 card p-5 rounded-2xl">
             <div className="flex items-center justify-between mb-6">
               <div>
+                <div className="esports-label mb-0.5">Grafik</div>
                 <h3 className="font-bold text-[var(--text-primary)]">Performa ELO</h3>
                 <p className="text-xs text-[var(--text-muted)] mt-0.5">Riwayat rating kamu</p>
               </div>
@@ -315,7 +316,10 @@ export default function DashboardPage() {
           {/* Recent games */}
           <motion.div variants={FADE} className="card rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
-              <h3 className="font-bold text-[var(--text-primary)]">Game Terakhir</h3>
+              <div>
+                <div className="esports-label mb-0.5">Riwayat</div>
+                <h3 className="font-bold text-[var(--text-primary)]">Game Terakhir</h3>
+              </div>
               <Link href="/games" className="text-sm text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors">
                 Lihat semua <ChevronRight className="w-4 h-4" />
               </Link>
@@ -339,7 +343,7 @@ export default function DashboardPage() {
                 const result = game.winner === 'draw' ? 'draw'
                   : (game.winner === 'white') === isWhite ? 'win' : 'loss';
                 return (
-                  <div key={game.id} className="flex items-center gap-3 px-5 py-3 hover:bg-[var(--bg-hover)] transition-colors cursor-pointer">
+                  <div key={game.id} className={`flex items-center gap-3 pr-5 py-3 hover:bg-[var(--bg-hover)] transition-colors cursor-pointer ${result === 'win' ? 'row-win' : result === 'loss' ? 'row-loss' : 'row-draw'}`}>
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg font-bold
                       ${result === 'win' ? 'bg-emerald-500/10 text-emerald-400' : result === 'loss' ? 'bg-red-500/10 text-red-400' : 'bg-slate-500/10 text-slate-400'}`}>
                       {result === 'win' ? 'M' : result === 'loss' ? 'K' : 'S'}
@@ -376,7 +380,10 @@ export default function DashboardPage() {
           {/* Top players */}
           <motion.div variants={FADE} className="card rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
-              <h3 className="font-bold text-[var(--text-primary)]">Pemain Teratas</h3>
+              <div>
+                <div className="esports-label mb-0.5">Ranking</div>
+                <h3 className="font-bold text-[var(--text-primary)]">Pemain Teratas</h3>
+              </div>
               <Link href="/leaderboard" className="text-sm text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors">
                 Leaderboard <ChevronRight className="w-4 h-4" />
               </Link>

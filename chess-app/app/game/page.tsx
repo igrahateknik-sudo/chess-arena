@@ -376,27 +376,45 @@ export default function GamePage() {
           {step === 'matchmaking' && (
             <motion.div key="mm" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-              <div className="relative mb-8">
-                <div className="w-24 h-24 rounded-full border-4 border-amber-500/20 animate-ping absolute inset-0" />
-                <div className="w-24 h-24 rounded-full border-4 border-amber-500/10 animate-ping absolute inset-0" style={{ animationDelay: '0.4s' }} />
-                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-amber-500/20 to-yellow-500/20 flex items-center justify-center border border-amber-500/30">
-                  <Search className="w-10 h-10 text-amber-400" />
+
+              {/* VS layout */}
+              <div className="flex items-center gap-8 mb-8 w-full max-w-sm">
+                {/* My card */}
+                <div className="flex-1 card p-4 rounded-2xl text-center card-accent-top">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-2 ring-2 ring-amber-400/40 shadow-lg shadow-amber-500/10">
+                    <img src={user?.avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${user?.username}`} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="font-bold text-sm text-[var(--text-primary)] truncate">{user?.username}</div>
+                  <div className="text-xs text-amber-400 font-bold">{user?.elo} ELO</div>
+                </div>
+
+                {/* Center pulse */}
+                <div className="flex-shrink-0 relative">
+                  <div className="w-14 h-14 rounded-full border-2 border-amber-500/30 animate-ping absolute inset-0" />
+                  <div className="w-14 h-14 rounded-full border-2 border-amber-500/20 animate-ping absolute inset-0" style={{ animationDelay: '0.5s' }} />
+                  <div className="relative w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+                    <span className="text-amber-400 font-black text-sm">VS</span>
+                  </div>
+                </div>
+
+                {/* Opponent card (TBD) */}
+                <div className="flex-1 card p-4 rounded-2xl text-center opacity-60">
+                  <div className="w-16 h-16 rounded-2xl bg-[var(--bg-hover)] mx-auto mb-2 flex items-center justify-center">
+                    <Search className="w-6 h-6 text-[var(--text-muted)] animate-pulse" />
+                  </div>
+                  <div className="font-bold text-sm text-[var(--text-muted)]">Mencari...</div>
+                  <div className="text-xs text-[var(--text-muted)]">±{Math.min(100 + matchmakingTime * 5, 500)}</div>
                 </div>
               </div>
 
-              <h2 className="text-2xl font-black text-[var(--text-primary)] mb-2">Mencari Lawan...</h2>
-              <p className="text-[var(--text-muted)] mb-1">Mencari match <strong>{selectedTC.label}</strong></p>
+              <h2 className="text-xl font-black text-[var(--text-primary)] mb-1">Mencarikan Lawan Terbaik</h2>
+              <p className="text-sm text-[var(--text-muted)] mb-3">{selectedTC.label} • ELO {user?.elo}</p>
 
-              <p className="text-sm text-[var(--text-muted)] mt-4">
-                <span className="font-mono text-amber-400 text-lg">
-                  {String(Math.floor(matchmakingTime / 60)).padStart(2, '0')}:{String(matchmakingTime % 60).padStart(2, '0')}
-                </span>
-              </p>
+              <span className="font-mono text-amber-400 text-3xl font-black mb-4 block">
+                {String(Math.floor(matchmakingTime / 60)).padStart(2, '0')}:{String(matchmakingTime % 60).padStart(2, '0')}
+              </span>
 
-              <div className="flex flex-wrap gap-2 justify-center mt-6 mb-8">
-                <span className="text-xs px-3 py-1 rounded-full bg-[var(--bg-hover)] text-[var(--text-muted)]">
-                  ELO {user?.elo} ±{Math.min(100 + matchmakingTime * 5, 500)}
-                </span>
+              <div className="flex flex-wrap gap-2 justify-center mb-6">
                 {onlineUsers > 0 && (
                   <span className="text-xs px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
                     {onlineUsers.toLocaleString()} online
@@ -406,8 +424,9 @@ export default function GamePage() {
                   <Wifi className="w-3 h-3 inline mr-1" />Terhubung
                 </span>
               </div>
+
               {matchmakingError && (
-                <div className="mb-5 rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-4 py-2.5 text-sm text-yellow-300">
+                <div className="mb-5 rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-4 py-2.5 text-sm text-yellow-300 max-w-sm">
                   {matchmakingError}
                 </div>
               )}
@@ -424,6 +443,12 @@ export default function GamePage() {
   );
 }
 
+const TC_CATEGORY_STYLE: Record<string, { active: string; dot: string; label: string; emoji: string }> = {
+  bullet: { active: 'bg-red-500 shadow-red-500/30 text-white', dot: 'bg-red-400', label: 'text-red-400', emoji: '⚡' },
+  blitz:  { active: 'bg-orange-500 shadow-orange-500/30 text-white', dot: 'bg-orange-400', label: 'text-orange-400', emoji: '🔥' },
+  rapid:  { active: 'bg-emerald-500 shadow-emerald-500/30 text-white', dot: 'bg-emerald-400', label: 'text-emerald-400', emoji: '⏱' },
+};
+
 function TimeControlSelector({ selected, onSelect }: { selected: typeof TIME_CONTROLS[0]; onSelect: (tc: typeof TIME_CONTROLS[0]) => void }) {
   const grouped = {
     bullet: TIME_CONTROLS.filter(tc => tc.type === 'bullet'),
@@ -432,23 +457,35 @@ function TimeControlSelector({ selected, onSelect }: { selected: typeof TIME_CON
   };
   return (
     <div className="mb-6">
-      <h3 className="font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2"><Clock className="w-4 h-4 text-[var(--text-muted)]" /> Time Control</h3>
-      <div className="space-y-3">
-        {Object.entries(grouped).map(([type, tcs]) => (
-          <div key={type}>
-            <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">
-              {type === 'bullet' ? '⚡ Bullet' : type === 'blitz' ? '🔥 Blitz' : '⏱ Rapid'}
+      <h3 className="font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+        <Clock className="w-4 h-4 text-[var(--text-muted)]" /> Kontrol Waktu
+      </h3>
+      <div className="space-y-4">
+        {(Object.entries(grouped) as [string, typeof TIME_CONTROLS][]).map(([type, tcs]) => {
+          const cat = TC_CATEGORY_STYLE[type];
+          return (
+            <div key={type} className="card p-3 rounded-xl">
+              <div className={`flex items-center gap-2 mb-2.5`}>
+                <span className={`w-2 h-2 rounded-full ${cat.dot}`} />
+                <span className={`text-xs font-black uppercase tracking-widest ${cat.label}`}>
+                  {cat.emoji} {type.charAt(0).toUpperCase() + type.slice(1)}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {tcs.map(tc => (
+                  <button key={tc.label} onClick={() => onSelect(tc)}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg min-w-[64px] ${
+                      selected.label === tc.label
+                        ? `${cat.active} shadow-lg`
+                        : 'bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:bg-[var(--border)] shadow-none'
+                    }`}>
+                    {tc.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {tcs.map(tc => (
-                <button key={tc.label} onClick={() => onSelect(tc)}
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${selected.label === tc.label ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/25' : 'bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:bg-[var(--border)]'}`}>
-                  {tc.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

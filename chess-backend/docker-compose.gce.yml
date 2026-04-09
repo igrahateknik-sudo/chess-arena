@@ -1,0 +1,81 @@
+version: '3.9'
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Chess Arena — Google Compute Engine Production Stack
+#  Usage: docker compose -f docker-compose.gce.yml up -d
+# ─────────────────────────────────────────────────────────────────────────────
+
+networks:
+  arena-net:
+    driver: bridge
+
+volumes:
+  redis-data:
+
+services:
+
+  # ── Redis (Socket.io adapter + pub/sub) ─────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: chess-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save ""
+    volumes:
+      - redis-data:/data
+    networks:
+      - arena-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Chess Backend (Node.js Express + Socket.io) ──────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chess-backend
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "127.0.0.1:4000:4000"   # Only expose to localhost (nginx proxies)
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - arena-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          memory: 256M
+
+  # ── Nginx (SSL termination + reverse proxy) ──────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: chess-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro          # Let's Encrypt certs go here
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - backend
+    networks:
+      - arena-net
