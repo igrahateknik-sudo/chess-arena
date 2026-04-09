@@ -16,9 +16,11 @@
  *   Jika ya → buat round berikutnya (atau finish jika sudah 5 round).
  *
  * Prize split (dari total tiket terkumpul):
- *   80% → juara 1
- *   10% → juara 2
- *   10% → platform fee (tidak dibagikan)
+ *    4% → platform fee
+ *   96% net pool:
+ *     50% → juara 1
+ *     30% → juara 2
+ *     20% → juara 3
  */
 
 const { supabase, games, users, wallets, transactions, notifications } = require('./db');
@@ -51,8 +53,8 @@ const TIERS = [
   },
 ];
 
-const PRIZE_DISTRIBUTION = { '1': 0.80, '2': 0.10 };
-// 10% sisanya adalah platform fee — tidak didistribusikan
+const PLATFORM_FEE_PCT   = 0.04; // 4% platform fee
+const PRIZE_DISTRIBUTION = { '1': 0.50, '2': 0.30, '3': 0.20 }; // dari net pool (setelah fee)
 
 // ── Module-level io reference (set by startTournamentScheduler) ───────────────
 let _io = null;
@@ -109,7 +111,7 @@ async function createHourlyTournaments() {
       format: 'swiss',
       time_control: tier.time_control,
       prize_pool: 0,               // Dihitung saat aktivasi
-      prize_distribution: PRIZE_DISTRIBUTION,
+      prize_distribution: PRIZE_DISTRIBUTION, // 50/30/20 dari net pool (setelah 4% fee)
       entry_fee: tier.entry_fee,
       max_players: tier.max_players,
       min_elo: null,
@@ -276,17 +278,32 @@ async function distributePrizesAndFinish(tournament) {
     return;
   }
 
-  const prizePool = tournament.prize_pool || 0;
-  const winnerId = registrations[0].user_id;
+  const grossPool = tournament.prize_pool || 0;
+  const winnerId  = registrations[0].user_id;
 
-  // Distribusi hadiah
-  if (prizePool > 0) {
+  // Distribusi hadiah (potong 4% platform fee dulu)
+  if (grossPool > 0) {
+    const platformFee = Math.floor(grossPool * PLATFORM_FEE_PCT);
+    const netPool     = grossPool - platformFee;
+
+    // Catat platform fee
+    if (platformFee > 0) {
+      await transactions.create({
+        user_id: null,
+        type: 'platform_fee',
+        amount: platformFee,
+        status: 'completed',
+        description: `Platform fee 4% — ${tournament.name}`,
+        metadata: { tournament_id: tournament.id, gross_pool: grossPool },
+      }).catch(() => {}); // non-fatal jika user_id null tidak diizinkan
+    }
+
     for (const [rank, pct] of Object.entries(PRIZE_DISTRIBUTION)) {
       const idx = parseInt(rank) - 1;
       if (idx >= registrations.length) continue;
 
       const player = registrations[idx];
-      const prize = Math.floor(prizePool * pct);
+      const prize  = Math.floor(netPool * pct);
       if (prize <= 0) continue;
 
       // Credit wallet

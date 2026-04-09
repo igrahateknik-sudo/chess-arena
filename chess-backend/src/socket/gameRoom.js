@@ -34,7 +34,7 @@ const { schemas, validateOrReject } = require('./payloadSchemas');
 
 // ── Other dependencies ────────────────────────────────────────────────────────
 const { getRedisClient }   = require('../lib/redis');
-const { games, users, wallets, transactions, notifications, eloHistory } = require('../lib/db');
+const { supabase, games, users, wallets, transactions, notifications, eloHistory } = require('../lib/db');
 const { calculateBothElo } = require('../lib/elo');
 const {
   analyzeGame, analyzeRealtime, enforceAnticheat,
@@ -565,6 +565,92 @@ async function endGame(io, gameId, winner, endReason, context = {}) {
 
     // Invalidate leaderboard cache — ELO just changed
     LeaderboardCache.invalidateAll().catch(() => {});
+
+    // ── Tournament score update ───────────────────────────────────────────
+    // If this game is part of a tournament pairing, update scores & pairing result
+    try {
+      const { data: pairing } = await supabase
+        .from('tournament_pairings')
+        .select('id, tournament_id, white_id, black_id')
+        .eq('game_id', gameId)
+        .maybeSingle();
+
+      if (pairing) {
+        const pairingResult = winner === 'draw' ? '1/2-1/2'
+          : winner === 'white' ? '1-0' : '0-1';
+
+        // Update pairing result
+        await supabase
+          .from('tournament_pairings')
+          .update({ result: pairingResult })
+          .eq('id', pairing.id);
+
+        const winnerId = winner === 'white' ? game.whiteId : winner === 'black' ? game.blackId : null;
+        const loserId  = winner === 'white' ? game.blackId : winner === 'black' ? game.whiteId : null;
+
+        if (winner === 'draw') {
+          // Both get 0.5 points
+          for (const uid of [game.whiteId, game.blackId]) {
+            const { data: reg } = await supabase
+              .from('tournament_registrations')
+              .select('score, draws')
+              .eq('tournament_id', pairing.tournament_id)
+              .eq('user_id', uid)
+              .maybeSingle();
+            if (reg) {
+              await supabase
+                .from('tournament_registrations')
+                .update({ score: (reg.score || 0) + 0.5, draws: (reg.draws || 0) + 1 })
+                .eq('tournament_id', pairing.tournament_id)
+                .eq('user_id', uid);
+            }
+          }
+        } else {
+          // Winner gets 1 point
+          const { data: winReg } = await supabase
+            .from('tournament_registrations')
+            .select('score, wins')
+            .eq('tournament_id', pairing.tournament_id)
+            .eq('user_id', winnerId)
+            .maybeSingle();
+          if (winReg) {
+            await supabase
+              .from('tournament_registrations')
+              .update({ score: (winReg.score || 0) + 1, wins: (winReg.wins || 0) + 1 })
+              .eq('tournament_id', pairing.tournament_id)
+              .eq('user_id', winnerId);
+          }
+          // Loser increments losses
+          const { data: loseReg } = await supabase
+            .from('tournament_registrations')
+            .select('losses')
+            .eq('tournament_id', pairing.tournament_id)
+            .eq('user_id', loserId)
+            .maybeSingle();
+          if (loseReg) {
+            await supabase
+              .from('tournament_registrations')
+              .update({ losses: (loseReg.losses || 0) + 1 })
+              .eq('tournament_id', pairing.tournament_id)
+              .eq('user_id', loserId);
+          }
+        }
+
+        // Notify tournament room of score update
+        io.to(`tournament:${pairing.tournament_id}`).emit('tournament:update', {
+          tournamentId: pairing.tournament_id,
+          event: 'game_result',
+          gameId,
+          result: pairingResult,
+          winnerId,
+        });
+
+        console.log(`[Tournament] Game ${gameId} result recorded: ${pairingResult} → tournament ${pairing.tournament_id}`);
+      }
+    } catch (tournamentErr) {
+      // Non-fatal — game already finished, tournament score update failed
+      console.error('[endGame:tournament]', tournamentErr.message);
+    }
 
     // Cleanup state after 5 minutes (allows reconnect & result viewing)
     const cleanupTimer = setTimeout(() => {

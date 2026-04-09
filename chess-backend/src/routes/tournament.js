@@ -407,23 +407,34 @@ router.post('/:id/finish', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'No registered players' });
     }
 
-    // ── Prize Distribution ────────────────────────────────────────────────
-    const prizes = [];
-    const prizePool = tournament.prize_pool || 0;
+    // ── Prize Distribution (4% platform fee, sisa 50/30/20 ke top 3) ─────
+    const prizes      = [];
+    const grossPool   = tournament.prize_pool || 0;
+    const PLATFORM_FEE_PCT = 0.04;
 
-    if (prizePool > 0) {
-      // Default distribution if none specified: 50/30/20 for top 3
-      const dist = tournament.prize_distribution || {
-        '1': 0.5,
-        '2': 0.3,
-        '3': 0.2,
-      };
+    if (grossPool > 0) {
+      const platformFee = Math.floor(grossPool * PLATFORM_FEE_PCT);
+      const netPool     = grossPool - platformFee;
+
+      // Catat platform fee
+      if (platformFee > 0) {
+        await transactions.create({
+          user_id: null,
+          type: 'platform_fee',
+          amount: platformFee,
+          status: 'completed',
+          description: `Platform fee 4% — ${tournament.name}`,
+          metadata: { tournament_id: id, gross_pool: grossPool },
+        }).catch(() => {});
+      }
+
+      const dist = tournament.prize_distribution || { '1': 0.50, '2': 0.30, '3': 0.20 };
 
       for (const [rank, pct] of Object.entries(dist)) {
         const idx = parseInt(rank) - 1;
         if (idx < registrations.length) {
           const player = registrations[idx];
-          const prize = Math.floor(prizePool * pct);
+          const prize  = Math.floor(netPool * pct);
 
           if (prize > 0) {
             await wallets.credit(player.user_id, prize);
