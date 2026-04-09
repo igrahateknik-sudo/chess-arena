@@ -1,3 +1,16 @@
+// Stub DB so gameRoom.js doesn't try to connect to Supabase in tests
+jest.mock('../src/lib/db', () => ({
+  supabase: { from: jest.fn().mockReturnThis(), select: jest.fn().mockReturnThis() },
+  users: { findById: jest.fn() },
+  games: { create: jest.fn(), findById: jest.fn(), update: jest.fn() },
+  wallets: { debit: jest.fn(), credit: jest.fn() },
+  transactions: { create: jest.fn() },
+  notifications: { create: jest.fn() },
+  eloHistory: { create: jest.fn() },
+}));
+
+process.env.JWT_SECRET = 'test-secret-key-for-jest-minimum-32-chars!!';
+
 const { __testOnly } = require('../src/socket/gameRoom');
 
 describe('fairness rules', () => {

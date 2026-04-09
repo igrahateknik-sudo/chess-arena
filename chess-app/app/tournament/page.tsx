@@ -5,29 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import {
   Trophy, ChevronRight, Zap, CheckCircle, Loader2,
-  AlertCircle, Clock, Users, Ticket, Crown, TrendingUp
+  AlertCircle, Clock, Users, Ticket, Crown, TrendingUp,
+  ArrowRight, Shield, Star
 } from 'lucide-react';
 import AppLayout from '@/components/ui/AppLayout';
 import { useAppStore } from '@/lib/store';
 import { api } from '@/lib/api';
-
-// ── Formatters ────────────────────────────────────────────────────────────────
-
-function toPoints(n: number) {
-  return `${Math.max(100, Math.floor(n / 1000))} PTS`;
-}
-
-function getTimeUntil(date: string) {
-  const now = new Date();
-  const target = new Date(date);
-  const diff = target.getTime() - now.getTime();
-  if (diff < 0) return 'Sudah Mulai';
-  const hours = Math.floor(diff / 3600000);
-  const mins = Math.floor((diff % 3600000) / 60000);
-  if (hours > 24) return `${Math.floor(hours / 24)}h ${hours % 24}j`;
-  if (hours > 0) return `${hours}j ${mins}m`;
-  return `${mins} menit`;
-}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -64,6 +47,14 @@ interface HourlyTier {
   registrations_count: number;
 }
 
+interface TierPlayer {
+  id: string;
+  user_id: string;
+  paid: boolean;
+  score: number;
+  user: { id: string; username: string; elo: number; title?: string; country?: string };
+}
+
 // ── Hourly Countdown ──────────────────────────────────────────────────────────
 
 type PhaseType = 'registering' | 'active' | 'idle';
@@ -85,26 +76,23 @@ function useHourlyPhase() {
       let label: string;
 
       if (totalSec < 5 * 60) {
-        // :00 – :05 → registration open for this hour's tournament
         const next = new Date(now);
         next.setMinutes(5, 0, 0);
         targetMs = next.getTime() - now.getTime();
         newPhase = 'registering';
-        label = 'Registrasi Dibuka — Turnamen Mulai Dalam';
+        label = 'Registrasi Dibuka';
       } else if (totalSec < 55 * 60) {
-        // :05 – :55 → tournament active
         const next = new Date(now);
         next.setHours(next.getHours() + 1, 0, 0, 0);
         targetMs = next.getTime() - now.getTime();
         newPhase = 'active';
-        label = 'Turnamen Berlangsung — Berakhir Dalam';
+        label = 'Turnamen Sedang Berlangsung';
       } else {
-        // :55 – :60 → registration for next hour
         const next = new Date(now);
         next.setHours(next.getHours() + 1, 5, 0, 0);
         targetMs = next.getTime() - now.getTime();
         newPhase = 'registering';
-        label = 'Registrasi Dibuka — Turnamen Mulai Dalam';
+        label = 'Registrasi Jam Berikutnya';
       }
 
       const totalMs = Math.max(0, targetMs);
@@ -129,33 +117,33 @@ const TIER_META = {
   bronze: {
     label: 'Bronze',
     icon: '🥉',
-    gradient: 'from-amber-900/40 to-amber-950/20',
-    border: 'border-amber-700/30',
-    accent: 'text-amber-500',
-    badgeBg: 'bg-amber-700/20',
+    prizeColor: 'text-amber-600',
+    accentColor: 'text-amber-500',
+    borderActive: 'border-amber-600/50',
+    borderIdle: 'border-[var(--border)]',
+    badgeBg: 'bg-amber-900/40',
     badgeText: 'text-amber-500',
-    glow: 'shadow-amber-900/20',
   },
   silver: {
     label: 'Silver',
     icon: '🥈',
-    gradient: 'from-slate-600/30 to-slate-800/20',
-    border: 'border-slate-500/30',
-    accent: 'text-slate-300',
-    badgeBg: 'bg-slate-500/20',
+    prizeColor: 'text-slate-300',
+    accentColor: 'text-slate-300',
+    borderActive: 'border-slate-400/50',
+    borderIdle: 'border-[var(--border)]',
+    badgeBg: 'bg-slate-700/40',
     badgeText: 'text-slate-300',
-    glow: 'shadow-slate-800/30',
     featured: true,
   },
   gold: {
     label: 'Gold',
     icon: '🥇',
-    gradient: 'from-yellow-800/30 to-yellow-950/20',
-    border: 'border-yellow-600/30',
-    accent: 'text-yellow-400',
-    badgeBg: 'bg-yellow-600/20',
+    prizeColor: 'text-yellow-400',
+    accentColor: 'text-yellow-400',
+    borderActive: 'border-yellow-500/50',
+    borderIdle: 'border-[var(--border)]',
+    badgeBg: 'bg-yellow-900/40',
     badgeText: 'text-yellow-400',
-    glow: 'shadow-yellow-900/20',
   },
 } as const;
 
@@ -168,15 +156,16 @@ export default function TournamentPage() {
   const [loading, setLoading] = useState(true);
   const [hourlyTiers, setHourlyTiers] = useState<HourlyTier[]>([]);
   const [tiersLoading, setTiersLoading] = useState(true);
+  const [tierPlayers, setTierPlayers] = useState<Record<string, TierPlayer[]>>({});
   const [joining, setJoining] = useState<string | null>(null);
   const [joined, setJoined] = useState<string[]>([]);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [tiersError, setTiersError] = useState<string | null>(null);
+  const [expandedTier, setExpandedTier] = useState<string | null>(null);
 
   const { phase, countdown, phaseLabel } = useHourlyPhase();
 
-  // Fetch tournament list
   useEffect(() => {
     setLoading(true);
     setListError(null);
@@ -187,27 +176,42 @@ export default function TournamentPage() {
       .finally(() => setLoading(false));
   }, [activeTab]);
 
-  // Fetch user's existing registrations to restore joined state after refresh
   useEffect(() => {
     if (!token) return;
     api.tournament.myRegistrations(token)
       .then((data: { tournamentIds: string[] }) => setJoined(data.tournamentIds || []))
-      .catch(() => {}); // non-critical — just means join buttons may show for already-registered
+      .catch(() => {});
   }, [token]);
 
-  // Fetch hourly tiers
   const fetchHourlyTiers = useCallback(() => {
     setTiersLoading(true);
     setTiersError(null);
     api.tournament.upcomingHourly()
-      .then((data: { tiers: HourlyTier[] }) => setHourlyTiers(data.tiers || []))
+      .then(async (data: { tiers: HourlyTier[] }) => {
+        const tiers = data.tiers || [];
+        setHourlyTiers(tiers);
+
+        // Fetch player list for each tier that has an ID
+        const playerMap: Record<string, TierPlayer[]> = {};
+        await Promise.all(
+          tiers
+            .filter(t => t.id)
+            .map(t =>
+              api.tournament.players(t.id!)
+                .then((d: { players: TierPlayer[] }) => {
+                  playerMap[t.id!] = d.players || [];
+                })
+                .catch(() => {})
+            )
+        );
+        setTierPlayers(playerMap);
+      })
       .catch(() => setTiersError('Tier turnamen jam ini gagal dimuat.'))
       .finally(() => setTiersLoading(false));
   }, []);
 
   useEffect(() => {
     fetchHourlyTiers();
-    // Refresh setiap 60 detik
     const interval = setInterval(fetchHourlyTiers, 60_000);
     return () => clearInterval(interval);
   }, [fetchHourlyTiers]);
@@ -238,219 +242,298 @@ export default function TournamentPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-5">
 
         {/* ── Header ───────────────────────────────────────────── */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
-              <Trophy className="w-6 h-6 text-yellow-400" />
-              Turnamen
-            </h1>
-            <p className="text-[var(--text-muted)] text-sm mt-0.5">Turnamen otomatis setiap jam — bertanding &amp; naikkan peringkat esports</p>
-          </div>
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+          <h1 className="text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
+            <Trophy className="w-6 h-6 text-yellow-400" />
+            Arena Turnamen
+          </h1>
+          <p className="text-[var(--text-muted)] text-sm mt-0.5">
+            Turnamen catur kompetitif setiap jam — daftar, bertanding, raih hadiah
+          </p>
         </motion.div>
 
-        {/* ── Countdown Banner ─────────────────────────────────── */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          className={`relative overflow-hidden rounded-2xl border p-5
+        {/* ── How it works strip ────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}
+          className="grid grid-cols-3 gap-3 text-center">
+          {[
+            { icon: <Ticket className="w-4 h-4" />, label: 'Beli Tiket', desc: 'Pilih tier sesuai kemampuan' },
+            { icon: <Zap className="w-4 h-4" />, label: 'Bertanding', desc: 'Dimulai tiap jam tepat :05' },
+            { icon: <Trophy className="w-4 h-4" />, label: 'Raih Hadiah', desc: 'Top 3 split 50/30/20' },
+          ].map((s, i) => (
+            <div key={i} className="card rounded-xl p-3 flex flex-col items-center gap-1.5">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center">
+                {s.icon}
+              </div>
+              <div className="text-xs font-bold text-[var(--text-primary)]">{s.label}</div>
+              <div className="text-[10px] text-[var(--text-muted)] leading-tight">{s.desc}</div>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* ── Live Countdown ────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
+          className={`flex items-center justify-between px-5 py-4 rounded-xl border
             ${phase === 'active'
-              ? 'bg-gradient-to-r from-red-500/15 to-orange-500/10 border-red-500/20'
-              : 'bg-gradient-to-r from-amber-500/15 to-yellow-500/10 border-amber-500/20'
+              ? 'bg-red-500/8 border-red-500/20'
+              : 'bg-amber-500/8 border-amber-500/20'
             }`}>
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
-                ${phase === 'active' ? 'bg-red-500/20' : 'bg-amber-500/20'}`}>
-                {phase === 'active'
-                  ? <Zap className="w-5 h-5 text-red-400" />
-                  : <Ticket className="w-5 h-5 text-amber-400" />
-                }
-              </div>
-              <div>
-                <div className={`text-xs font-bold uppercase tracking-wider mb-0.5
-                  ${phase === 'active' ? 'text-red-400' : 'text-amber-400'}`}>
-                  {phase === 'active' ? '● Live Sekarang' : '● Registrasi Dibuka'}
-                </div>
-                <div className="text-sm text-[var(--text-secondary)]">{phaseLabel}</div>
-              </div>
+          <div>
+            <div className={`text-xs font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5
+              ${phase === 'active' ? 'text-red-400' : 'text-amber-400'}`}>
+              <span className={`w-2 h-2 rounded-full animate-pulse ${phase === 'active' ? 'bg-red-400' : 'bg-amber-400'}`} />
+              {phaseLabel}
             </div>
-            <div className="flex items-center gap-2">
-              <Clock className={`w-5 h-5 ${phase === 'active' ? 'text-red-400' : 'text-amber-400'}`} />
-              <span className={`text-3xl font-black font-mono tabular-nums
-                ${phase === 'active' ? 'text-red-400' : 'text-amber-400'}`}>
-                {countdown}
-              </span>
+            <div className="text-sm text-[var(--text-secondary)]">
+              {phase === 'active'
+                ? 'Turnamen sedang berjalan — bergabung di ronde berikutnya'
+                : 'Daftar sekarang sebelum slot habis!'}
             </div>
+          </div>
+          <div className={`text-4xl font-black font-mono tabular-nums flex-shrink-0
+            ${phase === 'active' ? 'text-red-400' : 'text-amber-400'}`}>
+            {countdown}
           </div>
         </motion.div>
 
-        {/* ── Hourly Tier Cards ─────────────────────────────────── */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        {/* ── Hourly Tier Lobbies ───────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
           <div className="flex items-center gap-2 mb-3">
             <Crown className="w-4 h-4 text-yellow-400" />
-            <h2 className="font-bold text-[var(--text-primary)] text-sm">Turnamen Jam Ini</h2>
-            <span className="text-xs text-[var(--text-muted)]">— pilih tier &amp; daftar sekarang</span>
+            <h2 className="font-bold text-[var(--text-primary)]">Turnamen Jam Ini</h2>
           </div>
 
           {tiersLoading ? (
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="space-y-3">
               {[0, 1, 2].map(i => (
-                <div key={i} className="h-52 rounded-2xl bg-[var(--bg-hover)] animate-pulse" />
+                <div key={i} className="h-28 rounded-xl bg-[var(--bg-hover)] animate-pulse" />
               ))}
             </div>
+          ) : tiersError ? (
+            <div className="card rounded-xl p-6 text-center text-[var(--text-muted)] text-sm">{tiersError}</div>
           ) : (
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="space-y-3">
               {hourlyTiers.map((tier, i) => {
                 const meta = TIER_META[tier.tier];
-                const estPrize = tier.id
-                  ? toPoints(Math.floor(tier.prize_pool * 0.8))
-                  : toPoints(Math.floor(tier.entry_fee * tier.max_players * 0.8 * 0.8));
                 const isJoined = tier.id ? joined.includes(tier.id) : false;
                 const isTierFull = tier.max_players > 0 && tier.registrations_count >= tier.max_players;
-                const canJoin = tier.id && !isJoined && !isTierFull && tier.status !== 'finished';
+                const fillPct = Math.min((tier.registrations_count / tier.max_players) * 100, 100);
+                const players = tier.id ? (tierPlayers[tier.id] || []) : [];
+                const isExpanded = expandedTier === tier.tier;
+                const grossPrize = tier.id && tier.prize_pool > 0
+                  ? tier.prize_pool
+                  : tier.entry_fee * tier.max_players;
+                const firstPrize = Math.floor(grossPrize * 0.96 * 0.5);
 
                 return (
                   <motion.div key={tier.tier}
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-                    className={`relative rounded-2xl border bg-gradient-to-b ${meta.gradient} ${meta.border}
-                      ${'featured' in meta && meta.featured ? 'ring-1 ring-slate-500/20' : ''}
-                      hover:-translate-y-0.5 transition-all shadow-lg ${meta.glow}`}>
+                    initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                    className={`card rounded-xl overflow-hidden border transition-all
+                      ${isJoined ? 'border-emerald-500/30' : tier.status === 'active' ? meta.borderActive : meta.borderIdle}`}>
 
-                    {'featured' in meta && meta.featured && (
-                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-[var(--bg-card)] border border-slate-500/30 rounded-full text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        Populer
+                    {/* Main row */}
+                    <div className="flex items-center gap-4 p-4">
+                      {/* Tier badge */}
+                      <div className="flex-shrink-0 text-center w-14">
+                        <div className="text-2xl mb-0.5">{meta.icon}</div>
+                        <div className={`text-[10px] font-black uppercase tracking-wider ${meta.accentColor}`}>
+                          {meta.label}
+                        </div>
                       </div>
-                    )}
 
-                    <div className="p-5">
-                      {/* Header */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl">{meta.icon}</span>
-                          <span className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${meta.badgeBg} ${meta.badgeText}`}>
-                            {meta.label}
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="font-bold text-sm text-[var(--text-primary)]">
+                            {tier.time_control?.label || '–'}
+                          </span>
+                          <span className="text-xs text-[var(--text-muted)] capitalize">{tier.time_control?.type}</span>
+                          {tier.status === 'active' && (
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />LIVE
+                            </span>
+                          )}
+                          {isJoined && (
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                              <CheckCircle className="w-2.5 h-2.5" />Terdaftar
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Slot progress */}
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <div className="flex-1 h-1.5 bg-[var(--bg-hover)] rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${
+                              isTierFull ? 'bg-red-500' : fillPct > 75 ? 'bg-amber-400' : 'bg-emerald-500'
+                            }`} style={{ width: `${fillPct}%` }} />
+                          </div>
+                          <span className="text-[10px] text-[var(--text-muted)] font-mono flex-shrink-0">
+                            {tier.registrations_count}/{tier.max_players}
                           </span>
                         </div>
-                        {tier.status === 'active' && (
-                          <span className="flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
-                            LIVE
-                          </span>
+
+                        {/* Player avatars preview */}
+                        {players.length > 0 && (
+                          <button
+                            onClick={() => setExpandedTier(isExpanded ? null : tier.tier)}
+                            className="flex items-center gap-1.5 group">
+                            <div className="flex -space-x-1.5">
+                              {players.slice(0, 5).map(p => (
+                                <div key={p.id}
+                                  className="w-5 h-5 rounded-full bg-[var(--bg-hover)] border border-[var(--border)] flex items-center justify-center text-[9px] font-bold text-[var(--text-muted)]"
+                                  title={p.user?.username}>
+                                  {p.user?.username?.[0]?.toUpperCase() || '?'}
+                                </div>
+                              ))}
+                              {players.length > 5 && (
+                                <div className="w-5 h-5 rounded-full bg-[var(--bg-hover)] border border-[var(--border)] flex items-center justify-center text-[9px] font-bold text-[var(--text-muted)]">
+                                  +{players.length - 5}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-[var(--text-muted)] group-hover:text-amber-400 transition-colors">
+                              {isExpanded ? 'Sembunyikan' : 'Lihat peserta'}
+                            </span>
+                          </button>
+                        )}
+                        {players.length === 0 && tier.id && (
+                          <span className="text-[10px] text-[var(--text-muted)] italic">Belum ada peserta</span>
                         )}
                       </div>
 
-                      {/* Stats */}
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-[var(--text-muted)]">Tiket</span>
-                          <span className="font-black text-[var(--text-primary)]">
+                      {/* Prize + CTA */}
+                      <div className="flex-shrink-0 text-right flex flex-col items-end gap-2">
+                        <div>
+                          <div className="text-[10px] text-[var(--text-muted)]">Tiket</div>
+                          <div className="text-sm font-black text-[var(--text-primary)]">
                             {tier.entry_fee > 0 ? `Rp ${tier.entry_fee.toLocaleString('id-ID')}` : 'GRATIS'}
-                          </span>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-[var(--text-muted)]">Kontrol Waktu</span>
-                          <span className="font-bold text-[var(--text-primary)] font-mono">{tier.time_control?.label || '–'}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-[var(--text-muted)]">Pemain</span>
-                          <span className="font-bold text-[var(--text-primary)]">
-                            {tier.registrations_count}/{tier.max_players}
-                            {isTierFull && <span className="ml-1 text-red-400 text-xs">FULL</span>}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-[var(--text-muted)]">Reward Utama</span>
-                          <span className={`font-black ${meta.accent}`}>{estPrize}</span>
-                        </div>
+                        {firstPrize > 0 && (
+                          <div>
+                            <div className="text-[10px] text-[var(--text-muted)]">Juara 1</div>
+                            <div className={`text-sm font-black ${meta.prizeColor}`}>
+                              Rp {firstPrize.toLocaleString('id-ID')}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Action button */}
+                        {!tier.id ? (
+                          <div className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-hover)] px-3 py-1.5 rounded-lg border border-[var(--border)]">
+                            Dibuka :55
+                          </div>
+                        ) : isJoined ? (
+                          <Link href={`/tournament/${tier.id}`}
+                            className="flex items-center gap-1 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors">
+                            Masuk Lobby <ArrowRight className="w-3 h-3" />
+                          </Link>
+                        ) : tier.status === 'active' ? (
+                          <div className="text-[10px] text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-lg">
+                            Sedang Live
+                          </div>
+                        ) : isTierFull ? (
+                          <div className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-hover)] px-3 py-1.5 rounded-lg border border-[var(--border)]">
+                            Slot Penuh
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleJoin(tier)}
+                            disabled={joining === tier.id || !token}
+                            className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg btn-gold text-black hover:opacity-90 transition-opacity disabled:opacity-40">
+                            {joining === tier.id
+                              ? <span className="w-3 h-3 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                              : <Ticket className="w-3 h-3" />
+                            }
+                            {!token ? 'Login' : tier.entry_fee > 0 ? 'Beli Tiket' : 'Daftar'}
+                          </button>
+                        )}
                       </div>
-
-                      {/* Progress bar */}
-                      {tier.max_players > 0 && (
-                        <div className="h-1 bg-white/5 rounded-full overflow-hidden mb-4">
-                          <div className={`h-full rounded-full transition-all ${
-                            isTierFull ? 'bg-red-500' : 'bg-gradient-to-r from-amber-500 to-yellow-500'
-                          }`}
-                            style={{ width: `${Math.min((tier.registrations_count / tier.max_players) * 100, 100)}%` }} />
-                        </div>
-                      )}
-
-                      {/* CTA */}
-                      {!tier.id ? (
-                        <div className="w-full py-2 rounded-xl text-center text-xs text-[var(--text-muted)] bg-[var(--bg-hover)] border border-[var(--border)]">
-                          Dibuka pukul :55
-                        </div>
-                      ) : isJoined ? (
-                        <Link href={`/tournament/${tier.id}`}
-                          className="w-full py-2 rounded-xl text-sm font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center gap-1.5">
-                          <CheckCircle className="w-4 h-4" /> Terdaftar — Lihat Bracket
-                        </Link>
-                      ) : tier.status === 'active' ? (
-                        <div className="w-full py-2 rounded-xl text-center text-xs text-red-400 bg-red-500/10 border border-red-500/20 font-semibold">
-                          ● Sedang Berlangsung — Registrasi Ditutup
-                        </div>
-                      ) : isTierFull ? (
-                        <div className="w-full py-2 rounded-xl text-center text-xs text-[var(--text-muted)] bg-[var(--bg-hover)] border border-[var(--border)]">
-                          Slot Penuh
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handleJoin(tier)}
-                          disabled={joining === tier.id || !token}
-                          className="w-full py-2 rounded-xl text-sm font-bold transition-all
-                            btn-gold text-black hover:opacity-90
-                            disabled:opacity-40 flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20">
-                          {joining === tier.id
-                            ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            : <Ticket className="w-4 h-4" />
-                          }
-                          {!token
-                            ? 'Masuk untuk Daftar'
-                            : tier.entry_fee > 0
-                              ? `Beli Tiket — Rp ${tier.entry_fee.toLocaleString('id-ID')}`
-                              : 'Daftar Gratis'}
-                        </button>
-                      )}
                     </div>
+
+                    {/* Expanded player list */}
+                    <AnimatePresence>
+                      {isExpanded && players.length > 0 && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden border-t border-[var(--border)]">
+                          <div className="px-4 py-3 bg-[var(--bg-secondary)]">
+                            <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">
+                              {players.length} Peserta Terdaftar
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5">
+                              {players.map(p => {
+                                const isMe = p.user_id === user?.id;
+                                return (
+                                  <div key={p.id}
+                                    className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs
+                                      ${isMe ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-[var(--bg-hover)]'}`}>
+                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0
+                                      ${isMe ? 'bg-amber-500/20 text-amber-400' : 'bg-[var(--bg-card)] text-[var(--text-muted)]'}`}>
+                                      {p.user?.username?.[0]?.toUpperCase() || '?'}
+                                    </div>
+                                    <span className={`font-medium truncate ${isMe ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}>
+                                      {p.user?.username}
+                                    </span>
+                                    <span className="text-[var(--text-muted)] font-mono ml-auto flex-shrink-0">
+                                      {p.user?.elo}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.div>
                 );
               })}
             </div>
           )}
-          {tiersError && <p className="mt-3 text-xs text-red-300">{tiersError}</p>}
         </motion.div>
 
-        {/* ── Info strip ─────────────────────────────────────────── */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-          className="flex items-center gap-4 px-5 py-3 bg-[var(--bg-hover)] rounded-xl border border-[var(--border)] text-sm">
-          <TrendingUp className="w-4 h-4 text-yellow-400 flex-shrink-0" />
-          <span className="text-[var(--text-muted)]">
-            Sistem kompetitif skill-based: hasil pertandingan memengaruhi&nbsp;
-            <span className="text-yellow-400 font-semibold">ranking</span>,&nbsp;
-            <span className="text-slate-300 font-semibold">badge</span>, dan&nbsp;
-            <span className="text-[var(--text-muted)] font-medium">ELO</span> pemain.
-          </span>
+        {/* ── Prize info ─────────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.18 }}
+          className="grid grid-cols-3 gap-3 text-center">
+          {[
+            { place: '🥇 Juara 1', pct: '50%', color: 'text-yellow-400' },
+            { place: '🥈 Juara 2', pct: '30%', color: 'text-slate-300' },
+            { place: '🥉 Juara 3', pct: '20%', color: 'text-amber-600' },
+          ].map(p => (
+            <div key={p.place} className="card rounded-xl py-3 px-2">
+              <div className="text-sm mb-0.5">{p.place}</div>
+              <div className={`text-xl font-black ${p.color}`}>{p.pct}</div>
+              <div className="text-[10px] text-[var(--text-muted)]">dari net pool</div>
+            </div>
+          ))}
         </motion.div>
 
         {/* ── Join error ────────────────────────────────────────── */}
-        {joinError && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            {joinError}
-            <button onClick={() => setJoinError(null)} className="ml-auto text-red-400/60 hover:text-red-400">✕</button>
-          </motion.div>
-        )}
+        <AnimatePresence>
+          {joinError && (
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="flex items-center gap-2 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {joinError}
+              <button onClick={() => setJoinError(null)} className="ml-auto text-red-400/60 hover:text-red-400">✕</button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* ── Tabs ─────────────────────────────────────────────── */}
+        {/* ── All Tournaments ───────────────────────────────────── */}
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold text-[var(--text-primary)]">Semua Turnamen</h2>
             <div className="flex p-1 bg-[var(--bg-hover)] rounded-xl gap-1">
               {(['live', 'upcoming', 'finished'] as const).map(t => (
                 <button key={t} onClick={() => setActiveTab(t)}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5
                     ${activeTab === t
                       ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-sm'
                       : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -462,159 +545,132 @@ export default function TournamentPage() {
             </div>
           </div>
 
-          {/* Tournament cards */}
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
             </div>
           ) : tournaments.length === 0 ? (
-            <div className="card rounded-2xl p-12 text-center text-[var(--text-muted)]">
+            <div className="card rounded-xl p-12 text-center text-[var(--text-muted)]">
               <Trophy className="w-10 h-10 mx-auto mb-3 opacity-20" />
-              <p className="font-medium text-sm">Tidak ada turnamen {activeTab === 'live' ? 'live' : activeTab === 'upcoming' ? 'mendatang' : 'yang selesai'}</p>
+              <p className="font-medium text-sm">
+                Tidak ada turnamen {activeTab === 'live' ? 'live' : activeTab === 'upcoming' ? 'mendatang' : 'yang selesai'}
+              </p>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-3">
               <AnimatePresence>
-                {tournaments.map((tournament, i) => (
-                  <motion.div key={tournament.id}
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }} transition={{ delay: i * 0.07 }}
-                    className="card rounded-2xl overflow-hidden hover:border-[var(--accent)]/50 transition-all">
+                {tournaments.map((tournament, i) => {
+                  const isLive = tournament.status === 'active';
+                  const isFinished = tournament.status === 'finished';
+                  const amJoined = joined.includes(tournament.id);
+                  const full = isFull(tournament);
 
-                    {/* Card header */}
-                    <div className={`relative overflow-hidden px-5 py-4
-                      ${tournament.status === 'active'
-                        ? 'bg-gradient-to-r from-red-500/10 to-orange-500/10'
-                        : tournament.status === 'upcoming'
-                        ? 'bg-gradient-to-r from-amber-500/10 to-yellow-500/10'
-                        : 'bg-gradient-to-r from-slate-500/8 to-gray-500/8'
-                      }`}>
-                      {tournament.status === 'active' && (
-                        <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                          LIVE
-                        </div>
-                      )}
-                      <div className="pr-16">
-                        <h3 className="font-bold text-[var(--text-primary)] mb-1">{tournament.name}</h3>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--bg-hover)] text-[var(--text-muted)] capitalize font-medium">
-                            {tournament.format}
-                          </span>
-                          {tournament.time_control?.label && (
-                            <span className="text-xs font-mono font-bold text-[var(--text-secondary)]">
-                              {tournament.time_control.label}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                  return (
+                    <motion.div key={tournament.id}
+                      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }} transition={{ delay: i * 0.05 }}
+                      className={`card rounded-xl overflow-hidden border transition-all hover:border-[var(--accent)]/40
+                        ${isLive ? 'border-red-500/20' : 'border-[var(--border)]'}`}>
 
-                    {/* Card body */}
-                    <div className="p-5">
-                      <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div>
-                          <div className="text-xs text-[var(--text-muted)] mb-0.5">Reward Pool</div>
-                          <div className="text-xl font-black text-yellow-400">{toPoints(tournament.prize_pool)}</div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-[var(--text-muted)] mb-0.5">Tiket</div>
-                          <div className="text-xl font-black text-[var(--text-primary)]">
-                            {tournament.entry_fee > 0
-                              ? `Rp ${tournament.entry_fee.toLocaleString('id-ID')}`
-                              : 'GRATIS'}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-[var(--text-muted)] mb-1">Pemain</div>
-                          <div className="flex items-center gap-1.5">
-                            <Users className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-                            <span className="text-sm font-bold text-[var(--text-primary)]">
-                              {currentCount(tournament)}{tournament.max_players ? `/${tournament.max_players}` : ''}
-                            </span>
-                            {tournament.max_players && (
-                              <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${isFull(tournament) ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                                {isFull(tournament) ? 'FULL' : `${tournament.max_players - currentCount(tournament)} slot`}
-                              </span>
-                            )}
-                          </div>
-                          {tournament.max_players && (
-                            <div className="mt-1.5 h-1 bg-[var(--bg-hover)] rounded-full overflow-hidden">
-                              <div className="h-full bg-gradient-to-r from-amber-500 to-yellow-600 rounded-full transition-all"
-                                style={{ width: `${Math.min((currentCount(tournament) / tournament.max_players) * 100, 100)}%` }} />
+                      <div className="flex items-center gap-4 p-4">
+                        {/* Status dot */}
+                        <div className="flex-shrink-0">
+                          {isLive ? (
+                            <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center">
+                              <Zap className="w-5 h-5 text-red-400" />
+                            </div>
+                          ) : isFinished ? (
+                            <div className="w-10 h-10 rounded-xl bg-slate-500/10 flex items-center justify-center">
+                              <Trophy className="w-5 h-5 text-slate-500" />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
+                              <Clock className="w-5 h-5 text-amber-400" />
                             </div>
                           )}
                         </div>
-                        <div>
-                          <div className="text-xs text-[var(--text-muted)] mb-0.5">
-                            {tournament.status === 'finished' ? 'Status' : tournament.status === 'active' ? 'Dimulai' : 'Mulai Dalam'}
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                            <span className="font-bold text-sm text-[var(--text-primary)] truncate">{tournament.name}</span>
+                            {isLive && (
+                              <span className="flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full flex-shrink-0">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />LIVE
+                              </span>
+                            )}
+                            {amJoined && (
+                              <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full flex-shrink-0">
+                                <CheckCircle className="w-2.5 h-2.5" />Terdaftar
+                              </span>
+                            )}
                           </div>
-                          <div className={`text-sm font-bold ${tournament.status === 'active' ? 'text-red-400' : tournament.status === 'finished' ? 'text-slate-400' : 'text-amber-400'}`}>
-                            {tournament.status === 'finished' ? 'Selesai' :
-                             tournament.status === 'active' ? '● Live Sekarang' :
-                             getTimeUntil(tournament.starts_at)}
+                          <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
+                            <span className="capitalize">{tournament.format}</span>
+                            <span className="font-mono font-bold">{tournament.time_control?.label}</span>
+                            <span className="flex items-center gap-1">
+                              <Users className="w-3 h-3" />
+                              {currentCount(tournament)}{tournament.max_players ? `/${tournament.max_players}` : ''}
+                            </span>
+                            {tournament.prize_pool > 0 && (
+                              <span className="text-yellow-400 font-bold">
+                                Rp {tournament.prize_pool.toLocaleString('id-ID')}
+                              </span>
+                            )}
                           </div>
+                        </div>
+
+                        {/* Entry fee + CTA */}
+                        <div className="flex-shrink-0 flex flex-col items-end gap-2">
+                          <div className="text-right">
+                            <div className="text-[10px] text-[var(--text-muted)]">Tiket</div>
+                            <div className="text-sm font-black text-[var(--text-primary)]">
+                              {tournament.entry_fee > 0
+                                ? `Rp ${tournament.entry_fee.toLocaleString('id-ID')}`
+                                : 'GRATIS'}
+                            </div>
+                          </div>
+
+                          {isFinished ? (
+                            <Link href={`/tournament/${tournament.id}`}
+                              className="flex items-center gap-1 text-xs text-[var(--text-secondary)] border border-[var(--border)] px-3 py-1.5 rounded-lg hover:bg-[var(--bg-hover)] transition-colors">
+                              Hasil <ChevronRight className="w-3 h-3" />
+                            </Link>
+                          ) : isLive ? (
+                            amJoined ? (
+                              <Link href={`/tournament/${tournament.id}`}
+                                className="flex items-center gap-1 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors">
+                                Lihat <ArrowRight className="w-3 h-3" />
+                              </Link>
+                            ) : (
+                              <Link href={`/tournament/${tournament.id}`}
+                                className="flex items-center gap-1 text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-lg">
+                                Tonton <ArrowRight className="w-3 h-3" />
+                              </Link>
+                            )
+                          ) : (
+                            amJoined ? (
+                              <Link href={`/tournament/${tournament.id}`}
+                                className="flex items-center gap-1 text-xs font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg hover:bg-amber-500/20 transition-colors">
+                                Detail <ChevronRight className="w-3 h-3" />
+                              </Link>
+                            ) : (
+                              <button onClick={() => handleJoin(tournament)}
+                                disabled={joining === tournament.id || full}
+                                className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg btn-gold text-black hover:opacity-90 disabled:opacity-40 transition-opacity">
+                                {joining === tournament.id
+                                  ? <span className="w-3 h-3 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                                  : <Trophy className="w-3 h-3" />
+                                }
+                                {full ? 'Penuh' : tournament.entry_fee > 0 ? 'Beli Tiket' : 'Daftar'}
+                              </button>
+                            )
+                          )}
                         </div>
                       </div>
-
-                      {/* Prize distribution */}
-                      {tournament.prize_pool > 0 && (
-                        <div className="mb-4 p-3 bg-[var(--bg-hover)] rounded-xl">
-                          <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Distribusi Reward</div>
-                          <div className="flex gap-3">
-                            {[
-                              { place: '1st', pct: tournament.prize_distribution?.['1'] ?? 0.80, color: 'text-yellow-400' },
-                              { place: '2nd', pct: tournament.prize_distribution?.['2'] ?? 0.10, color: 'text-slate-300' },
-                            ].map(p => (
-                              <div key={p.place} className="flex-1 text-center">
-                                <div className={`text-xs font-bold ${p.color}`}>{p.place}</div>
-                                <div className="text-sm font-black text-[var(--text-primary)]">
-                                  {toPoints(Math.floor(tournament.prize_pool * p.pct))}
-                                </div>
-                                <div className="text-xs text-[var(--text-muted)]">{Math.round(p.pct * 100)}%</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Action */}
-                      {tournament.status === 'finished' ? (
-                        <Link href={`/tournament/${tournament.id}`}
-                          className="w-full py-2.5 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] text-sm font-medium hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center gap-2">
-                          Lihat Hasil <ChevronRight className="w-4 h-4" />
-                        </Link>
-                      ) : tournament.status === 'active' ? (
-                        joined.includes(tournament.id) ? (
-                          <Link href={`/tournament/${tournament.id}`}
-                            className="w-full py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-sm font-semibold flex items-center justify-center gap-2">
-                            <CheckCircle className="w-4 h-4" /> Sudah Bergabung — Lihat Bracket
-                          </Link>
-                        ) : (
-                          <div className="w-full py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-semibold flex items-center justify-center gap-2">
-                            <Zap className="w-4 h-4" /> Sedang Berlangsung — Registrasi Ditutup
-                          </div>
-                        )
-                      ) : (
-                        joined.includes(tournament.id) ? (
-                          <Link href={`/tournament/${tournament.id}`}
-                            className="w-full py-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 text-sm font-semibold flex items-center justify-center gap-2">
-                            <CheckCircle className="w-4 h-4" /> Terdaftar — Lihat Detail
-                          </Link>
-                        ) : (
-                          <button onClick={() => handleJoin(tournament)}
-                            disabled={joining === tournament.id || isFull(tournament)}
-                            className="w-full py-2.5 rounded-xl btn-gold text-black text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20">
-                            {joining === tournament.id ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Trophy className="w-4 h-4" />}
-                            {tournament.entry_fee > 0
-                              ? `Daftar — Rp ${tournament.entry_fee.toLocaleString('id-ID')}`
-                              : 'Daftar — GRATIS'}
-                          </button>
-                        )
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             </div>
           )}

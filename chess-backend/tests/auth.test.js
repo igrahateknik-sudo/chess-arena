@@ -6,6 +6,10 @@
 
 const request = require('supertest');
 
+// Set required env vars before any module is loaded
+process.env.JWT_SECRET = 'test-secret-key-for-jest-minimum-32-chars!!';
+process.env.JWT_EXPIRES = '1h';
+
 // Disable rate limiting in tests
 jest.mock('express-rate-limit', () => () => (req, res, next) => next());
 
