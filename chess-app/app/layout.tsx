@@ -8,6 +8,11 @@ import { useRealtime } from '@/lib/realtime';
 // Provider yang mengaktifkan semua socket real-time selama sesi login
 function RealtimeProvider({ children }: { children: React.ReactNode }) {
   useRealtime();
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  }, []);
   return <>{children}</>;
 }
 
@@ -45,14 +50,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Favicons */}
         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♔</text></svg>" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-        {/* Service Worker registration */}
-        <script dangerouslySetInnerHTML={{ __html: `
-          if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-              navigator.serviceWorker.register('/sw.js').catch(function(){});
-            });
-          }
-        `}} />
       </head>
       <body className={theme === 'dark' ? 'dark' : ''}>
         <div className="min-h-screen bg-[var(--bg-primary)] transition-colors duration-300">
