@@ -1,4 +1,4 @@
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://chess-arena-backend-289232625557.asia-southeast2.run.app';
 
 class ApiError extends Error {
   code?: string;
